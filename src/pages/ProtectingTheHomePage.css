@@ -1,0 +1,512 @@
+.protect-home-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(120, 90, 180, 0.18), transparent 30%),
+    radial-gradient(circle at bottom, rgba(80, 120, 220, 0.12), transparent 35%),
+    linear-gradient(180deg, #07070d 0%, #0d0b16 45%, #120f1d 100%);
+  color: #f5f1ff;
+}
+
+.protect-home-page::before,
+.protect-home-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.protect-home-page::before {
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+    radial-gradient(circle, rgba(183, 144, 255, 0.12) 1px, transparent 1px),
+    radial-gradient(circle, rgba(152, 214, 255, 0.1) 1px, transparent 1px);
+  background-size: 140px 140px, 200px 200px, 260px 260px;
+  background-position: 0 0, 40px 70px, 90px 20px;
+  animation: starDrift 26s linear infinite;
+  opacity: 0.55;
+}
+
+.protect-home-page::after {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.04),
+    transparent 55%
+  );
+  animation: auraPulse 8s ease-in-out infinite;
+}
+
+.protect-home-content {
+  position: relative;
+  z-index: 2;
+  width: min(1200px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 80px 0 90px;
+}
+
+.protect-home-hero {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.home-symbol-main {
+  display: inline-block;
+  font-size: 3rem;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 18px rgba(180, 130, 255, 0.5));
+  animation: crystalPulse 3.2s ease-in-out infinite;
+}
+
+.protect-home-title {
+  margin: 0 0 12px;
+  font-size: clamp(2.4rem, 5vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 20px rgba(165, 120, 255, 0.2);
+}
+
+.protect-home-subtitle {
+  max-width: 760px;
+  margin: 0 auto;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: rgba(245, 241, 255, 0.82);
+}
+
+.protect-home-info-card,
+.protect-home-stones-section,
+.protect-home-closing {
+  position: relative;
+  background: rgba(18, 15, 29, 0.72);
+  border: 1px solid rgba(196, 170, 255, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 26px;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.protect-home-info-card {
+  padding: 30px;
+  margin-bottom: 34px;
+}
+
+.protect-home-info-card h2,
+.protect-home-stones-section h2 {
+  margin-top: 0;
+  margin-bottom: 22px;
+  font-size: 1.6rem;
+  letter-spacing: 0.03em;
+}
+
+.protect-home-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.protect-home-info-grid > div {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(196, 170, 255, 0.1);
+}
+
+.label {
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(211, 190, 255, 0.72);
+}
+
+.value {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #f5f1ff;
+}
+
+.protect-home-stones-section {
+  padding: 30px;
+  margin-bottom: 34px;
+}
+
+.protect-home-stones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 22px;
+}
+
+.stone-card {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  padding: 22px 20px;
+  border-radius: 22px;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.025)
+    ),
+    rgba(20, 16, 34, 0.88);
+  border: 1px solid rgba(198, 172, 255, 0.14);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.24),
+    0 0 0 rgba(180, 130, 255, 0);
+  transition:
+    transform 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    background 0.3s ease;
+}
+
+.stone-card::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle, rgba(175, 131, 255, 0.2), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.stone-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  border-color: rgba(215, 191, 255, 0.34);
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.32),
+    0 0 26px rgba(169, 118, 255, 0.16);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07),
+      rgba(255, 255, 255, 0.03)
+    ),
+    rgba(24, 18, 40, 0.92);
+}
+
+.stone-card:hover::before {
+  opacity: 1;
+}
+
+.stone-card.open {
+  border-color: rgba(215, 191, 255, 0.34);
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.32),
+    0 0 26px rgba(169, 118, 255, 0.16);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07),
+      rgba(255, 255, 255, 0.03)
+    ),
+    rgba(24, 18, 40, 0.92);
+}
+
+.stone-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stone-toggle {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  color: #f5f1ff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(196, 170, 255, 0.16);
+}
+
+.stone-card h3 {
+  position: relative;
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  color: #ffffff;
+  z-index: 1;
+}
+
+.stone-card p {
+  position: relative;
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.7;
+  color: rgba(244, 239, 255, 0.82);
+  z-index: 1;
+}
+
+.stone-expanded {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(196, 170, 255, 0.14);
+  animation: fadeReveal 0.25s ease;
+}
+
+.stone-expanded-label {
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(211, 190, 255, 0.72);
+}
+
+.stone-expanded-text {
+  line-height: 1.7;
+  color: rgba(244, 239, 255, 0.86);
+}
+
+.protect-home-closing {
+  padding: 28px 30px;
+  text-align: center;
+}
+
+.protect-home-closing p {
+  max-width: 850px;
+  margin: 0 auto;
+  line-height: 1.9;
+  color: rgba(245, 241, 255, 0.84);
+}
+
+.house-float {
+  position: absolute;
+  z-index: 1;
+  font-size: 1.5rem;
+  color: rgba(230, 220, 255, 0.34);
+  text-shadow: 0 0 18px rgba(170, 120, 255, 0.28);
+  animation: floatSymbol 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.house-float:nth-child(2n) {
+  animation-duration: 7.5s;
+}
+
+.house-float:nth-child(3n) {
+  animation-duration: 8.5s;
+}
+
+/* ============================= */
+/* STONE COLLECTIONS PAGE STYLE */
+/* ============================= */
+
+.collections-page {
+  min-height: 100vh;
+  padding: 80px 0;
+  color: #f5f1ff;
+  background:
+    radial-gradient(circle at top, rgba(120, 90, 180, 0.18), transparent 30%),
+    radial-gradient(circle at bottom, rgba(80, 120, 220, 0.12), transparent 35%),
+    linear-gradient(180deg, #07070d 0%, #0d0b16 45%, #120f1d 100%);
+}
+
+.collections-container {
+  width: min(1200px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+.collections-title {
+  margin: 0 0 10px;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  text-align: center;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 20px rgba(165, 120, 255, 0.2);
+}
+
+.collections-subtitle {
+  max-width: 760px;
+  margin: 0 auto 50px;
+  text-align: center;
+  line-height: 1.8;
+  color: rgba(245, 241, 255, 0.82);
+}
+
+.collections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 26px;
+}
+
+.collection-card {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  padding: 26px;
+  border-radius: 22px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.025)
+    ),
+    rgba(20, 16, 34, 0.88);
+  border: 1px solid rgba(198, 172, 255, 0.15);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.24),
+    0 0 0 rgba(180, 130, 255, 0);
+  text-decoration: none;
+  color: #f5f1ff;
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease;
+}
+
+.collection-card::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle, rgba(175, 131, 255, 0.18), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.collection-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(215, 191, 255, 0.4);
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.32),
+    0 0 26px rgba(169, 118, 255, 0.16);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07),
+      rgba(255, 255, 255, 0.03)
+    ),
+    rgba(24, 18, 40, 0.92);
+}
+
+.collection-card:hover::before {
+  opacity: 1;
+}
+
+.collection-card h3 {
+  position: relative;
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+  color: #ffffff;
+  z-index: 1;
+}
+
+.collection-card p {
+  position: relative;
+  margin: 0;
+  line-height: 1.7;
+  color: rgba(244, 239, 255, 0.82);
+  z-index: 1;
+}
+
+.collection-tags {
+  position: relative;
+  margin-top: 14px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: rgba(211, 190, 255, 0.72);
+  z-index: 1;
+}
+
+@keyframes floatSymbol {
+  0%,
+  100% {
+    transform: translateY(0px);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-12px);
+    opacity: 0.7;
+  }
+}
+
+@keyframes crystalPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    text-shadow: 0 0 0 rgba(190, 150, 255, 0.12);
+  }
+  50% {
+    transform: scale(1.08);
+    text-shadow: 0 0 28px rgba(190, 150, 255, 0.3);
+  }
+}
+
+@keyframes starDrift {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-18px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes auraPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes fadeReveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .protect-home-content {
+    width: min(100% - 20px, 1200px);
+    padding: 56px 0 70px;
+  }
+
+  .protect-home-info-card,
+  .protect-home-stones-section,
+  .protect-home-closing {
+    border-radius: 22px;
+    padding: 22px;
+  }
+
+  .house-float {
+    font-size: 1.2rem;
+  }
+
+  .collections-page {
+    padding: 56px 0 70px;
+  }
+
+  .collections-container {
+    width: min(100% - 20px, 1200px);
+  }
+
+  .collections-grid {
+    gap: 20px;
+  }
+
+  .collection-card {
+    padding: 22px;
+    border-radius: 20px;
+  }
+}

@@ -1,0 +1,212 @@
+.veterans-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(45, 32, 92, 0.28), transparent 32%),
+    linear-gradient(180deg, #05060d 0%, #070914 45%, #090b18 100%);
+  color: #f5efe4;
+  padding: 48px 20px 72px;
+}
+
+.veterans-content {
+  position: relative;
+  z-index: 2;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.veterans-float {
+  position: absolute;
+  z-index: 1;
+  font-size: 5rem;
+  opacity: 0.08;
+  pointer-events: none;
+  user-select: none;
+}
+
+.veterans-hero {
+  text-align: center;
+  margin-bottom: 34px;
+}
+
+.veterans-icon-wrap {
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24px;
+  background: rgba(16, 18, 30, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 26px rgba(140, 150, 255, 0.18),
+    0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+.veterans-icon {
+  font-size: 3.2rem;
+  line-height: 1;
+}
+
+.veterans-hero h1 {
+  margin: 0 0 12px;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.veterans-hero p {
+  max-width: 760px;
+  margin: 0 auto;
+  color: #e2d8cc;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.veterans-summary-card,
+.veterans-stones-card,
+.veterans-closing-card {
+  background: linear-gradient(
+    180deg,
+    rgba(19, 21, 35, 0.92) 0%,
+    rgba(16, 17, 29, 0.94) 100%
+  );
+  border: 1px solid rgba(150, 132, 255, 0.13);
+  border-radius: 24px;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.veterans-summary-card {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  padding: 28px 30px;
+  margin-bottom: 28px;
+}
+
+.veterans-summary-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.veterans-label {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #a88fe6;
+  font-weight: 700;
+}
+
+.veterans-summary-block strong {
+  font-size: 1.06rem;
+  color: #f4ede2;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.veterans-stones-card {
+  padding: 28px 24px 22px;
+  margin-bottom: 28px;
+}
+
+.veterans-stones-card h2 {
+  margin: 0 0 22px;
+  font-size: 1.9rem;
+  line-height: 1.2;
+  color: #f7efe5;
+}
+
+.veterans-stones-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.veterans-stone-item {
+  min-height: 150px;
+  padding: 16px 16px 14px;
+  border-radius: 18px;
+  background: linear-gradient(
+    180deg,
+    rgba(43, 35, 74, 0.44) 0%,
+    rgba(27, 22, 47, 0.5) 100%
+  );
+  border: 1px solid rgba(150, 132, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.veterans-stone-item h3 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  color: #fff4ea;
+  line-height: 1.2;
+}
+
+.veterans-stone-item p {
+  margin: 0;
+  color: #ddd3c8;
+  font-size: 0.98rem;
+  line-height: 1.7;
+}
+
+.veterans-closing-card {
+  padding: 28px 36px;
+  text-align: center;
+}
+
+.veterans-closing-card p {
+  margin: 0 auto;
+  max-width: 780px;
+  color: #ede3d8;
+  font-size: 1.02rem;
+  line-height: 1.8;
+}
+
+@media (max-width: 1024px) {
+  .veterans-summary-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .veterans-stones-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .veterans-page {
+    padding: 32px 14px 56px;
+  }
+
+  .veterans-icon-wrap {
+    width: 78px;
+    height: 78px;
+    border-radius: 20px;
+  }
+
+  .veterans-icon {
+    font-size: 2.7rem;
+  }
+
+  .veterans-summary-card {
+    grid-template-columns: 1fr;
+    padding: 22px 20px;
+  }
+
+  .veterans-stones-card {
+    padding: 22px 18px 18px;
+  }
+
+  .veterans-stones-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .veterans-closing-card {
+    padding: 22px 20px;
+  }
+}

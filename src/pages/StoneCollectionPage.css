@@ -1,0 +1,173 @@
+.stone-collections-page {
+  position: relative;
+  min-height: 100vh;
+  background: radial-gradient(
+    60% 60% at 50% 30%,
+    rgba(120, 90, 255, 0.18),
+    rgba(0, 0, 0, 1) 70%
+  );
+  color: white;
+  padding: 40px 20px;
+  overflow: hidden;
+}
+
+/* Floating symbols */
+.stone-collections-float {
+  position: absolute;
+  opacity: 0.15;
+  font-size: 22px;
+  pointer-events: none;
+}
+
+/* Content wrapper */
+.stone-collections-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* Back button */
+.stone-back-link {
+  display: inline-block;
+  margin-bottom: 20px;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  transition: all 0.2s ease;
+}
+
+.stone-back-link:hover {
+  color: white;
+  transform: translateX(-4px);
+}
+
+/* Hero */
+.stone-collections-hero {
+  margin-bottom: 30px;
+}
+
+.stone-collections-symbol {
+  font-size: 18px;
+  opacity: 0.7;
+}
+
+.stone-collections-title {
+  font-size: 2.4rem;
+  margin: 10px 0;
+}
+
+.stone-collections-subtitle {
+  opacity: 0.8;
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+/* Toolbar */
+.stone-collections-toolbar {
+  margin-bottom: 25px;
+}
+
+.stone-search-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  outline: none;
+  margin-bottom: 15px;
+}
+
+/* Filters */
+.stone-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.stone-filter-chip {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.stone-filter-chip.active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Count */
+.stone-results-count {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* GRID (THIS IS WHAT YOU LOST) */
+.stone-collections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+/* CARD DESIGN */
+.stone-collection-card {
+  display: block;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-decoration: none;
+  color: white;
+  transition: all 0.25s ease;
+}
+
+.stone-collection-card:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Card content */
+.stone-collection-card-icon {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.stone-collection-card h2 {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.stone-collection-card p {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-bottom: 10px;
+}
+
+.stone-collection-accent {
+  display: block;
+  font-size: 11px;
+  opacity: 0.6;
+  margin-bottom: 6px;
+}
+
+.stone-collection-category {
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+/* Empty state */
+.stone-empty-state {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.stone-empty-symbol {
+  font-size: 24px;
+  opacity: 0.5;
+}

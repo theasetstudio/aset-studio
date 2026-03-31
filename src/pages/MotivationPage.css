@@ -1,0 +1,140 @@
+.motivation-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(45,32,92,0.28), transparent 32%),
+    linear-gradient(180deg,#05060d 0%,#070914 45%,#090b18 100%);
+  color: #f5efe4;
+  padding: 48px 20px 72px;
+}
+
+.motivation-content {
+  position: relative;
+  z-index: 2;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.motivation-float {
+  position: absolute;
+  z-index: 1;
+  font-size: 5rem;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.motivation-hero {
+  text-align: center;
+  margin-bottom: 34px;
+}
+
+.motivation-icon-wrap {
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24px;
+  background: rgba(16,18,30,0.78);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.motivation-icon {
+  font-size: 3.4rem;
+}
+
+.motivation-hero h1 {
+  font-size: clamp(2.5rem,5vw,4rem);
+  margin-bottom: 12px;
+}
+
+.motivation-hero p {
+  max-width: 760px;
+  margin: 0 auto;
+  color: #e2d8cc;
+}
+
+.motivation-summary-card,
+.motivation-stones-card,
+.motivation-closing-card {
+  background: linear-gradient(
+    180deg,
+    rgba(19,21,35,0.92) 0%,
+    rgba(16,17,29,0.94) 100%
+  );
+  border: 1px solid rgba(150,132,255,0.13);
+  border-radius: 24px;
+  margin-bottom: 28px;
+}
+
+.motivation-summary-card {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 18px;
+  padding: 28px 30px;
+}
+
+.motivation-summary-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.motivation-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #a88fe6;
+}
+
+.motivation-stones-card {
+  padding: 28px 24px;
+}
+
+.motivation-stones-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 18px;
+}
+
+.motivation-stone-item {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(40,34,70,0.5);
+  border: 1px solid rgba(150,132,255,0.16);
+}
+
+.motivation-stone-item h3 {
+  margin-bottom: 10px;
+}
+
+.motivation-closing-card {
+  padding: 28px 36px;
+  text-align: center;
+}
+
+@media (max-width:1024px) {
+
+  .motivation-summary-card {
+    grid-template-columns: repeat(2,1fr);
+  }
+
+  .motivation-stones-grid {
+    grid-template-columns: repeat(2,1fr);
+  }
+
+}
+
+@media (max-width:640px) {
+
+  .motivation-summary-card {
+    grid-template-columns: 1fr;
+  }
+
+  .motivation-stones-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
