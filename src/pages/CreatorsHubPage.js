@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { getOrCreateConversation } from "../utils/messaging";
@@ -6,17 +6,24 @@ import { getOrCreateConversation } from "../utils/messaging";
 export default function CreatorsHubPage() {
   const navigate = useNavigate();
 
+  const avatarInputRef = useRef(null);
+  const bannerInputRef = useRef(null);
+
   const [currentUser, setCurrentUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
   const [uploads, setUploads] = useState([]);
   const [loadingUploads, setLoadingUploads] = useState(true);
+
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+
   const [profileForm, setProfileForm] = useState({
     display_name: "",
     username: "",
@@ -35,6 +42,142 @@ export default function CreatorsHubPage() {
       ...prev,
       [field]: value,
     }));
+  }
+
+  function getFileExtension(fileName = "") {
+    const parts = String(fileName).split(".");
+    if (parts.length < 2) return "jpg";
+    return parts[parts.length - 1].toLowerCase();
+  }
+
+  async function getSignedProfileImageUrl(pathOrUrl) {
+    if (!pathOrUrl) return "";
+
+    const value = String(pathOrUrl).trim();
+    if (!value) return "";
+
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+      const marker = "/storage/v1/object/sign/media/";
+      const markerIndex = value.indexOf(marker);
+
+      if (markerIndex === -1) {
+        return value;
+      }
+
+      const pathPart = value.slice(markerIndex + marker.length).split("?")[0];
+      if (!pathPart) return value;
+
+      const decodedPath = decodeURIComponent(pathPart);
+
+      const { data, error } = await supabase.storage
+        .from("media")
+        .createSignedUrl(decodedPath, 3600);
+
+      if (error) {
+        console.error("Error creating signed profile image URL:", decodedPath, error);
+        return "";
+      }
+
+      return data?.signedUrl || "";
+    }
+
+    const cleanPath = value.replace(/^\/+/, "");
+
+    const { data, error } = await supabase.storage
+      .from("media")
+      .createSignedUrl(cleanPath, 3600);
+
+    if (error) {
+      console.error("Error creating signed profile image URL:", cleanPath, error);
+      return "";
+    }
+
+    return data?.signedUrl || "";
+  }
+
+  async function refreshProfileImages(profileRecord) {
+    const signedAvatarUrl = await getSignedProfileImageUrl(profileRecord?.avatar_url);
+    const signedBannerUrl = await getSignedProfileImageUrl(profileRecord?.banner_url);
+
+    setProfile(profileRecord || null);
+    setProfileForm((prev) => ({
+      ...prev,
+      display_name: profileRecord?.display_name || "",
+      username: profileRecord?.username || "",
+      portfolio_tagline: profileRecord?.portfolio_tagline || "",
+      bio: profileRecord?.bio || "",
+      location: profileRecord?.location || "",
+      quote: profileRecord?.quote || "",
+      avatar_url: signedAvatarUrl || "",
+      banner_url: signedBannerUrl || "",
+    }));
+  }
+
+  async function uploadProfileImage(file, type) {
+    if (!currentUser?.id) {
+      setError("You must be signed in.");
+      return;
+    }
+
+    if (!file) return;
+
+    const isAvatar = type === "avatar";
+    const setUploadingState = isAvatar ? setUploadingAvatar : setUploadingBanner;
+    const dbColumn = isAvatar ? "avatar_url" : "banner_url";
+    const fileExtension = getFileExtension(file.name);
+    const filePath = `profiles/${currentUser.id}/${type}-${Date.now()}.${fileExtension}`;
+
+    try {
+      setError("");
+      setSuccessMessage("");
+      setUploadingState(true);
+
+      const { error: uploadError } = await supabase.storage
+        .from("media")
+        .upload(filePath, file, {
+          upsert: true,
+          contentType: file.type || undefined,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data, error: updateError } = await supabase
+        .from("profiles")
+        .update({ [dbColumn]: filePath })
+        .eq("id", currentUser.id)
+        .select(
+          "id, role, display_name, username, is_age_verified, portfolio_tagline, bio, location, quote, avatar_url, banner_url"
+        )
+        .single();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      await refreshProfileImages(data);
+      setSuccessMessage(
+        isAvatar ? "Profile photo updated successfully." : "Banner image updated successfully."
+      );
+    } catch (err) {
+      console.error(`Error uploading ${type}:`, err);
+      setError(err.message || `Failed to upload ${type}.`);
+    } finally {
+      setUploadingState(false);
+    }
+  }
+
+  async function handleAvatarUpload(e) {
+    const file = e.target.files?.[0];
+    await uploadProfileImage(file, "avatar");
+    e.target.value = "";
+  }
+
+  async function handleBannerUpload(e) {
+    const file = e.target.files?.[0];
+    await uploadProfileImage(file, "banner");
+    e.target.value = "";
   }
 
   async function handleStartConversation(targetUserId) {
@@ -111,58 +254,6 @@ export default function CreatorsHubPage() {
         color: "#555",
       },
     };
-  }
-
-  async function getSignedProfileImageUrl(pathOrUrl) {
-    if (!pathOrUrl) return "";
-
-    const value = String(pathOrUrl).trim();
-    if (!value) return "";
-
-    if (value.startsWith("http://") || value.startsWith("https://")) {
-      const marker = "/storage/v1/object/sign/media/";
-      const markerIndex = value.indexOf(marker);
-
-      if (markerIndex === -1) {
-        return value;
-      }
-
-      const pathPart = value.slice(markerIndex + marker.length).split("?")[0];
-
-      if (!pathPart) {
-        return value;
-      }
-
-      const decodedPath = decodeURIComponent(pathPart);
-
-      const { data, error } = await supabase.storage
-        .from("media")
-        .createSignedUrl(decodedPath, 3600);
-
-      if (error) {
-        console.error(
-          "Error creating signed profile image URL:",
-          decodedPath,
-          error
-        );
-        return "";
-      }
-
-      return data?.signedUrl || "";
-    }
-
-    const cleanPath = value.replace(/^\/+/, "");
-
-    const { data, error } = await supabase.storage
-      .from("media")
-      .createSignedUrl(cleanPath, 3600);
-
-    if (error) {
-      console.error("Error creating signed profile image URL:", cleanPath, error);
-      return "";
-    }
-
-    return data?.signedUrl || "";
   }
 
   const fetchUploads = useCallback(async (userId) => {
@@ -258,14 +349,10 @@ export default function CreatorsHubPage() {
 
       const nextProfile = profileData || null;
 
-      const signedAvatarUrl = await getSignedProfileImageUrl(
-        nextProfile?.avatar_url
-      );
-      const signedBannerUrl = await getSignedProfileImageUrl(
-        nextProfile?.banner_url
-      );
-
       setProfile(nextProfile);
+
+      const signedAvatarUrl = await getSignedProfileImageUrl(nextProfile?.avatar_url);
+      const signedBannerUrl = await getSignedProfileImageUrl(nextProfile?.banner_url);
 
       setProfileForm({
         display_name: nextProfile?.display_name || "",
@@ -344,11 +431,10 @@ export default function CreatorsHubPage() {
         throw updateError;
       }
 
-      setProfile(data || null);
-
       const refreshedAvatarUrl = await getSignedProfileImageUrl(data?.avatar_url);
       const refreshedBannerUrl = await getSignedProfileImageUrl(data?.banner_url);
 
+      setProfile(data || null);
       setProfileForm((prev) => ({
         ...prev,
         display_name: data?.display_name || "",
@@ -472,6 +558,22 @@ export default function CreatorsHubPage() {
           >
             <h3 style={{ marginTop: 0, marginBottom: "16px" }}>Profile Images</h3>
 
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              style={{ display: "none" }}
+            />
+
+            <input
+              ref={bannerInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleBannerUpload}
+              style={{ display: "none" }}
+            />
+
             <div
               style={{
                 display: "grid",
@@ -485,44 +587,99 @@ export default function CreatorsHubPage() {
                   Profile Picture
                 </p>
 
-                {profileForm.avatar_url ? (
-                  <img
-                    src={profileForm.avatar_url}
-                    alt="Profile avatar"
+                <div
+                  style={{
+                    position: "relative",
+                    width: "120px",
+                    height: "120px",
+                  }}
+                >
+                  {profileForm.avatar_url ? (
+                    <img
+                      src={profileForm.avatar_url}
+                      alt="Profile avatar"
+                      style={{
+                        width: "120px",
+                        height: "120px",
+                        objectFit: "cover",
+                        borderRadius: "999px",
+                        border: "1px solid #ddd",
+                        display: "block",
+                        backgroundColor: "#f7f7f7",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "120px",
+                        height: "120px",
+                        borderRadius: "999px",
+                        border: "1px dashed #bbb",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#777",
+                        fontSize: "14px",
+                        backgroundColor: "#fafafa",
+                        textAlign: "center",
+                        padding: "12px",
+                      }}
+                    >
+                      No image
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={uploadingAvatar}
                     style={{
+                      marginTop: "12px",
                       width: "120px",
-                      height: "120px",
-                      objectFit: "cover",
+                      padding: "10px 12px",
                       borderRadius: "999px",
-                      border: "1px solid #ddd",
-                      display: "block",
-                      backgroundColor: "#f7f7f7",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: "120px",
-                      height: "120px",
-                      borderRadius: "999px",
-                      border: "1px dashed #bbb",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#777",
-                      fontSize: "14px",
-                      backgroundColor: "#fafafa",
+                      border: "1px solid #ccc",
+                      backgroundColor: "#fff",
+                      cursor: uploadingAvatar ? "default" : "pointer",
+                      fontSize: "13px",
+                      opacity: uploadingAvatar ? 0.7 : 1,
                     }}
                   >
-                    No image
-                  </div>
-                )}
+                    {uploadingAvatar ? "Uploading..." : "Change Photo"}
+                  </button>
+                </div>
               </div>
 
               <div>
-                <p style={{ margin: "0 0 10px 0", fontWeight: "600" }}>
-                  Banner Image
-                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "12px",
+                    marginBottom: "10px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <p style={{ margin: 0, fontWeight: "600" }}>Banner Image</p>
+
+                  <button
+                    type="button"
+                    onClick={() => bannerInputRef.current?.click()}
+                    disabled={uploadingBanner}
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: "999px",
+                      border: "1px solid #ccc",
+                      backgroundColor: "#fff",
+                      cursor: uploadingBanner ? "default" : "pointer",
+                      fontSize: "13px",
+                      opacity: uploadingBanner ? 0.7 : 1,
+                    }}
+                  >
+                    {uploadingBanner ? "Uploading..." : "Change Banner"}
+                  </button>
+                </div>
 
                 {profileForm.banner_url ? (
                   <img
@@ -530,8 +687,8 @@ export default function CreatorsHubPage() {
                     alt="Profile banner"
                     style={{
                       width: "100%",
-                      maxWidth: "420px",
-                      height: "120px",
+                      maxWidth: "520px",
+                      height: "180px",
                       objectFit: "cover",
                       borderRadius: "14px",
                       border: "1px solid #ddd",
@@ -543,8 +700,8 @@ export default function CreatorsHubPage() {
                   <div
                     style={{
                       width: "100%",
-                      maxWidth: "420px",
-                      height: "120px",
+                      maxWidth: "520px",
+                      height: "180px",
                       borderRadius: "14px",
                       border: "1px dashed #bbb",
                       display: "flex",
@@ -569,8 +726,7 @@ export default function CreatorsHubPage() {
                 opacity: 0.7,
               }}
             >
-              Image URLs are hidden from this form now. We can wire real upload/change
-              buttons next.
+              Click the profile photo or banner buttons to upload new images.
             </p>
           </div>
 
@@ -654,9 +810,7 @@ export default function CreatorsHubPage() {
               </label>
               <input
                 value={profileForm.quote}
-                onChange={(e) =>
-                  handleProfileFieldChange("quote", e.target.value)
-                }
+                onChange={(e) => handleProfileFieldChange("quote", e.target.value)}
                 placeholder="A favorite quote, signature line, or brand statement"
                 style={{
                   width: "100%",
