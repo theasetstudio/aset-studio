@@ -158,7 +158,9 @@ export default function CreatorsHubPage() {
 
       await refreshProfileImages(data);
       setSuccessMessage(
-        isAvatar ? "Profile photo updated successfully." : "Banner image updated successfully."
+        isAvatar
+          ? "Profile photo updated successfully."
+          : "Banner image updated successfully."
       );
     } catch (err) {
       console.error(`Error uploading ${type}:`, err);
@@ -530,350 +532,455 @@ export default function CreatorsHubPage() {
       <div
         style={{
           border: "1px solid #ddd",
-          borderRadius: "16px",
-          padding: "24px",
+          borderRadius: "20px",
           marginBottom: "40px",
           backgroundColor: "#fff",
+          overflow: "hidden",
         }}
       >
-        <h2 style={{ marginTop: 0, marginBottom: "8px" }}>Edit Creator Profile</h2>
-        <p style={{ marginTop: 0, opacity: 0.75 }}>
-          Update the public profile details shown on your creator page.
-        </p>
+        <div style={{ padding: "24px 24px 0 24px" }}>
+          <h2 style={{ marginTop: 0, marginBottom: "8px" }}>Edit Creator Profile</h2>
+          <p style={{ marginTop: 0, marginBottom: "24px", opacity: 0.75 }}>
+            Update the public profile details shown on your creator page.
+          </p>
+        </div>
 
-        <form
-          onSubmit={handleSaveProfile}
-          style={{
-            display: "grid",
-            gap: "24px",
-            marginTop: "24px",
-          }}
-        >
+        <form onSubmit={handleSaveProfile}>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarUpload}
+            style={{ display: "none" }}
+          />
+
+          <input
+            ref={bannerInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleBannerUpload}
+            style={{ display: "none" }}
+          />
+
           <div
             style={{
-              border: "1px solid #e5e5e5",
-              borderRadius: "14px",
-              padding: "20px",
+              position: "relative",
+              padding: "0 24px 24px 24px",
             }}
           >
-            <h3 style={{ marginTop: 0, marginBottom: "16px" }}>Profile Images</h3>
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "260px",
+                borderRadius: "20px",
+                overflow: "hidden",
+                border: "1px solid #e5e5e5",
+                background: "linear-gradient(135deg, #f7f7f7 0%, #efefef 100%)",
+              }}
+            >
+              {profileForm.banner_url ? (
+                <img
+                  src={profileForm.banner_url}
+                  alt="Profile banner"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#777",
+                    fontSize: "14px",
+                    backgroundColor: "#fafafa",
+                  }}
+                >
+                  No banner image
+                </div>
+              )}
 
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarUpload}
-              style={{ display: "none" }}
-            />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "linear-gradient(to top, rgba(0,0,0,0.35), rgba(0,0,0,0.08), rgba(0,0,0,0))",
+                }}
+              />
 
-            <input
-              ref={bannerInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleBannerUpload}
-              style={{ display: "none" }}
-            />
+              <button
+                type="button"
+                onClick={() => bannerInputRef.current?.click()}
+                disabled={uploadingBanner}
+                style={{
+                  position: "absolute",
+                  top: "16px",
+                  right: "16px",
+                  padding: "10px 14px",
+                  borderRadius: "999px",
+                  border: "1px solid rgba(255,255,255,0.55)",
+                  backgroundColor: "rgba(255,255,255,0.92)",
+                  color: "#111",
+                  cursor: uploadingBanner ? "default" : "pointer",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  opacity: uploadingBanner ? 0.7 : 1,
+                }}
+              >
+                {uploadingBanner ? "Uploading..." : "Change Banner"}
+              </button>
+            </div>
 
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "180px 1fr",
-                gap: "24px",
-                alignItems: "start",
+                position: "relative",
+                marginTop: "-54px",
+                paddingLeft: "24px",
+                paddingRight: "24px",
               }}
             >
-              <div>
-                <p style={{ margin: "0 0 10px 0", fontWeight: "600" }}>
-                  Profile Picture
-                </p>
-
-                <div
-                  style={{
-                    position: "relative",
-                    width: "120px",
-                    height: "120px",
-                  }}
-                >
-                  {profileForm.avatar_url ? (
-                    <img
-                      src={profileForm.avatar_url}
-                      alt="Profile avatar"
-                      style={{
-                        width: "120px",
-                        height: "120px",
-                        objectFit: "cover",
-                        borderRadius: "999px",
-                        border: "1px solid #ddd",
-                        display: "block",
-                        backgroundColor: "#f7f7f7",
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "120px",
-                        height: "120px",
-                        borderRadius: "999px",
-                        border: "1px dashed #bbb",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#777",
-                        fontSize: "14px",
-                        backgroundColor: "#fafafa",
-                        textAlign: "center",
-                        padding: "12px",
-                      }}
-                    >
-                      No image
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => avatarInputRef.current?.click()}
-                    disabled={uploadingAvatar}
-                    style={{
-                      marginTop: "12px",
-                      width: "120px",
-                      padding: "10px 12px",
-                      borderRadius: "999px",
-                      border: "1px solid #ccc",
-                      backgroundColor: "#fff",
-                      cursor: uploadingAvatar ? "default" : "pointer",
-                      fontSize: "13px",
-                      opacity: uploadingAvatar ? 0.7 : 1,
-                    }}
-                  >
-                    {uploadingAvatar ? "Uploading..." : "Change Photo"}
-                  </button>
-                </div>
-              </div>
-
-              <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-end",
+                  justifyContent: "space-between",
+                  gap: "20px",
+                  flexWrap: "wrap",
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "12px",
-                    marginBottom: "10px",
+                    alignItems: "flex-end",
+                    gap: "18px",
                     flexWrap: "wrap",
                   }}
                 >
-                  <p style={{ margin: 0, fontWeight: "600" }}>Banner Image</p>
-
-                  <button
-                    type="button"
-                    onClick={() => bannerInputRef.current?.click()}
-                    disabled={uploadingBanner}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: "999px",
-                      border: "1px solid #ccc",
-                      backgroundColor: "#fff",
-                      cursor: uploadingBanner ? "default" : "pointer",
-                      fontSize: "13px",
-                      opacity: uploadingBanner ? 0.7 : 1,
-                    }}
-                  >
-                    {uploadingBanner ? "Uploading..." : "Change Banner"}
-                  </button>
-                </div>
-
-                {profileForm.banner_url ? (
-                  <img
-                    src={profileForm.banner_url}
-                    alt="Profile banner"
-                    style={{
-                      width: "100%",
-                      maxWidth: "520px",
-                      height: "180px",
-                      objectFit: "cover",
-                      borderRadius: "14px",
-                      border: "1px solid #ddd",
-                      display: "block",
-                      backgroundColor: "#f7f7f7",
-                    }}
-                  />
-                ) : (
                   <div
                     style={{
-                      width: "100%",
-                      maxWidth: "520px",
-                      height: "180px",
-                      borderRadius: "14px",
-                      border: "1px dashed #bbb",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#777",
-                      fontSize: "14px",
-                      backgroundColor: "#fafafa",
+                      position: "relative",
+                      width: "124px",
+                      height: "124px",
+                      borderRadius: "999px",
+                      overflow: "hidden",
+                      border: "4px solid #fff",
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+                      backgroundColor: "#f7f7f7",
                     }}
                   >
-                    No banner image
+                    {profileForm.avatar_url ? (
+                      <img
+                        src={profileForm.avatar_url}
+                        alt="Profile avatar"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#777",
+                          fontSize: "14px",
+                          textAlign: "center",
+                          padding: "12px",
+                          backgroundColor: "#fafafa",
+                        }}
+                      >
+                        No image
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      style={{
+                        position: "absolute",
+                        right: "8px",
+                        bottom: "8px",
+                        padding: "7px 10px",
+                        borderRadius: "999px",
+                        border: "1px solid rgba(255,255,255,0.65)",
+                        backgroundColor: "rgba(255,255,255,0.94)",
+                        color: "#111",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        cursor: uploadingAvatar ? "default" : "pointer",
+                        opacity: uploadingAvatar ? 0.7 : 1,
+                      }}
+                    >
+                      {uploadingAvatar ? "..." : "Edit"}
+                    </button>
                   </div>
-                )}
+
+                  <div style={{ paddingBottom: "8px" }}>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "12px",
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#666",
+                      }}
+                    >
+                      Creator profile
+                    </p>
+                    <p
+                      style={{
+                        margin: "6px 0 0 0",
+                        fontSize: "15px",
+                        color: "#555",
+                      }}
+                    >
+                      Upload your banner and profile image, then update your public
+                      details below.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ paddingBottom: "8px" }}>
+                  <button
+                    type="submit"
+                    disabled={savingProfile}
+                    style={{
+                      padding: "14px 22px",
+                      borderRadius: "12px",
+                      border: "none",
+                      backgroundColor: "#111",
+                      color: "#fff",
+                      cursor: savingProfile ? "default" : "pointer",
+                      opacity: savingProfile ? 0.7 : 1,
+                      fontWeight: "600",
+                      minWidth: "150px",
+                    }}
+                  >
+                    {savingProfile ? "Saving..." : "Save Profile"}
+                  </button>
+                </div>
               </div>
             </div>
-
-            <p
-              style={{
-                marginTop: "14px",
-                marginBottom: 0,
-                fontSize: "13px",
-                opacity: 0.7,
-              }}
-            >
-              Click the profile photo or banner buttons to upload new images.
-            </p>
           </div>
 
-          <div
-            style={{
-              border: "1px solid #e5e5e5",
-              borderRadius: "14px",
-              padding: "20px",
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: "16px" }}>Profile Details</h3>
-
+          <div style={{ padding: "0 24px 24px 24px" }}>
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
+                border: "1px solid #ececec",
+                borderRadius: "18px",
+                padding: "24px",
+                backgroundColor: "#fcfcfc",
               }}
             >
-              <div>
-                <label style={{ display: "block", marginBottom: "8px" }}>
-                  Display Name
+              <div style={{ marginBottom: "24px" }}>
+                <h3 style={{ margin: 0, marginBottom: "6px" }}>Basic Identity</h3>
+                <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
+                  These details shape how your creator profile appears publicly.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "16px",
+                }}
+              >
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Display Name
+                  </label>
+                  <input
+                    value={profileForm.display_name}
+                    onChange={(e) =>
+                      handleProfileFieldChange("display_name", e.target.value)
+                    }
+                    placeholder="Your public name"
+                    style={{
+                      width: "100%",
+                      padding: "14px",
+                      borderRadius: "12px",
+                      border: "1px solid #d8d8d8",
+                      backgroundColor: "#fff",
+                      fontSize: "14px",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Username
+                  </label>
+                  <input
+                    value={profileForm.username}
+                    onChange={(e) =>
+                      handleProfileFieldChange("username", e.target.value)
+                    }
+                    placeholder="username"
+                    style={{
+                      width: "100%",
+                      padding: "14px",
+                      borderRadius: "12px",
+                      border: "1px solid #d8d8d8",
+                      backgroundColor: "#fff",
+                      fontSize: "14px",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginTop: "24px" }}>
+                <h3 style={{ margin: 0, marginBottom: "6px" }}>Creator Details</h3>
+                <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
+                  Add your role, identity, and signature voice.
+                </p>
+              </div>
+
+              <div style={{ marginTop: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                  }}
+                >
+                  Portfolio Tagline
                 </label>
                 <input
-                  value={profileForm.display_name}
+                  value={profileForm.portfolio_tagline}
                   onChange={(e) =>
-                    handleProfileFieldChange("display_name", e.target.value)
+                    handleProfileFieldChange("portfolio_tagline", e.target.value)
                   }
-                  placeholder="Your public name"
+                  placeholder="A short line under your name"
                   style={{
                     width: "100%",
-                    padding: "12px",
-                    borderRadius: "10px",
-                    border: "1px solid #ccc",
+                    padding: "14px",
+                    borderRadius: "12px",
+                    border: "1px solid #d8d8d8",
+                    backgroundColor: "#fff",
+                    fontSize: "14px",
                   }}
                 />
               </div>
 
-              <div>
-                <label style={{ display: "block", marginBottom: "8px" }}>
-                  Username
+              <div style={{ marginTop: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                  }}
+                >
+                  Quote / Signature Line
                 </label>
                 <input
-                  value={profileForm.username}
-                  onChange={(e) =>
-                    handleProfileFieldChange("username", e.target.value)
-                  }
-                  placeholder="username"
+                  value={profileForm.quote}
+                  onChange={(e) => handleProfileFieldChange("quote", e.target.value)}
+                  placeholder="A favorite quote, signature line, or brand statement"
                   style={{
                     width: "100%",
-                    padding: "12px",
-                    borderRadius: "10px",
-                    border: "1px solid #ccc",
+                    padding: "14px",
+                    borderRadius: "12px",
+                    border: "1px solid #d8d8d8",
+                    backgroundColor: "#fff",
+                    fontSize: "14px",
+                  }}
+                />
+              </div>
+
+              <div style={{ marginTop: "24px" }}>
+                <h3 style={{ margin: 0, marginBottom: "6px" }}>Bio & Location</h3>
+                <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
+                  Let visitors know who you are and where your work is rooted.
+                </p>
+              </div>
+
+              <div style={{ marginTop: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                  }}
+                >
+                  Bio
+                </label>
+                <textarea
+                  value={profileForm.bio}
+                  onChange={(e) => handleProfileFieldChange("bio", e.target.value)}
+                  placeholder="Tell people about yourself"
+                  rows={5}
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    borderRadius: "12px",
+                    border: "1px solid #d8d8d8",
+                    backgroundColor: "#fff",
+                    fontSize: "14px",
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+
+              <div style={{ marginTop: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                  }}
+                >
+                  Location
+                </label>
+                <input
+                  value={profileForm.location}
+                  onChange={(e) =>
+                    handleProfileFieldChange("location", e.target.value)
+                  }
+                  placeholder="City, State or region"
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    borderRadius: "12px",
+                    border: "1px solid #d8d8d8",
+                    backgroundColor: "#fff",
+                    fontSize: "14px",
                   }}
                 />
               </div>
             </div>
-
-            <div style={{ marginTop: "16px" }}>
-              <label style={{ display: "block", marginBottom: "8px" }}>
-                Portfolio Tagline
-              </label>
-              <input
-                value={profileForm.portfolio_tagline}
-                onChange={(e) =>
-                  handleProfileFieldChange("portfolio_tagline", e.target.value)
-                }
-                placeholder="A short line under your name"
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  borderRadius: "10px",
-                  border: "1px solid #ccc",
-                }}
-              />
-            </div>
-
-            <div style={{ marginTop: "16px" }}>
-              <label style={{ display: "block", marginBottom: "8px" }}>
-                Quote / Signature Line
-              </label>
-              <input
-                value={profileForm.quote}
-                onChange={(e) => handleProfileFieldChange("quote", e.target.value)}
-                placeholder="A favorite quote, signature line, or brand statement"
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  borderRadius: "10px",
-                  border: "1px solid #ccc",
-                }}
-              />
-            </div>
-
-            <div style={{ marginTop: "16px" }}>
-              <label style={{ display: "block", marginBottom: "8px" }}>Bio</label>
-              <textarea
-                value={profileForm.bio}
-                onChange={(e) => handleProfileFieldChange("bio", e.target.value)}
-                placeholder="Tell people about yourself"
-                rows={5}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  borderRadius: "10px",
-                  border: "1px solid #ccc",
-                  resize: "vertical",
-                }}
-              />
-            </div>
-
-            <div style={{ marginTop: "16px" }}>
-              <label style={{ display: "block", marginBottom: "8px" }}>
-                Location
-              </label>
-              <input
-                value={profileForm.location}
-                onChange={(e) =>
-                  handleProfileFieldChange("location", e.target.value)
-                }
-                placeholder="City, State or region"
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  borderRadius: "10px",
-                  border: "1px solid #ccc",
-                }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={savingProfile}
-              style={{
-                padding: "12px 18px",
-                borderRadius: "10px",
-                border: "none",
-                backgroundColor: "#111",
-                color: "#fff",
-                cursor: "pointer",
-                opacity: savingProfile ? 0.7 : 1,
-              }}
-            >
-              {savingProfile ? "Saving..." : "Save Profile"}
-            </button>
           </div>
         </form>
       </div>

@@ -65,7 +65,7 @@ export default function HomePage() {
           </h1>
 
           <p style={styles.subtext}>
-            Egyptian royalty. Mythic cinema. A siren’s whisper beneath the
+            Egyptian royalty. Mythic cinema. A siren&apos;s whisper beneath the
             surface.
           </p>
 
@@ -207,19 +207,20 @@ const styles = {
   },
   hero: {
     position: "relative",
-    minHeight: "78vh",
+    minHeight: "88vh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     padding: "64px 18px",
-    background:
-      "radial-gradient(1200px 600px at 50% 30%, rgba(170,140,70,0.18), rgba(0,0,0,0)), linear-gradient(180deg, #07070a, #020204)",
+    backgroundImage: "url('/images/aset-hero.png')",
+    backgroundSize: "cover",
+    backgroundPosition: "center center",
+    backgroundRepeat: "no-repeat",
   },
   heroOverlay: {
     position: "absolute",
     inset: 0,
-    background:
-      "linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.88))",
+    background: "rgba(0,0,0,0.45)",
     pointerEvents: "none",
   },
   heroInner: {
@@ -228,11 +229,13 @@ const styles = {
     maxWidth: 980,
     width: "100%",
     textAlign: "center",
+    paddingTop: 40,
+    paddingBottom: 40,
   },
   brand: {
     letterSpacing: "0.22em",
     fontSize: 12,
-    opacity: 0.9,
+    opacity: 0.95,
     marginBottom: 10,
   },
   headline: {
@@ -245,7 +248,7 @@ const styles = {
   subtext: {
     maxWidth: 720,
     margin: "0 auto 22px",
-    opacity: 0.85,
+    opacity: 0.9,
     fontSize: 16,
     lineHeight: 1.6,
   },
@@ -268,8 +271,8 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "rgba(170,140,70,0.18)",
-    border: "1px solid rgba(170,140,70,0.55)",
+    background: "rgba(170,140,70,0.20)",
+    border: "1px solid rgba(170,140,70,0.60)",
     color: "#f2f0ea",
     padding: "12px 18px",
     borderRadius: 14,
@@ -284,8 +287,8 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "rgba(212,175,55,0.14)",
-    border: "1px solid rgba(212,175,55,0.55)",
+    background: "rgba(212,175,55,0.16)",
+    border: "1px solid rgba(212,175,55,0.58)",
     color: "#f2f0ea",
     padding: "12px 18px",
     borderRadius: 14,
@@ -316,8 +319,8 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.16)",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.18)",
     color: "#f2f0ea",
     padding: "12px 18px",
     borderRadius: 14,
@@ -328,7 +331,7 @@ const styles = {
     cursor: "pointer",
   },
   note: {
-    opacity: 0.7,
+    opacity: 0.78,
     fontSize: 13,
     marginTop: 10,
   },
