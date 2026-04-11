@@ -1,397 +1,331 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import { getSignedMediaUrl } from "../utils/storage";
+import { getCreatorFollowersPath, getCreatorProfilePath } from "../utils/creatorLinks";
 
-export default function CreatorPortfolioPage() {
-  const { id } = useParams();
+export default function CreatorProfilePage() {
+  const { username } = useParams();
 
-  const [creatorProfile, setCreatorProfile] = useState(null);
-  const [portfolioItems, setPortfolioItems] = useState([]);
+  const [creator, setCreator] = useState(null);
+  const [portfolioPreview, setPortfolioPreview] = useState([]);
+  const [totalFavoritesReceived, setTotalFavoritesReceived] = useState(0);
+  const [publishedWorksCount, setPublishedWorksCount] = useState(0);
+
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-
-  const PAGE_SIZE = 12;
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const [bannerFailed, setBannerFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
 
-    async function loadInitialPortfolio() {
+    async function loadCreator() {
       try {
         setLoading(true);
-        setPage(0);
-        setHasMore(true);
-        setPortfolioItems([]);
+        setAvatarFailed(false);
+        setBannerFailed(false);
+        setTotalFavoritesReceived(0);
+        setPublishedWorksCount(0);
 
-        if (!id) {
+        const routeValue = decodeURIComponent(String(username || "").trim());
+
+        if (!routeValue) {
           if (alive) {
-            setCreatorProfile(null);
-            setHasMore(false);
+            setCreator(null);
+            setPortfolioPreview([]);
           }
           return;
         }
 
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("id, display_name, username, avatar_url, banner_url, quote")
-          .eq("id", id)
+          .select("*")
+          .ilike("username", routeValue)
           .maybeSingle();
 
         if (profileError) throw profileError;
 
         if (!profileData) {
           if (alive) {
-            setCreatorProfile(null);
-            setHasMore(false);
+            setCreator(null);
+            setPortfolioPreview([]);
           }
           return;
         }
+
+        const avatarSignedUrl = profileData.avatar_url
+          ? await getSignedMediaUrl(profileData.avatar_url)
+          : "";
+
+        const bannerSignedUrl = profileData.banner_url
+          ? await getSignedMediaUrl(profileData.banner_url)
+          : "";
+
+        const normalizedCreator = {
+          ...profileData,
+          avatar_signed_url: avatarSignedUrl,
+          banner_signed_url: bannerSignedUrl,
+        };
 
         if (alive) {
-          setCreatorProfile(profileData);
+          setCreator(normalizedCreator);
         }
 
-        const from = 0;
-        const to = PAGE_SIZE - 1;
+        let mediaRows = [];
 
-        const { data: mediaRows, error: mediaError } = await supabase
+        const byOwner = await supabase
           .from("media_items")
-          .select("id, file_path, status, access_level, created_at")
-          .eq("owner_id", id)
+          .select("id, title, file_path, watermarked_path, created_at, hidden, status")
+          .eq("owner_id", profileData.id)
           .in("status", ["approved", "published"])
-          .order("created_at", { ascending: false })
-          .range(from, to);
+          .eq("hidden", false)
+          .order("created_at", { ascending: false });
 
-        if (mediaError) throw mediaError;
+        if (byOwner.error) throw byOwner.error;
 
-        if (!mediaRows || mediaRows.length === 0) {
-          if (alive) {
-            setPortfolioItems([]);
-            setHasMore(false);
-          }
-          return;
+        mediaRows = byOwner.data || [];
+
+        if (mediaRows.length === 0) {
+          const byCreator = await supabase
+            .from("media_items")
+            .select("id, title, file_path, watermarked_path, created_at, hidden, status")
+            .eq("creator_id", profileData.id)
+            .in("status", ["approved", "published"])
+            .eq("hidden", false)
+            .order("created_at", { ascending: false });
+
+          if (byCreator.error) throw byCreator.error;
+
+          mediaRows = byCreator.data || [];
         }
 
-        const itemsWithSignedUrls = await Promise.all(
-          mediaRows.map(async (item) => {
-            let signedUrl = "";
+        if (!alive) return;
 
-            if (item.file_path) {
-              try {
-                const { data: signedData, error: signedError } =
-                  await supabase.storage
-                    .from("media")
-                    .createSignedUrl(item.file_path, 3600);
+        setPublishedWorksCount(mediaRows.length);
 
-                if (!signedError && signedData?.signedUrl) {
-                  signedUrl = signedData.signedUrl;
-                }
-              } catch (err) {
-                console.error("Signed URL error:", err);
-              }
-            }
+        const previewRows = mediaRows.slice(0, 6);
 
-            return {
-              ...item,
-              signedUrl,
-            };
+        const signedPreviewItems = await Promise.all(
+          previewRows.map(async (item) => {
+            const previewPath = item.watermarked_path || item.file_path || "";
+            const signedUrl = previewPath ? await getSignedMediaUrl(previewPath) : "";
+            return { ...item, signedUrl };
           })
         );
 
         if (alive) {
-          setPortfolioItems(itemsWithSignedUrls);
-          setPage(1);
-          setHasMore(mediaRows.length === PAGE_SIZE);
+          setPortfolioPreview(signedPreviewItems);
         }
-      } catch (error) {
-        console.error("Error loading creator portfolio:", error);
 
+        const mediaIds = mediaRows.map((item) => item.id).filter(Boolean);
+
+        if (mediaIds.length > 0) {
+          const { data: favoriteRows, error: favoritesError } = await supabase
+            .from("favorites")
+            .select("media_item_id")
+            .in("media_item_id", mediaIds);
+
+          if (favoritesError) throw favoritesError;
+
+          if (alive) {
+            setTotalFavoritesReceived((favoriteRows || []).length);
+          }
+        } else {
+          if (alive) {
+            setTotalFavoritesReceived(0);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading creator profile:", err);
         if (alive) {
-          setCreatorProfile(null);
-          setPortfolioItems([]);
-          setHasMore(false);
+          setCreator(null);
+          setPortfolioPreview([]);
+          setTotalFavoritesReceived(0);
+          setPublishedWorksCount(0);
         }
       } finally {
-        if (alive) {
-          setLoading(false);
-        }
+        if (alive) setLoading(false);
       }
     }
 
-    loadInitialPortfolio();
+    loadCreator();
 
     return () => {
       alive = false;
     };
-  }, [id]);
+  }, [username]);
 
-  async function handleLoadMore() {
-    if (loadingMore || !hasMore || !id) return;
+  const displayName = creator?.display_name || "Unnamed Creator";
+  const usernameLabel = creator?.username ? `@${creator.username}` : "";
+  const bio =
+    creator?.bio ||
+    creator?.description ||
+    creator?.about ||
+    "This creator is building their world inside The Aset Studio.";
 
-    try {
-      setLoadingMore(true);
+  const specialties = Array.isArray(creator?.specialties)
+    ? creator.specialties.slice(0, 4)
+    : Array.isArray(creator?.tags)
+      ? creator.tags.slice(0, 4)
+      : [];
 
-      const from = page * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
+  const locationLabel = [creator?.city, creator?.state, creator?.country]
+    .filter(Boolean)
+    .join(", ");
 
-      const { data: mediaRows, error: mediaError } = await supabase
-        .from("media_items")
-        .select("id, file_path, status, access_level, created_at")
-        .eq("owner_id", id)
-        .in("status", ["approved", "published"])
-        .order("created_at", { ascending: false })
-        .range(from, to);
-
-      if (mediaError) throw mediaError;
-
-      if (!mediaRows || mediaRows.length === 0) {
-        setHasMore(false);
-        return;
-      }
-
-      const itemsWithSignedUrls = await Promise.all(
-        mediaRows.map(async (item) => {
-          let signedUrl = "";
-
-          if (item.file_path) {
-            try {
-              const { data: signedData, error: signedError } =
-                await supabase.storage
-                  .from("media")
-                  .createSignedUrl(item.file_path, 3600);
-
-              if (!signedError && signedData?.signedUrl) {
-                signedUrl = signedData.signedUrl;
-              }
-            } catch (err) {
-              console.error("Signed URL error:", err);
-            }
-          }
-
-          return {
-            ...item,
-            signedUrl,
-          };
-        })
-      );
-
-      setPortfolioItems((prev) => [...prev, ...itemsWithSignedUrls]);
-      setPage((prev) => prev + 1);
-      setHasMore(mediaRows.length === PAGE_SIZE);
-    } catch (error) {
-      console.error("Error loading more portfolio items:", error);
-    } finally {
-      setLoadingMore(false);
-    }
-  }
+  const showAvatar = creator?.avatar_signed_url && !avatarFailed;
+  const showBanner = creator?.banner_signed_url && !bannerFailed;
 
   if (loading) {
-    return <div style={{ padding: 40, color: "#fff" }}>Loading creator profile...</div>;
-  }
-
-  if (!creatorProfile) {
     return (
-      <div style={{ padding: 40, maxWidth: 1200, margin: "0 auto", color: "#fff" }}>
-        <h1 style={{ marginTop: 0 }}>Creator Profile</h1>
-        <p>Creator not found.</p>
-        <Link
-          to="/creators"
-          style={{
-            display: "inline-block",
-            marginTop: 16,
-            color: "#fff",
-            textDecoration: "underline",
-          }}
-        >
-          Back to Creators
-        </Link>
+      <div className="min-h-screen bg-black text-white px-6 py-10">
+        Loading creator...
       </div>
     );
   }
 
-  const displayName = creatorProfile.display_name || "Unnamed Creator";
-  const username = creatorProfile.username ? `@${creatorProfile.username}` : null;
-  const quote = creatorProfile.quote?.trim();
+  if (!creator) {
+    return (
+      <div className="min-h-screen bg-black text-white px-6 py-10">
+        Creator not found.
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200, margin: "0 auto", color: "#fff" }}>
-      <div
-        style={{
-          border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: 20,
-          overflow: "hidden",
-          background:
-            "linear-gradient(180deg, rgba(20,20,20,0.96), rgba(8,8,8,0.98))",
-          boxShadow: "0 18px 50px rgba(0,0,0,0.55)",
-        }}
-      >
-        <div
-          style={{
-            height: 200,
-            background: creatorProfile.banner_url
-              ? `url(${creatorProfile.banner_url}) center/cover no-repeat`
-              : "linear-gradient(135deg, #1b1b1b 0%, #2b1f1f 100%)",
-          }}
-        />
+    <div className="min-h-screen bg-black text-white px-6 py-10">
+      <div className="max-w-6xl mx-auto rounded-[32px] border border-white/10 bg-white/[0.04] overflow-hidden shadow-lg">
+        <div className="relative h-[150px] md:h-[190px] xl:h-[150px]">
+          {showBanner ? (
+            <img
+              src={creator.banner_signed_url}
+              alt={`${displayName} banner`}
+              className="h-full w-full object-cover"
+              onError={() => setBannerFailed(true)}
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-r from-[#161616] via-[#1d1d1d] to-[#241b1b]" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+        </div>
 
-        <div style={{ padding: 28 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 16,
-              flexWrap: "wrap",
-              alignItems: "flex-start",
-              marginBottom: 22,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 13,
-                  letterSpacing: "0.5px",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.65)",
-                  marginBottom: 8,
-                }}
-              >
-                Creator Profile
+        <div className="px-5 md:px-8 pb-8 md:pb-10 -mt-6 md:-mt-8 xl:-mt-4">
+          <div className="flex flex-col xl:flex-row xl:justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-black bg-white/10">
+                {showAvatar ? (
+                  <img
+                    src={creator.avatar_signed_url}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                    onError={() => setAvatarFailed(true)}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center font-bold text-white text-2xl">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
 
-              <h1 style={{ margin: "0 0 6px 0", fontSize: 34 }}>{displayName}</h1>
+              <div>
+                <h1 className="text-2xl md:text-4xl font-bold">{displayName}</h1>
+                {usernameLabel && <p className="text-white/70">{usernameLabel}</p>}
+                {locationLabel && <p className="text-white/60">📍 {locationLabel}</p>}
 
-              {username && (
-                <div style={{ color: "rgba(255,255,255,0.72)", fontSize: 15 }}>
-                  {username}
-                </div>
-              )}
+                <div className="flex flex-wrap gap-3 mt-4">
+                  <div className="px-4 py-3 rounded-2xl border border-white/12 bg-white/[0.04] min-w-[160px]">
+                    <div className="text-white/55 text-xs uppercase tracking-[0.18em]">
+                      Total Favorites
+                    </div>
+                    <div className="text-white text-2xl font-bold mt-1">
+                      {totalFavoritesReceived}
+                    </div>
+                  </div>
 
-              {quote && (
-                <div
-                  style={{
-                    marginTop: 14,
-                    maxWidth: 720,
-                    padding: "14px 16px",
-                    borderRadius: 14,
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    color: "rgba(255,255,255,0.9)",
-                    fontSize: 15,
-                    lineHeight: 1.6,
-                    fontStyle: "italic",
-                  }}
-                >
-                  “{quote}”
+                  <div className="px-4 py-3 rounded-2xl border border-white/12 bg-white/[0.04] min-w-[160px]">
+                    <div className="text-white/55 text-xs uppercase tracking-[0.18em]">
+                      Published Works
+                    </div>
+                    <div className="text-white text-2xl font-bold mt-1">
+                      {publishedWorksCount}
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
 
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div className="flex flex-wrap gap-3">
               <Link
-                to={`/creator/${id}`}
-                style={{
-                  display: "inline-block",
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  color: "#fff",
-                  textDecoration: "none",
-                  background: "rgba(255,255,255,0.04)",
-                  fontWeight: 600,
-                }}
+                to={`${getCreatorProfilePath(creator)}/portfolio`}
+                className="px-5 py-3 rounded-2xl bg-white text-black font-semibold"
               >
-                Back to Profile
+                View Portfolio
+              </Link>
+
+              <Link
+                to={getCreatorFollowersPath(creator)}
+                className="px-5 py-3 rounded-2xl border border-white/15 text-white font-semibold"
+              >
+                Followers
+              </Link>
+
+              <Link
+                to="/"
+                className="px-5 py-3 rounded-2xl border border-white/15 text-white font-semibold"
+              >
+                Home
               </Link>
             </div>
           </div>
 
-          {portfolioItems.length === 0 ? (
-            <div
-              style={{
-                borderTop: "1px solid rgba(255,255,255,0.06)",
-                paddingTop: 20,
-                color: "rgba(255,255,255,0.72)",
-              }}
-            >
-              No portfolio items yet.
-            </div>
-          ) : (
-            <>
-              <div
-                style={{
-                  borderTop: "1px solid rgba(255,255,255,0.06)",
-                  paddingTop: 20,
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-                  gap: 14,
-                }}
-              >
-                {portfolioItems.map((item) => (
+          <div className="mt-6">
+            {bio && <p className="text-white/75 leading-7">{bio}</p>}
+
+            {specialties.length > 0 && (
+              <div className="flex flex-wrap gap-3 mt-4">
+                {specialties.map((tag) => (
+                  <span
+                    key={`${creator.id}-${tag}`}
+                    className="px-4 py-2 rounded-full border border-white/12 bg-white/[0.04] text-white/85 text-sm"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-10">
+            <h2 className="text-2xl font-bold">Portfolio Preview</h2>
+
+            {portfolioPreview.length === 0 ? (
+              <div className="mt-4 p-6 bg-white/[0.03] rounded-2xl text-white/70">
+                No portfolio items yet.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mt-4">
+                {portfolioPreview.map((item) => (
                   <Link
                     key={item.id}
                     to={`/media/${item.id}`}
-                    style={{
-                      display: "block",
-                      borderRadius: 14,
-                      overflow: "hidden",
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      textDecoration: "none",
-                    }}
+                    className="group block overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]"
                   >
                     {item.signedUrl ? (
                       <img
                         src={item.signedUrl}
-                        alt="portfolio item"
-                        style={{
-                          width: "100%",
-                          height: 220,
-                          objectFit: "cover",
-                          display: "block",
-                        }}
+                        alt={item.title || "portfolio item"}
+                        className="w-full aspect-square object-cover transition group-hover:scale-105"
                       />
                     ) : (
-                      <div
-                        style={{
-                          width: "100%",
-                          height: 220,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "rgba(255,255,255,0.55)",
-                          fontSize: 13,
-                        }}
-                      >
+                      <div className="w-full aspect-square flex items-center justify-center text-white/55">
                         Preview unavailable
                       </div>
                     )}
                   </Link>
                 ))}
               </div>
-
-              {hasMore && (
-                <div style={{ marginTop: 20, display: "flex", justifyContent: "center" }}>
-                  <button
-                    onClick={handleLoadMore}
-                    disabled={loadingMore}
-                    style={{
-                      padding: "10px 18px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      background: "rgba(255,255,255,0.04)",
-                      color: "#fff",
-                      cursor: loadingMore ? "not-allowed" : "pointer",
-                      fontWeight: 600,
-                      opacity: loadingMore ? 0.7 : 1,
-                    }}
-                  >
-                    {loadingMore ? "Loading..." : "Load More"}
-                  </button>
-                </div>
-              )}
-            </>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

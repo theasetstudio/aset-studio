@@ -1,12 +1,8 @@
 import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
-// Pages
+import TopNav from "./components/TopNav";
+
 import HomePage from "./pages/HomePage";
 import GalleryPage from "./pages/GalleryPage";
 import MediaDetailPage from "./pages/MediaDetailPage";
@@ -15,27 +11,24 @@ import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
 import AuthCallback from "./pages/AuthCallback";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
-import SupremeAccessPage from "./pages/SupremeAccessPage";
 import CreatorUploadPage from "./pages/CreatorUploadPage";
 import MessagesPage from "./pages/MessagesPage";
 import CreatorsDirectoryPage from "./pages/CreatorsDirectoryPage";
 import CreatorProfileEditorPage from "./pages/CreatorProfileEditorPage";
-import CreatorConnectionsPage from "./pages/CreatorConnectionsPage";
-import ReturnToSenderDeities from "./pages/ReturnToSenderDeities";
-import EliteGeneratorPage from "./pages/EliteGeneratorPage";
-import CreativeMusePage from "./pages/CreativeMusePage";
-import BluePage from "./pages/BluePage";
+import CreatorProfilePage from "./pages/CreatorProfilePage";
+import CreatorProfileSetupPage from "./pages/CreatorProfileSetupPage";
 import CreatorPortfolioPage from "./pages/CreatorPortfolioPage";
-import ConjurinInTheKitchenPage from "./pages/sirens-realm-alchemy/ConjurinInTheKitchenPage";
-import CayennePage from "./pages/sirens-realm-alchemy/CayennePage";
-
-// Creator Hub
+import CreatorConnectionsPage from "./pages/CreatorConnectionsPage";
 import CreatorsHubPage from "./pages/CreatorsHubPage";
-
-// Creators Corner
 import CreatorsCornerPage from "./pages/CreatorsCornerPage";
+import FeaturedPage from "./pages/FeaturedPage";
+import DebugAuthPage from "./pages/DebugAuthPage";
 
-// Sirens Realm
+import AsetLoungePage from "./pages/AsetLoungePage";
+import PuzzleLibraryPage from "./pages/PuzzleLibraryPage";
+import PuzzlePlayPage from "./pages/PuzzlePlayPage";
+import MyCreationsPage from "./pages/MyCreationsPage";
+
 import SirensRealmPage from "./pages/SirensRealmPage";
 import StoneCollectionPage from "./pages/StoneCollectionPage";
 import StoneDetailPage from "./pages/StoneDetailPage";
@@ -55,59 +48,60 @@ import RisingSignPage from "./pages/RisingSignPage";
 import MotivationPage from "./pages/MotivationPage";
 import VeteransPage from "./pages/VeteransPage";
 import LovePage from "./pages/LovePage";
+import CreativeMusePage from "./pages/CreativeMusePage";
+import BluePage from "./pages/BluePage";
+import ReturnToSenderDeities from "./pages/ReturnToSenderDeities";
 
-// Aset Lounge
-import AsetLoungePage from "./pages/AsetLoungePage";
-import PuzzleLibraryPage from "./pages/PuzzleLibraryPage";
-import PuzzlePlayPage from "./pages/PuzzlePlayPage";
-import MyCreationsPage from "./pages/MyCreationsPage";
-
-// Featured
-import FeaturedPage from "./pages/FeaturedPage";
-
-// Debug
-import DebugAuthPage from "./pages/DebugAuthPage";
-
-// Reviews
-import ReviewPage from "./components/ReviewPage";
-
-// Creator Profile
-import CreatorProfilePage from "./pages/CreatorProfilePage";
-import CreatorProfileSetupPage from "./pages/CreatorProfileSetupPage";
+import EliteGeneratorPage from "./pages/EliteGeneratorPage";
+import SupremeAccessPage from "./pages/SupremeAccessPage";
+import StudioWriter from "./pages/StudioWriter";
 
 function App() {
   return (
     <Router>
+      {/* 🔥 CLEAN NAVBAR ONLY — NO RED BAR */}
+      <TopNav />
+
       <Routes>
+        {/* CORE */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/gallery" element={<GalleryPage key={window.location.pathname} />} />
+        <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/media/:id" element={<MediaDetailPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+        {/* ACCESS */}
         <Route path="/supreme-access" element={<SupremeAccessPage />} />
+
+        {/* CREATOR SYSTEM */}
         <Route path="/upload" element={<CreatorUploadPage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/creators" element={<CreatorsDirectoryPage />} />
         <Route path="/creator-profile/edit" element={<CreatorProfileEditorPage />} />
         <Route path="/creator/setup" element={<CreatorProfileSetupPage />} />
-        <Route path="/creator/:id" element={<CreatorProfilePage />} />
-        <Route path="/creator/:id/portfolio" element={<CreatorPortfolioPage />} />
-        <Route path="/creator/:id/followers" element={<CreatorConnectionsPage />} />
-        <Route path="/creator/:id/following" element={<CreatorConnectionsPage />} />
+
+        <Route path="/creator/:username" element={<CreatorProfilePage />} />
+        <Route path="/creator/:username/portfolio" element={<CreatorPortfolioPage />} />
+        <Route path="/creator/:username/followers" element={<CreatorConnectionsPage />} />
+        <Route path="/creator/:username/following" element={<CreatorConnectionsPage />} />
+
         <Route path="/creator-hub" element={<CreatorsHubPage />} />
         <Route path="/creators-corner" element={<CreatorsCornerPage />} />
-        <Route path="/reviews" element={<ReviewPage />} />
+
+        {/* DISCOVERY */}
         <Route path="/featured" element={<FeaturedPage />} />
         <Route path="/debug-auth" element={<DebugAuthPage />} />
 
+        {/* ASET LOUNGE */}
         <Route path="/aset-lounge" element={<AsetLoungePage />} />
         <Route path="/aset-lounge/puzzle-library" element={<PuzzleLibraryPage />} />
         <Route path="/aset-lounge/puzzle-play" element={<PuzzlePlayPage />} />
         <Route path="/aset-lounge/my-creations" element={<MyCreationsPage />} />
 
+        {/* SIRENS REALM */}
         <Route path="/sirens-realm" element={<SirensRealmPage />} />
         <Route path="/sirens-realm/stones" element={<StoneCollectionPage />} />
         <Route path="/sirens-realm/stones/:slug" element={<StoneDetailPage />} />
@@ -131,17 +125,11 @@ function App() {
         <Route path="/sirens-realm/blue" element={<BluePage />} />
         <Route path="/sirens-realm/return-to-sender-deities" element={<ReturnToSenderDeities />} />
 
-        <Route
-          path="/sirens-realm-alchemy/conjurin-in-the-kitchen"
-          element={<ConjurinInTheKitchenPage />}
-        />
-        <Route
-          path="/sirens-realm-alchemy/cayenne"
-          element={<CayennePage />}
-        />
-
+        {/* GENERATOR */}
         <Route path="/elite-generator" element={<EliteGeneratorPage />} />
+        <Route path="/studio/writer" element={<StudioWriter />} />
 
+        {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

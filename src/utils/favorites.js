@@ -1,4 +1,3 @@
-// src/utils/favorites.js
 import { supabase } from "../supabaseClient";
 
 // Returns a Set of media_item_id values the user has favorited
@@ -9,7 +8,8 @@ export async function fetchMyFavoriteIds(userId) {
     .eq("user_id", userId);
 
   if (error) throw error;
-  return new Set((data || []).map((row) => row.media_item_id));
+
+  return new Set((data || []).map((row) => row.media_item_id).filter(Boolean));
 }
 
 export async function addFavorite({ userId, mediaItemId }) {
@@ -20,8 +20,10 @@ export async function addFavorite({ userId, mediaItemId }) {
     },
   ]);
 
-  // Ignore duplicate favorites (unique index)
-  if (error && error.code !== "23505") throw error;
+  // Ignore duplicate favorites if a unique constraint exists
+  if (error && error.code !== "23505") {
+    throw error;
+  }
 }
 
 export async function removeFavorite({ userId, mediaItemId }) {
@@ -35,9 +37,8 @@ export async function removeFavorite({ userId, mediaItemId }) {
 }
 
 /**
- * Fetch favorited media items for a user (approved + not hidden only).
- * Favorites page should STILL gate display + signed URLs using getAccessGate,
- * but this prevents obviously unavailable items from showing up at all.
+ * Fetch favorited media items for a user.
+ * Filters out hidden items and keeps approved/published only.
  */
 export async function fetchMyFavoriteItems(userId, { limit = 200 } = {}) {
   const { data, error } = await supabase
@@ -53,11 +54,13 @@ export async function fetchMyFavoriteItems(userId, { limit = 200 } = {}) {
 
   if (error) throw error;
 
-  // Flatten joined rows
   const items = (data || [])
     .map((row) => row.media_items)
     .filter(Boolean)
-    .filter((it) => it.status === "approved" && it.hidden === false);
+    .filter((item) => {
+      const status = String(item?.status || "").trim().toLowerCase();
+      return (status === "approved" || status === "published") && item.hidden === false;
+    });
 
   return items;
 }

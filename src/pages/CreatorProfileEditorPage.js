@@ -20,6 +20,54 @@ const CREATOR_TYPE_OPTIONS = [
   "DJ",
 ];
 
+const SIGNED_URL_TTL_SECONDS = 600;
+
+function normalizeStoragePath(input) {
+  if (!input) return "";
+
+  const value = String(input).trim();
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return "";
+  }
+
+  let p = value;
+
+  while (p.startsWith("/")) {
+    p = p.slice(1);
+  }
+
+  if (p.toLowerCase().startsWith("media/")) {
+    p = p.slice(6);
+  }
+
+  if (p.toLowerCase().startsWith("public/")) {
+    p = p.slice(7);
+  }
+
+  while (p.includes("//")) {
+    p = p.replace("//", "/");
+  }
+
+  return p;
+}
+
+async function getSignedUrl(path) {
+  const cleanPath = normalizeStoragePath(path);
+  if (!cleanPath) return "";
+
+  const { data, error } = await supabase.storage
+    .from("media")
+    .createSignedUrl(cleanPath, SIGNED_URL_TTL_SECONDS);
+
+  if (error) {
+    console.error("Signed URL error:", error);
+    return "";
+  }
+
+  return data?.signedUrl || "";
+}
+
 export default function CreatorProfileEditorPage() {
   const navigate = useNavigate();
 
@@ -45,6 +93,9 @@ export default function CreatorProfileEditorPage() {
 
   const [avatarFile, setAvatarFile] = useState(null);
   const [bannerFile, setBannerFile] = useState(null);
+
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState("");
+  const [bannerPreviewUrl, setBannerPreviewUrl] = useState("");
 
   const [newCustomBadge, setNewCustomBadge] = useState("");
 
@@ -80,7 +131,7 @@ export default function CreatorProfileEditorPage() {
             is_available_for_collab,
             is_available_for_client_work,
             creator_types,
-            custom_creator_types,
+            custom_creator_type,
             avatar_url,
             banner_url
           `)
@@ -94,7 +145,7 @@ export default function CreatorProfileEditorPage() {
 
         if (!alive) return;
 
-        setProfile({
+        const nextProfile = {
           display_name: data.display_name || "",
           username: data.username || "",
           portfolio_tagline: data.portfolio_tagline || "",
@@ -104,12 +155,27 @@ export default function CreatorProfileEditorPage() {
           is_available_for_collab: !!data.is_available_for_collab,
           is_available_for_client_work: !!data.is_available_for_client_work,
           creator_types: Array.isArray(data.creator_types) ? data.creator_types : [],
-          custom_creator_types: Array.isArray(data.custom_creator_types)
-            ? data.custom_creator_types
+          custom_creator_types: data.custom_creator_type
+            ? [data.custom_creator_type]
             : [],
           avatar_url: data.avatar_url || "",
           banner_url: data.banner_url || "",
-        });
+        };
+
+        setProfile(nextProfile);
+
+        const avatarSigned = nextProfile.avatar_url
+          ? await getSignedUrl(nextProfile.avatar_url)
+          : "";
+
+        const bannerSigned = nextProfile.banner_url
+          ? await getSignedUrl(nextProfile.banner_url)
+          : "";
+
+        if (!alive) return;
+
+        setAvatarPreviewUrl(avatarSigned);
+        setBannerPreviewUrl(bannerSigned);
       } catch (err) {
         console.error("Error loading profile:", err);
       } finally {
@@ -137,13 +203,17 @@ export default function CreatorProfileEditorPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const objectUrl = URL.createObjectURL(file);
+
     if (type === "avatar") {
       setAvatarFile(file);
+      setAvatarPreviewUrl(objectUrl);
       return;
     }
 
     if (type === "banner") {
       setBannerFile(file);
+      setBannerPreviewUrl(objectUrl);
     }
   }
 
@@ -197,13 +267,7 @@ export default function CreatorProfileEditorPage() {
 
     if (error) throw error;
 
-    const { data, error: signedError } = await supabase.storage
-      .from("media")
-      .createSignedUrl(path, 60 * 60 * 24 * 7);
-
-    if (signedError) throw signedError;
-
-    return data?.signedUrl || null;
+    return path;
   }
 
   async function handleSave() {
@@ -212,17 +276,17 @@ export default function CreatorProfileEditorPage() {
     try {
       setSaving(true);
 
-      let avatarUrl = profile.avatar_url;
-      let bannerUrl = profile.banner_url;
+      let avatarPath = profile.avatar_url;
+      let bannerPath = profile.banner_url;
 
       if (avatarFile) {
-        const avatarPath = `profiles/avatars/${userId}-${Date.now()}-${avatarFile.name}`;
-        avatarUrl = await uploadFile(avatarFile, avatarPath);
+        avatarPath = `profiles/avatars/${userId}-${Date.now()}-${avatarFile.name}`;
+        avatarPath = await uploadFile(avatarFile, avatarPath);
       }
 
       if (bannerFile) {
-        const bannerPath = `profiles/banners/${userId}-${Date.now()}-${bannerFile.name}`;
-        bannerUrl = await uploadFile(bannerFile, bannerPath);
+        bannerPath = `profiles/banners/${userId}-${Date.now()}-${bannerFile.name}`;
+        bannerPath = await uploadFile(bannerFile, bannerPath);
       }
 
       const payload = {
@@ -235,9 +299,9 @@ export default function CreatorProfileEditorPage() {
         is_available_for_collab: profile.is_available_for_collab,
         is_available_for_client_work: profile.is_available_for_client_work,
         creator_types: profile.creator_types,
-        custom_creator_types: profile.custom_creator_types,
-        avatar_url: avatarUrl,
-        banner_url: bannerUrl,
+        custom_creator_type: profile.custom_creator_types[0] || null,
+        avatar_url: avatarPath,
+        banner_url: bannerPath,
       };
 
       const { error } = await supabase
@@ -432,9 +496,9 @@ export default function CreatorProfileEditorPage() {
       <div style={{ marginBottom: 20 }}>
         <div style={{ marginBottom: 8, fontWeight: 600 }}>Avatar</div>
 
-        {profile.avatar_url ? (
+        {avatarPreviewUrl ? (
           <img
-            src={profile.avatar_url}
+            src={avatarPreviewUrl}
             alt="Avatar preview"
             style={{
               width: 110,
@@ -457,9 +521,9 @@ export default function CreatorProfileEditorPage() {
       <div style={{ marginBottom: 24 }}>
         <div style={{ marginBottom: 8, fontWeight: 600 }}>Banner</div>
 
-        {profile.banner_url ? (
+        {bannerPreviewUrl ? (
           <img
-            src={profile.banner_url}
+            src={bannerPreviewUrl}
             alt="Banner preview"
             style={{
               width: "100%",

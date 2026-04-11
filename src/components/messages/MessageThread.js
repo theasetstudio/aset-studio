@@ -43,18 +43,9 @@ export default function MessageThread({ messages, currentUserId }) {
   }, [messages]);
 
   return (
-    <div
-      style={{
-        flex: 1,
-        padding: 20,
-        overflowY: "auto",
-        backgroundColor: "#000",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
+    <div style={styles.container}>
       {messages.length === 0 ? (
-        <p style={{ color: "#ddd" }}>No messages yet.</p>
+        <div style={styles.empty}>No messages yet.</div>
       ) : (
         messages.map((msg) => {
           const senderName = profilesById[msg.sender_id] || "Unknown User";
@@ -64,39 +55,24 @@ export default function MessageThread({ messages, currentUserId }) {
             <div
               key={msg.id}
               style={{
-                display: "flex",
+                ...styles.row,
                 justifyContent: isMine ? "flex-end" : "flex-start",
-                marginBottom: 14,
               }}
             >
               <div
                 style={{
-                  maxWidth: "70%",
-                  display: "flex",
-                  flexDirection: "column",
+                  ...styles.messageGroup,
                   alignItems: isMine ? "flex-end" : "flex-start",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    marginBottom: 4,
-                    color: "#bdbdbd",
-                    fontWeight: 600,
-                  }}
-                >
+                <div style={styles.senderName}>
                   {isMine ? "You" : senderName}
                 </div>
 
                 <div
                   style={{
-                    padding: "12px 14px",
-                    borderRadius: 16,
-                    backgroundColor: isMine ? "#f2f2f2" : "#171717",
-                    color: isMine ? "#111" : "#fff",
-                    border: isMine ? "none" : "1px solid #2d2d2d",
-                    lineHeight: 1.4,
-                    wordBreak: "break-word",
+                    ...styles.bubble,
+                    ...(isMine ? styles.myBubble : styles.theirBubble),
                   }}
                 >
                   {msg.content}
@@ -111,3 +87,64 @@ export default function MessageThread({ messages, currentUserId }) {
     </div>
   );
 }
+
+const styles = {
+  container: {
+    flex: 1,
+    padding: "16px",
+    overflowY: "auto",
+    backgroundColor: "#000",
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+  },
+
+  empty: {
+    color: "rgba(255,255,255,0.72)",
+    fontSize: 14,
+    lineHeight: 1.6,
+    padding: "8px 2px",
+  },
+
+  row: {
+    display: "flex",
+    marginBottom: 12,
+    width: "100%",
+  },
+
+  messageGroup: {
+    maxWidth: "min(78%, 720px)",
+    display: "flex",
+    flexDirection: "column",
+    minWidth: 0,
+  },
+
+  senderName: {
+    fontSize: 12,
+    marginBottom: 5,
+    color: "#bdbdbd",
+    fontWeight: 600,
+    lineHeight: 1.4,
+  },
+
+  bubble: {
+    padding: "12px 14px",
+    borderRadius: 16,
+    lineHeight: 1.5,
+    wordBreak: "break-word",
+    fontSize: 14,
+    whiteSpace: "pre-wrap",
+  },
+
+  myBubble: {
+    backgroundColor: "#f2f2f2",
+    color: "#111",
+    border: "none",
+  },
+
+  theirBubble: {
+    backgroundColor: "#171717",
+    color: "#fff",
+    border: "1px solid #2d2d2d",
+  },
+};

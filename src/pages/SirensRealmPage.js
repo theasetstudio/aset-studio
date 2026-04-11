@@ -4,8 +4,9 @@ import { Link } from "react-router-dom";
 export default function SirensRealmPage() {
   return (
     <div style={styles.page}>
-      <div style={styles.hero}>
-        <div style={styles.heroOverlay}>
+      <section style={styles.hero}>
+        <div style={styles.heroOverlay} />
+        <div style={styles.heroInner}>
           <div style={styles.container}>
             <div style={styles.eyebrow}>SIRENS REALM</div>
 
@@ -71,8 +72,8 @@ export default function SirensRealmPage() {
                 <div style={styles.cardEyebrow}>Sirens Realm</div>
                 <div style={styles.cardTitle}>Stone Collection</div>
                 <div style={styles.cardText}>
-                  Curated stone groupings, themed collections, and focused spiritual
-                  sets for specific energies and intentions.
+                  Curated stone groupings, themed collections, and focused
+                  spiritual sets for specific energies and intentions.
                 </div>
               </Link>
 
@@ -83,8 +84,8 @@ export default function SirensRealmPage() {
                 <div style={styles.cardEyebrow}>Sirens Realm</div>
                 <div style={styles.cardTitle}>Return to Sender</div>
                 <div style={styles.cardText}>
-                  Protective forces, reversal work, divine witnesses, and spiritual
-                  justice.
+                  Protective forces, reversal work, divine witnesses, and
+                  spiritual justice.
                 </div>
               </Link>
             </div>
@@ -101,8 +102,8 @@ export default function SirensRealmPage() {
                 <div style={styles.featureTitle}>Conjurin in the Kitchen</div>
 
                 <div style={styles.featureText}>
-                  Protection, spiritual defense, fast movement, exposure of lies,
-                  and keeping harmful energy away from your space.
+                  Protection, spiritual defense, fast movement, exposure of
+                  lies, and keeping harmful energy away from your space.
                 </div>
               </Link>
             </div>
@@ -124,7 +125,7 @@ export default function SirensRealmPage() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
@@ -133,51 +134,63 @@ const styles = {
   page: {
     minHeight: "100vh",
     background: "#000",
-    color: "white",
+    color: "#ffffff",
   },
 
   hero: {
+    position: "relative",
     minHeight: "100vh",
     backgroundImage: "url('/images/sirens-hero.png')",
     backgroundSize: "cover",
-    backgroundPosition: "center",
-    display: "flex",
-    alignItems: "center",
+    backgroundPosition: "center center",
+    backgroundRepeat: "no-repeat",
   },
 
   heroOverlay: {
-    width: "100%",
+    position: "absolute",
+    inset: 0,
+    background:
+      "linear-gradient(to bottom, rgba(0,0,0,0.46), rgba(0,0,0,0.72))",
+    pointerEvents: "none",
+  },
+
+  heroInner: {
+    position: "relative",
+    zIndex: 1,
     minHeight: "100vh",
-    background: "rgba(0,0,0,0.65)",
     display: "flex",
     alignItems: "center",
-    padding: "48px 20px",
+    padding: "clamp(56px, 8vw, 92px) 16px",
   },
 
   container: {
-    maxWidth: 980,
+    width: "100%",
+    maxWidth: 1120,
     margin: "0 auto",
   },
 
   eyebrow: {
-    letterSpacing: 3,
-    fontSize: 12,
-    opacity: 0.85,
+    letterSpacing: "0.24em",
+    fontSize: "clamp(11px, 1.8vw, 12px)",
+    opacity: 0.88,
+    marginBottom: 10,
   },
 
   title: {
-    fontSize: "clamp(2.5rem, 6vw, 56px)",
+    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontSize: "clamp(32px, 6vw, 56px)",
     lineHeight: 1.05,
-    marginTop: 16,
-    marginBottom: 0,
+    margin: "0 0 14px",
+    maxWidth: 760,
+    textWrap: "balance",
   },
 
   subtitle: {
-    maxWidth: 700,
-    marginTop: 14,
-    opacity: 0.85,
-    fontSize: 16,
-    lineHeight: 1.6,
+    maxWidth: 760,
+    margin: "0 0 24px",
+    opacity: 0.88,
+    fontSize: "clamp(15px, 2.4vw, 17px)",
+    lineHeight: 1.65,
   },
 
   buttonRow: {
@@ -185,64 +198,91 @@ const styles = {
     gap: 12,
     flexWrap: "wrap",
     marginTop: 24,
+    marginBottom: 36,
+    width: "100%",
   },
 
   primaryButton: {
-    padding: "12px 18px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "14px 18px",
     borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(255,255,255,0.08)",
-    color: "white",
+    border: "1px solid rgba(255,255,255,0.20)",
+    background: "rgba(255,255,255,0.10)",
+    color: "#ffffff",
     textDecoration: "none",
     fontWeight: 700,
+    minHeight: 50,
+    flex: "1 1 220px",
+    maxWidth: 260,
   },
 
   secondaryButton: {
-    padding: "12px 18px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "14px 18px",
     borderRadius: 14,
     border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(0,0,0,0.20)",
-    color: "white",
+    background: "rgba(0,0,0,0.22)",
+    color: "#ffffff",
     textDecoration: "none",
     fontWeight: 600,
+    minHeight: 50,
+    flex: "1 1 220px",
+    maxWidth: 260,
   },
 
   fireButton: {
-    padding: "12px 18px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "14px 18px",
     borderRadius: 14,
-    border: "1px solid rgba(255,120,120,0.28)",
-    background: "rgba(139,30,30,0.18)",
-    color: "white",
+    border: "1px solid rgba(255,120,120,0.30)",
+    background: "rgba(139,30,30,0.20)",
+    color: "#ffffff",
     textDecoration: "none",
     fontWeight: 700,
+    minHeight: 50,
+    flex: "1 1 220px",
+    maxWidth: 260,
   },
 
   ghostButton: {
-    padding: "12px 18px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "14px 18px",
     borderRadius: 14,
     border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(0,0,0,0.10)",
-    color: "white",
+    background: "rgba(0,0,0,0.12)",
+    color: "#ffffff",
     textDecoration: "none",
     fontWeight: 600,
+    minHeight: 50,
+    flex: "1 1 220px",
+    maxWidth: 260,
   },
 
   sectionsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: 16,
-    marginTop: 36,
+    marginTop: 8,
   },
 
   sectionCard: {
     display: "block",
     textDecoration: "none",
-    background: "rgba(255,255,255,0.04)",
+    background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.10)",
     borderRadius: 18,
     padding: 18,
     color: "#f5f1ff",
-    minHeight: 170,
+    minHeight: 180,
+    backdropFilter: "blur(2px)",
   },
 
   cardEyebrow: {
@@ -254,9 +294,10 @@ const styles = {
   },
 
   cardTitle: {
-    fontSize: "1.1rem",
+    fontSize: "clamp(1rem, 2vw, 1.1rem)",
     fontWeight: 700,
     marginBottom: 10,
+    lineHeight: 1.3,
   },
 
   cardText: {
@@ -266,24 +307,26 @@ const styles = {
   },
 
   featureSection: {
-    marginTop: 44,
+    marginTop: 42,
   },
 
   featureHeading: {
-    fontSize: "1.6rem",
-    marginBottom: 16,
+    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontSize: "clamp(1.35rem, 3vw, 1.6rem)",
+    margin: "0 0 16px",
     letterSpacing: "0.04em",
   },
 
   featureCard: {
     display: "block",
     textDecoration: "none",
-    background: "rgba(139,30,30,0.12)",
-    border: "1px solid rgba(255,120,120,0.25)",
+    background: "rgba(139,30,30,0.14)",
+    border: "1px solid rgba(255,120,120,0.26)",
     borderRadius: 18,
     padding: 20,
     color: "#f5e9e0",
-    maxWidth: 560,
+    maxWidth: 620,
+    width: "100%",
   },
 
   featureEyebrow: {
@@ -295,9 +338,10 @@ const styles = {
   },
 
   featureTitle: {
-    fontSize: "1.4rem",
+    fontSize: "clamp(1.15rem, 2.5vw, 1.4rem)",
     fontWeight: 700,
     marginBottom: 8,
+    lineHeight: 1.3,
   },
 
   featureText: {
@@ -311,17 +355,19 @@ const styles = {
     padding: 18,
     borderRadius: 18,
     border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(0,0,0,0.35)",
+    background: "rgba(0,0,0,0.38)",
     maxWidth: 780,
   },
 
   comingNextTitle: {
     fontWeight: 700,
     marginBottom: 6,
+    fontSize: 16,
   },
 
   comingNextText: {
-    opacity: 0.85,
-    lineHeight: 1.6,
+    opacity: 0.88,
+    lineHeight: 1.7,
+    fontSize: 15,
   },
 };

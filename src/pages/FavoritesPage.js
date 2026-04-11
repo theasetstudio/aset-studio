@@ -31,7 +31,8 @@ export default function FavoritesPage() {
   const [items, setItems] = useState([]);
   const [signedUrlsById, setSignedUrlsById] = useState({});
 
-  const [loading, setLoading] = useState(true);
+  const [loadingSession, setLoadingSession] = useState(true);
+  const [loadingFavorites, setLoadingFavorites] = useState(true);
   const [removingIds, setRemovingIds] = useState(() => new Set());
 
   const [ageModalOpen, setAgeModalOpen] = useState(false);
@@ -41,27 +42,33 @@ export default function FavoritesPage() {
 
     async function loadSession() {
       try {
-        const { data } = await supabase.auth.getSession();
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
+
         if (!mounted) return;
-        setSession(data?.session ?? null);
+        setSession(currentSession ?? null);
       } catch (error) {
         console.error("FavoritesPage session load error:", error);
         if (!mounted) return;
         setSession(null);
+      } finally {
+        if (mounted) setLoadingSession(false);
       }
     }
 
     loadSession();
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
-        setSession(nextSession ?? null);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession ?? null);
+      setLoadingSession(false);
+    });
 
     return () => {
       mounted = false;
-      subscription?.subscription?.unsubscribe?.();
+      subscription?.unsubscribe?.();
     };
   }, []);
 
@@ -102,19 +109,21 @@ export default function FavoritesPage() {
     let alive = true;
 
     async function loadFavorites() {
+      if (loadingSession) return;
+
       if (!session?.user?.id) {
         setItems([]);
         setSignedUrlsById({});
-        setLoading(false);
+        setLoadingFavorites(false);
         return;
       }
 
-      setLoading(true);
+      setLoadingFavorites(true);
 
       try {
         const { data: favoriteRows, error: favoritesError } = await supabase
           .from("favorites")
-          .select("media_id, created_at")
+          .select("media_item_id, created_at")
           .eq("user_id", session.user.id)
           .order("created_at", { ascending: false });
 
@@ -124,18 +133,18 @@ export default function FavoritesPage() {
           console.error("FavoritesPage favorites fetch error:", favoritesError);
           setItems([]);
           setSignedUrlsById({});
-          setLoading(false);
+          setLoadingFavorites(false);
           return;
         }
 
         const mediaIds = (favoriteRows ?? [])
-          .map((row) => row.media_id)
+          .map((row) => row.media_item_id)
           .filter(Boolean);
 
         if (mediaIds.length === 0) {
           setItems([]);
           setSignedUrlsById({});
-          setLoading(false);
+          setLoadingFavorites(false);
           return;
         }
 
@@ -154,17 +163,9 @@ export default function FavoritesPage() {
             file_path,
             watermarked_path,
             created_at,
-            owner_id,
-            owner:profiles!media_items_owner_id_fkey (
-              id,
-              display_name
-            ),
-            favorites(count),
-            media_comments(count)
+            owner_id
           `)
-          .in("id", mediaIds)
-          .in("status", ["approved", "published"])
-          .eq("hidden", false);
+          .in("id", mediaIds);
 
         if (!alive) return;
 
@@ -172,11 +173,17 @@ export default function FavoritesPage() {
           console.error("FavoritesPage media fetch error:", mediaError);
           setItems([]);
           setSignedUrlsById({});
-          setLoading(false);
+          setLoadingFavorites(false);
           return;
         }
 
-        const mediaById = new Map((mediaRows ?? []).map((row) => [row.id, row]));
+        const cleanedRows = (mediaRows ?? []).filter((row) => {
+          const status = norm(row?.status);
+          const hidden = Boolean(row?.hidden);
+          return (status === "approved" || status === "published") && hidden === false;
+        });
+
+        const mediaById = new Map(cleanedRows.map((row) => [row.id, row]));
         const orderedItems = mediaIds
           .map((id) => mediaById.get(id))
           .filter(Boolean);
@@ -189,7 +196,7 @@ export default function FavoritesPage() {
         setItems([]);
         setSignedUrlsById({});
       } finally {
-        if (alive) setLoading(false);
+        if (alive) setLoadingFavorites(false);
       }
     }
 
@@ -198,7 +205,7 @@ export default function FavoritesPage() {
     return () => {
       alive = false;
     };
-  }, [session?.user?.id]);
+  }, [session?.user?.id, loadingSession]);
 
   useEffect(() => {
     let cancelled = false;
@@ -245,8 +252,7 @@ export default function FavoritesPage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, profile?.role, profile?.is_age_verified, session?.user?.id]);
+  }, [items, profile?.role, profile?.is_age_verified, session?.user?.id, signedUrlsById]);
 
   function openAgeModal() {
     setAgeModalOpen(true);
@@ -320,6 +326,7 @@ export default function FavoritesPage() {
     });
 
     const previousItems = items;
+    const previousSignedUrls = signedUrlsById;
 
     setItems((prev) => prev.filter((item) => item.id !== mediaId));
     setSignedUrlsById((prev) => {
@@ -333,12 +340,13 @@ export default function FavoritesPage() {
         .from("favorites")
         .delete()
         .eq("user_id", session.user.id)
-        .eq("media_id", mediaId);
+        .eq("media_item_id", mediaId);
 
       if (error) throw error;
     } catch (error) {
       console.error("FavoritesPage remove favorite error:", error);
       setItems(previousItems);
+      setSignedUrlsById(previousSignedUrls);
     } finally {
       setRemovingIds((prev) => {
         const next = new Set(prev);
@@ -348,20 +356,17 @@ export default function FavoritesPage() {
     }
   }
 
-  function handleOpenCreatorProfile(item) {
-    const ownerId = item?.owner?.id || item?.owner_id;
-    if (!ownerId) return;
-    navigate(`/creator/${ownerId}`);
-  }
-
   const hasItems = useMemo(() => items.length > 0, [items]);
+  const favoritesCount = useMemo(() => items.length, [items]);
 
-  if (loading) {
+  if (loadingSession || loadingFavorites) {
     return (
       <div className="gallery-page">
         <div className="gallery-header">
           <h1 className="gallery-title">Favorites</h1>
+          <div style={{ opacity: 0.75, marginTop: 6 }}>Loading your saved pieces…</div>
         </div>
+
         <div className="gallery-loading">Loading favorites…</div>
       </div>
     );
@@ -372,6 +377,9 @@ export default function FavoritesPage() {
       <div className="gallery-page">
         <div className="gallery-header">
           <h1 className="gallery-title">Favorites</h1>
+          <div style={{ opacity: 0.75, marginTop: 6 }}>
+            Sign in to view everything you have saved.
+          </div>
         </div>
 
         <div className="gallery-loading" style={{ opacity: 0.9 }}>
@@ -398,6 +406,9 @@ export default function FavoritesPage() {
         <div style={{ opacity: 0.75, marginTop: 6 }}>
           Saved pieces from your gallery activity.
         </div>
+        <div style={{ opacity: 0.9, marginTop: 10, fontSize: 14 }}>
+          {favoritesCount} {favoritesCount === 1 ? "item saved" : "items saved"}
+        </div>
       </div>
 
       {!hasItems ? (
@@ -413,9 +424,6 @@ export default function FavoritesPage() {
             const isLocked = !decision?.allowed;
             const signedUrl = signedUrlsById[item.id] || null;
             const isRemoving = removingIds.has(item.id);
-
-            const favCount = item?.favorites?.[0]?.count ?? 0;
-            const commentCount = item?.media_comments?.[0]?.count ?? 0;
 
             if (isLocked) {
               const isBoudoir = item.access_level === "boudoir";
@@ -446,28 +454,6 @@ export default function FavoritesPage() {
                         <div className="locked-icon">🔒</div>
                         <div className="locked-title">Locked</div>
                         <div className="locked-subtitle">{subtitle}</div>
-
-                        <button
-                          type="button"
-                          className="gallery-item-uploader locked-uploader"
-                          onClick={() => handleOpenCreatorProfile(item)}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            padding: 0,
-                            marginTop: "8px",
-                            cursor:
-                              item?.owner?.id || item?.owner_id
-                                ? "pointer"
-                                : "default",
-                            textDecoration: "underline",
-                            color: "inherit",
-                            font: "inherit",
-                          }}
-                        >
-                          Uploaded by{" "}
-                          {item.owner?.display_name || "The Aset Studio"}
-                        </button>
 
                         <div
                           style={{
@@ -503,6 +489,12 @@ export default function FavoritesPage() {
                 <div
                   className="gallery-thumb"
                   onClick={() => navigate(`/media/${item.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      navigate(`/media/${item.id}`);
+                    }
+                  }}
                   role="button"
                   tabIndex={0}
                 >
@@ -521,45 +513,8 @@ export default function FavoritesPage() {
                   <div className="gallery-meta-text">
                     <div className="gallery-item-title">{item.title ?? ""}</div>
                     <div className="gallery-item-tagline">{item.tagline ?? ""}</div>
-
-                    <button
-                      type="button"
-                      className="gallery-item-uploader"
-                      onClick={() => handleOpenCreatorProfile(item)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        marginTop: "6px",
-                        cursor:
-                          item?.owner?.id || item?.owner_id
-                            ? "pointer"
-                            : "default",
-                        textDecoration: "underline",
-                        textAlign: "left",
-                        color: "inherit",
-                        font: "inherit",
-                      }}
-                    >
-                      Uploaded by{" "}
-                      {item.owner?.display_name || "The Aset Studio"}
-                    </button>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 12,
-                        alignItems: "center",
-                        marginTop: 8,
-                        fontSize: 13,
-                        opacity: 0.85,
-                      }}
-                    >
-                      {favCount > 0 ? <span>❤️ {favCount}</span> : null}
-                      {commentCount > 0 ? <span>💬 {commentCount}</span> : null}
-                      {favCount === 0 && commentCount === 0 ? (
-                        <span style={{ opacity: 0.65 }}>—</span>
-                      ) : null}
+                    <div style={{ marginTop: 8, fontSize: 13, opacity: 0.8 }}>
+                      {item.category || "Gallery"}
                     </div>
                   </div>
 
@@ -568,6 +523,7 @@ export default function FavoritesPage() {
                     onClick={() => removeFavorite(item.id)}
                     title="Remove favorite"
                     disabled={isRemoving}
+                    type="button"
                   >
                     {isRemoving ? "…" : "♥"}
                   </button>

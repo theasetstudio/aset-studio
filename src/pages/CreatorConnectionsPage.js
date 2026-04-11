@@ -1,12 +1,64 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
 const PAGE_SIZE = 20;
+const SIGNED_URL_TTL_SECONDS = 600;
 
-export default function CreatorConnectionsPage({ mode = "followers" }) {
-  const { id } = useParams();
+function normalizeStoragePath(input) {
+  if (!input) return "";
 
+  let p = String(input).trim();
+
+  while (p.startsWith("/")) {
+    p = p.slice(1);
+  }
+
+  if (p.toLowerCase().startsWith("media/")) {
+    p = p.slice(6);
+  }
+
+  if (p.toLowerCase().startsWith("public/")) {
+    p = p.slice(7);
+  }
+
+  while (p.includes("//")) {
+    p = p.replace("//", "/");
+  }
+
+  return p;
+}
+
+async function getSignedUrl(path) {
+  const cleanPath = normalizeStoragePath(path);
+  if (!cleanPath) return "";
+
+  try {
+    const { data, error } = await supabase.storage
+      .from("media")
+      .createSignedUrl(cleanPath, SIGNED_URL_TTL_SECONDS);
+
+    if (error) {
+      console.error("Signed URL error:", error);
+      return "";
+    }
+
+    return data?.signedUrl || "";
+  } catch (error) {
+    console.error("Signed URL exception:", error);
+    return "";
+  }
+}
+
+export default function CreatorConnectionsPage({ mode: modeProp }) {
+  const { username } = useParams();
+  const location = useLocation();
+
+  const mode =
+    modeProp ||
+    (location.pathname.endsWith("/following") ? "following" : "followers");
+
+  const [creatorProfile, setCreatorProfile] = useState(null);
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -19,7 +71,7 @@ export default function CreatorConnectionsPage({ mode = "followers" }) {
   const currentUserId = supabase.auth.user()?.id;
 
   const loadMoreProfiles = useCallback(async () => {
-    if (loadingRef.current || !id) return;
+    if (loadingRef.current || !creatorProfile?.id) return;
 
     loadingRef.current = true;
     setLoading(true);
@@ -34,16 +86,16 @@ export default function CreatorConnectionsPage({ mode = "followers" }) {
         const { data: followRows, error } = await supabase
           .from("creator_follows")
           .select("follower_id")
-          .eq("creator_id", id)
+          .eq("creator_id", creatorProfile.id)
           .range(start, end);
 
         if (error) throw error;
         connectionIds = followRows?.map((row) => row.follower_id) || [];
-      } else if (mode === "following") {
+      } else {
         const { data: followRows, error } = await supabase
           .from("creator_follows")
           .select("creator_id")
-          .eq("follower_id", id)
+          .eq("follower_id", creatorProfile.id)
           .range(start, end);
 
         if (error) throw error;
@@ -62,9 +114,23 @@ export default function CreatorConnectionsPage({ mode = "followers" }) {
 
       if (profileError) throw profileError;
 
+      const profilesWithSignedUrls = await Promise.all(
+        (profileData || []).map(async (profile) => {
+          const avatar_signed_url = profile.avatar_url
+            ? await getSignedUrl(profile.avatar_url)
+            : "";
+
+          return {
+            ...profile,
+            creator_slug: profile.username || profile.id,
+            avatar_signed_url,
+          };
+        })
+      );
+
       setProfiles((prev) => {
         const existingIds = new Set(prev.map((item) => item.id));
-        const newProfiles = (profileData || []).filter(
+        const newProfiles = profilesWithSignedUrls.filter(
           (item) => !existingIds.has(item.id)
         );
         return [...prev, ...newProfiles];
@@ -73,7 +139,7 @@ export default function CreatorConnectionsPage({ mode = "followers" }) {
       const { count, error: countError } = await supabase
         .from("creator_follows")
         .select("*", { count: "exact", head: true })
-        .eq(mode === "followers" ? "creator_id" : "follower_id", id);
+        .eq(mode === "followers" ? "creator_id" : "follower_id", creatorProfile.id);
 
       if (countError) throw countError;
 
@@ -126,21 +192,85 @@ export default function CreatorConnectionsPage({ mode = "followers" }) {
       loadingRef.current = false;
       setLoading(false);
     }
-  }, [id, mode, currentUserId]);
+  }, [creatorProfile?.id, mode, currentUserId]);
 
   useEffect(() => {
-    async function resetAndLoad() {
-      pageRef.current = 0;
-      setProfiles([]);
-      setHasMore(false);
-      setFollowStatusMap({});
-      setFollowsYouMap({});
-      setSearchTerm("");
-      await loadMoreProfiles();
+    let alive = true;
+
+    async function loadCreatorProfile() {
+      try {
+        setLoading(true);
+        pageRef.current = 0;
+        setProfiles([]);
+        setHasMore(false);
+        setFollowStatusMap({});
+        setFollowsYouMap({});
+        setSearchTerm("");
+
+        const routeValue = String(username || "").trim();
+
+        if (!routeValue) {
+          if (alive) {
+            setCreatorProfile(null);
+            setLoading(false);
+          }
+          return;
+        }
+
+        let profileData = null;
+
+        const { data: usernameMatch, error: usernameError } = await supabase
+          .from("profiles")
+          .select("id, display_name, username")
+          .eq("username", routeValue)
+          .maybeSingle();
+
+        if (usernameError) throw usernameError;
+        profileData = usernameMatch;
+
+        if (!profileData) {
+          const { data: lowerUsernameMatch, error: lowerUsernameError } = await supabase
+            .from("profiles")
+            .select("id, display_name, username")
+            .eq("username", routeValue.toLowerCase())
+            .maybeSingle();
+
+          if (lowerUsernameError) throw lowerUsernameError;
+          profileData = lowerUsernameMatch;
+        }
+
+        if (!profileData) {
+          const { data: idMatch, error: idError } = await supabase
+            .from("profiles")
+            .select("id, display_name, username")
+            .eq("id", routeValue)
+            .maybeSingle();
+
+          if (idError) throw idError;
+          profileData = idMatch;
+        }
+
+        if (!alive) return;
+        setCreatorProfile(profileData || null);
+      } catch (error) {
+        console.error("Error loading creator profile for connections:", error);
+        if (!alive) return;
+        setCreatorProfile(null);
+        setLoading(false);
+      }
     }
 
-    resetAndLoad();
-  }, [loadMoreProfiles]);
+    loadCreatorProfile();
+
+    return () => {
+      alive = false;
+    };
+  }, [username]);
+
+  useEffect(() => {
+    if (!creatorProfile?.id) return;
+    loadMoreProfiles();
+  }, [creatorProfile?.id, loadMoreProfiles]);
 
   const toggleFollow = async (profileId) => {
     if (!currentUserId || profileId === currentUserId) return;
@@ -177,10 +307,10 @@ export default function CreatorConnectionsPage({ mode = "followers" }) {
   };
 
   const renderAvatar = (profile) => {
-    if (profile.avatar_url) {
+    if (profile.avatar_signed_url) {
       return (
         <img
-          src={profile.avatar_url}
+          src={profile.avatar_signed_url}
           alt={profile.display_name || "Creator avatar"}
           style={{
             width: "100%",
@@ -239,13 +369,15 @@ export default function CreatorConnectionsPage({ mode = "followers" }) {
 
     return profiles.filter((profile) => {
       const displayName = (profile.display_name || "").toLowerCase();
-      const username = (profile.username || "").toLowerCase();
+      const usernameValue = (profile.username || "").toLowerCase();
       return (
         displayName.includes(normalizedSearch) ||
-        username.includes(normalizedSearch)
+        usernameValue.includes(normalizedSearch)
       );
     });
   }, [profiles, searchTerm]);
+
+  const creatorSlug = creatorProfile?.username || creatorProfile?.id || "";
 
   return (
     <div
@@ -259,6 +391,15 @@ export default function CreatorConnectionsPage({ mode = "followers" }) {
       <h1 style={{ marginBottom: 12 }}>
         {mode === "followers" ? "Followers" : "Following"}
       </h1>
+
+      <div style={{ marginBottom: 16 }}>
+        <Link
+          to={`/creator/${creatorSlug}`}
+          style={{ color: "#fff", textDecoration: "underline" }}
+        >
+          Back to Profile
+        </Link>
+      </div>
 
       <div style={{ marginBottom: 24 }}>
         <input
@@ -291,6 +432,7 @@ export default function CreatorConnectionsPage({ mode = "followers" }) {
           {filteredProfiles.map((profile) => {
             const followsYou = !!followsYouMap[profile.id];
             const isMutual = followsYou && !!followStatusMap[profile.id];
+            const profileSlug = profile.username || profile.id;
 
             return (
               <div
@@ -306,7 +448,7 @@ export default function CreatorConnectionsPage({ mode = "followers" }) {
                 }}
               >
                 <Link
-                  to={`/creator/${profile.id}`}
+                  to={`/creator/${profileSlug}`}
                   style={{
                     display: "flex",
                     alignItems: "center",

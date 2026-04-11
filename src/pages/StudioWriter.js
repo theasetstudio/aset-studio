@@ -9,13 +9,12 @@ export default function StudioWriter() {
   const [outputData, setOutputData] = useState(null);
   const [copyMessage, setCopyMessage] = useState("");
 
-  // Phase 3 active engine:
-  // "ai" uses the deployed Supabase Edge Function.
-  // If AI fails for any reason, we safely fall back to mock output.
   const GENERATOR_ENGINE = "ai";
 
   const SUPABASE_FUNCTION_URL =
     "https://xilrceoojnnxiugezrrj.supabase.co/functions/v1/scene-architect";
+
+  const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || "";
 
   const presets = [
     {
@@ -260,10 +259,16 @@ ${promptValue.charAt(0).toUpperCase()}${promptValue.slice(1)} The emotional cent
 
   const buildAiOutput = async (promptValue, modeValue, toneValue, intensityValue) => {
     try {
+      if (!SUPABASE_ANON_KEY) {
+        throw new Error("Missing REACT_APP_SUPABASE_ANON_KEY.");
+      }
+
       const response = await fetch(SUPABASE_FUNCTION_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           prompt: promptValue,
@@ -276,7 +281,9 @@ ${promptValue.charAt(0).toUpperCase()}${promptValue.slice(1)} The emotional cent
       const data = await response.json();
 
       if (!response.ok || !data?.success || !data?.content) {
-        throw new Error("AI generation failed.");
+        throw new Error(
+          data?.error || data?.message || `AI generation failed with status ${response.status}.`
+        );
       }
 
       return {
@@ -290,7 +297,6 @@ ${promptValue.charAt(0).toUpperCase()}${promptValue.slice(1)} The emotional cent
       };
     } catch (error) {
       console.error("Scene Architect AI error:", error);
-
       return buildMockOutput(promptValue, modeValue, toneValue, intensityValue);
     }
   };

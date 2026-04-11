@@ -1,6 +1,5 @@
-// src/pages/MediaDetailPage.js
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate, useParams, Link, useLocation } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import {
   fetchMyFavoriteIds,
@@ -16,45 +15,31 @@ import {
 import CommentsPanel from "../components/CommentsPanel";
 import { startSupremeCheckout } from "../utils/checkout";
 
-const SIGNED_URL_TTL_SECONDS = 60 * 10;
+const SIGNED_URL_TTL_SECONDS = 600;
 
 function norm(v) {
-  return (v || "").trim().toLowerCase();
-}
-
-function isAbortError(e) {
-  return (
-    e?.name === "AbortError" ||
-    String(e?.message || "").toLowerCase().includes("aborted") ||
-    String(e || "").toLowerCase().includes("aborterror")
-  );
+  return String(v || "").trim().toLowerCase();
 }
 
 function normalizeStoragePath(input) {
   if (!input) return "";
 
   let p = String(input).trim();
-  p = p.replace(/^\/+/, "");
-  p = p.replace(/^media\//i, "");
-  p = p.replace(/^public\//i, "");
-  p = p.replace(/\/{2,}/g, "/");
 
-  const isValidRoot =
-    /^uploads\//i.test(p) ||
-    /^admin-uploads\//i.test(p) ||
-    /^watermarked\//i.test(p) ||
-    /^voice_notes\//i.test(p) ||
-    /^stones\//i.test(p) ||
-    /^prompt-previews\//i.test(p);
+  while (p.startsWith("/")) {
+    p = p.slice(1);
+  }
 
-  if (!isValidRoot) {
-    const parts = p.split("/").filter(Boolean);
-    const last = parts[parts.length - 1] || "";
-    const looksLikeFile = /\.(png|jpg|jpeg|webp|gif|avif)$/i.test(last);
+  if (p.toLowerCase().startsWith("media/")) {
+    p = p.slice(6);
+  }
 
-    if (looksLikeFile) {
-      p = `uploads/${last}`;
-    }
+  if (p.toLowerCase().startsWith("public/")) {
+    p = p.slice(7);
+  }
+
+  while (p.includes("//")) {
+    p = p.replace("//", "/");
   }
 
   return p;
@@ -71,13 +56,13 @@ function normalizeItem(item) {
 }
 
 function displayTitle(item) {
-  const t = (item?.title || "").trim();
+  const t = String(item?.title || "").trim();
   if (t) return t;
 
-  const tg = (item?.tagline || "").trim();
+  const tg = String(item?.tagline || "").trim();
   if (tg) return tg;
 
-  const q = (item?.quote || "").trim();
+  const q = String(item?.quote || "").trim();
   if (q) return q;
 
   return "Media Item";
@@ -85,321 +70,225 @@ function displayTitle(item) {
 
 export default function MediaDetailPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { category, id } = useParams();
+  const { id, category } = useParams();
 
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [ageVerified, setAgeVerified] = useState(getAgeVerified());
 
+  const [item, setItem] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imgError, setImgError] = useState("");
+  const [loading, setLoading] = useState(true);
+
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [loadingFavorites, setLoadingFavorites] = useState(false);
 
-  const [item, setItem] = useState(null);
-  const [imageUrl, setImageUrl] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [imgError, setImgError] = useState("");
-
   const [showAgeModal, setShowAgeModal] = useState(false);
-  const [gate, setGate] = useState(null);
   const [uploaderName, setUploaderName] = useState("The Aset Studio");
-  const [reloadTick, setReloadTick] = useState(0);
 
   const userId = session?.user?.id || null;
 
-  const getSignedUrl = useCallback(
-    async (path, expiresInSeconds = SIGNED_URL_TTL_SECONDS) => {
-      const p = normalizeStoragePath(path);
-      if (!p) return null;
-
-      try {
-        const { data, error } = await supabase.storage
-          .from("media")
-          .createSignedUrl(p, expiresInSeconds);
-
-        if (error) {
-          if (!isAbortError(error)) {
-            console.error("createSignedUrl failed:", error, "path:", p);
-          }
-          return null;
-        }
-
-        return data?.signedUrl || null;
-      } catch (e) {
-        if (!isAbortError(e)) console.error("createSignedUrl threw:", e);
-        return null;
-      }
-    },
-    []
-  );
-
-  const loadProfile = useCallback(async (nextUserId) => {
-    setProfile(null);
-    setIsAdmin(false);
-    setAgeVerified(getAgeVerified());
-
-    if (!nextUserId) return null;
-
-    try {
-      const { data: p, error } = await supabase
-        .from("profiles")
-        .select("id, role, is_age_verified, display_name")
-        .eq("id", nextUserId)
-        .single();
-
-      if (error) {
-        if (!isAbortError(error)) {
-          console.error("Failed to load profile:", error);
-        }
-        return null;
-      }
-
-      setProfile(p);
-
-      const dbAgeVerified = !!p?.is_age_verified;
-      setAgeVerified(dbAgeVerified);
-      if (dbAgeVerified) setAgeVerifiedLocal(true);
-
-      setIsAdmin(norm(p?.role) === "admin");
-      return p;
-    } catch (e) {
-      if (!isAbortError(e)) console.error("Failed to load profile:", e);
-      setProfile(null);
-      setIsAdmin(false);
-      return null;
-    }
-  }, []);
-
   useEffect(() => {
-    let active = true;
-
     async function boot() {
       try {
-        const { data } = await supabase.auth.getSession();
-        if (!active) return;
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
 
-        const currentSession = data?.session || null;
-        setSession(currentSession);
+        setSession(currentSession || null);
 
-        const nextUserId = currentSession?.user?.id || null;
-        await loadProfile(nextUserId);
+        if (currentSession?.user?.id) {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("id, role, is_age_verified, display_name")
+            .eq("id", currentSession.user.id)
+            .single();
 
-        if (!active) return;
+          const nextProfile = profileData || null;
+          setProfile(nextProfile);
+          setIsAdmin(norm(nextProfile?.role) === "admin");
 
-        if (nextUserId) {
+          const dbAgeVerified = nextProfile?.is_age_verified === true;
+          const localAgeVerified = getAgeVerified() === true;
+          const nextAgeVerified = dbAgeVerified || localAgeVerified;
+
+          setAgeVerified(nextAgeVerified);
+
+          if (dbAgeVerified) {
+            setAgeVerifiedLocal(true);
+          }
+
           setLoadingFavorites(true);
           try {
-            const favSet = await fetchMyFavoriteIds(nextUserId);
-            if (active) setFavoriteIds(favSet);
+            const favSet = await fetchMyFavoriteIds(currentSession.user.id);
+            setFavoriteIds(favSet);
           } catch (e) {
-            if (!isAbortError(e)) {
-              console.error("Failed to load favorites:", e);
-            }
+            console.error("Failed to load favorites:", e);
           } finally {
-            if (active) setLoadingFavorites(false);
+            setLoadingFavorites(false);
           }
         } else {
+          setProfile(null);
+          setIsAdmin(false);
+          setAgeVerified(getAgeVerified());
           setFavoriteIds(new Set());
         }
       } catch (e) {
-        if (!isAbortError(e)) console.error("Boot error:", e);
+        console.error("Boot error:", e);
       }
     }
 
     boot();
-
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
-        if (!active) return;
-
-        setSession(newSession || null);
-
-        const nextUserId = newSession?.user?.id || null;
-        await loadProfile(nextUserId);
-
-        if (!active) return;
-
-        if (nextUserId) {
-          setLoadingFavorites(true);
-          try {
-            const favSet = await fetchMyFavoriteIds(nextUserId);
-            if (active) setFavoriteIds(favSet);
-          } catch (e) {
-            if (!isAbortError(e)) {
-              console.error("Failed to refresh favorites:", e);
-            }
-          } finally {
-            if (active) setLoadingFavorites(false);
-          }
-        } else {
-          setFavoriteIds(new Set());
-        }
-
-        if (active) {
-          setReloadTick((v) => v + 1);
-        }
-      }
-    );
-
-    return () => {
-      active = false;
-      sub?.subscription?.unsubscribe?.();
-    };
-  }, [loadProfile]);
-
-  const loadItem = useCallback(async () => {
-    setLoading(true);
-    setItem(null);
-    setImageUrl(null);
-    setImgError("");
-    setShowAgeModal(false);
-    setGate(null);
-    setUploaderName("The Aset Studio");
-
-    try {
-      if (!id) throw new Error("Missing id in route");
-
-      const { data, error } = await supabase
-        .from("media_items")
-        .select(`
-          id,
-          title,
-          tagline,
-          quote,
-          category,
-          tags,
-          access_level,
-          status,
-          hidden,
-          file_path,
-          watermarked_path,
-          created_at,
-          owner_id
-        `)
-        .eq("id", id)
-        .single();
-
-      if (error) throw error;
-
-      const normalized = normalizeItem(data);
-
-      if (normalized.hidden === true && !isAdmin) {
-        setItem(null);
-        setImgError("This content is unavailable.");
-        return;
-      }
-
-      if (normalized.status !== "published" && !isAdmin) {
-        setItem(null);
-        setImgError("This content is unavailable.");
-        return;
-      }
-
-      setItem(normalized);
-
-      if (normalized.owner_id) {
-        const { data: uploaderProfile } = await supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("id", normalized.owner_id)
-          .maybeSingle();
-
-        if (uploaderProfile?.display_name) {
-          setUploaderName(uploaderProfile.display_name);
-        }
-      }
-
-      let accessDecision;
-
-      if (normalized.access_level === "public") {
-        accessDecision = { allowed: true, gate: "public" };
-      } else {
-        accessDecision =
-          getAccessGate({
-            user: session?.user,
-            profile,
-            mediaItem: normalized,
-          }) ||
-          canAccessMediaItem({
-            item: normalized,
-            profile,
-            session,
-          });
-      }
-
-      setGate(accessDecision);
-
-      if (!accessDecision?.allowed) {
-        const isBoudoirLocal = normalized.access_level === "boudoir";
-
-        if (isBoudoirLocal && userId && !ageVerified) {
-          setShowAgeModal(true);
-          setImgError("Age verification required to view this content.");
-        } else if (accessDecision?.needsLogin) {
-          setImgError("Please sign in to view this item.");
-        } else if (accessDecision?.needsSupreme) {
-          setImgError("Supreme Access required to view this item.");
-        } else if (accessDecision?.needsAgeVerification) {
-          setImgError("Age verification required to view this content.");
-        } else {
-          setImgError("Locked content.");
-        }
-        return;
-      }
-
-      const isSupremeUser =
-        norm(profile?.role) === "supreme" || isAdmin === true;
-
-      const rawPath = isSupremeUser
-        ? normalized.file_path || normalized.watermarked_path || ""
-        : normalized.watermarked_path || normalized.file_path || "";
-
-      if (!rawPath) {
-        setImgError("Missing image path on this item.");
-        return;
-      }
-
-      const signedUrl = await getSignedUrl(rawPath);
-      if (!signedUrl) {
-        setImgError("Could not load image. Please try again.");
-        return;
-      }
-
-      // cache-bust the rendered image on revisit/return
-      const bustedUrl = `${signedUrl}${signedUrl.includes("?") ? "&" : "?"}t=${Date.now()}`;
-      setImageUrl(bustedUrl);
-    } catch (e) {
-      if (!isAbortError(e)) console.error("Failed to load media detail:", e);
-      setImgError("Failed to load item.");
-    } finally {
-      setLoading(false);
-    }
-  }, [id, session, profile, ageVerified, isAdmin, userId, getSignedUrl]);
-
-  useEffect(() => {
-    loadItem();
-  }, [loadItem, location.key, reloadTick]);
-
-  useEffect(() => {
-    function handleFocus() {
-      setReloadTick((v) => v + 1);
-    }
-
-    function handleVisibilityChange() {
-      if (document.visibilityState === "visible") {
-        setReloadTick((v) => v + 1);
-      }
-    }
-
-    window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
   }, []);
+
+  useEffect(() => {
+    async function loadItem() {
+      setLoading(true);
+      setItem(null);
+      setImageUrl("");
+      setImgError("");
+      setShowAgeModal(false);
+      setUploaderName("The Aset Studio");
+
+      try {
+        if (!id) {
+          setImgError("Missing media id.");
+          setLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("media_items")
+          .select(`
+            id,
+            title,
+            tagline,
+            quote,
+            category,
+            tags,
+            access_level,
+            status,
+            hidden,
+            file_path,
+            watermarked_path,
+            created_at,
+            owner_id
+          `)
+          .eq("id", id)
+          .single();
+
+        if (error || !data) {
+          console.error("Failed to load media item:", error);
+          setImgError("Failed to load item.");
+          setLoading(false);
+          return;
+        }
+
+        const normalized = normalizeItem(data);
+
+        if (normalized.hidden === true && !isAdmin) {
+          setItem(null);
+          setImgError("This content is unavailable.");
+          setLoading(false);
+          return;
+        }
+
+        if (normalized.status !== "published" && !isAdmin) {
+          setItem(null);
+          setImgError("This content is unavailable.");
+          setLoading(false);
+          return;
+        }
+
+        setItem(normalized);
+
+        if (normalized.owner_id) {
+          const { data: uploaderProfile } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", normalized.owner_id)
+            .maybeSingle();
+
+          if (uploaderProfile?.display_name) {
+            setUploaderName(uploaderProfile.display_name);
+          }
+        }
+
+        let accessDecision;
+
+        if (normalized.access_level === "public") {
+          accessDecision = { allowed: true, gate: "public" };
+        } else {
+          accessDecision =
+            getAccessGate({
+              user: session?.user,
+              profile,
+              mediaItem: normalized,
+            }) ||
+            canAccessMediaItem({
+              item: normalized,
+              profile,
+              session,
+            });
+        }
+
+        if (!accessDecision?.allowed) {
+          if (normalized.access_level === "boudoir") {
+            setImgError("Age verification required to view this content.");
+            if (userId && !ageVerified) {
+              setShowAgeModal(true);
+            }
+          } else if (accessDecision?.needsLogin) {
+            setImgError("Please sign in to view this item.");
+          } else if (accessDecision?.needsSupreme) {
+            setImgError("Supreme Access required to view this item.");
+          } else {
+            setImgError("Locked content.");
+          }
+
+          setLoading(false);
+          return;
+        }
+
+        const isSupremeUser =
+          norm(profile?.role) === "supreme" || isAdmin === true;
+
+        const rawPath = isSupremeUser
+          ? normalized.file_path || normalized.watermarked_path || ""
+          : normalized.watermarked_path || normalized.file_path || "";
+
+        const cleanPath = normalizeStoragePath(rawPath);
+
+        if (!cleanPath) {
+          setImgError("Missing image path on this item.");
+          setLoading(false);
+          return;
+        }
+
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from("media")
+          .createSignedUrl(cleanPath, SIGNED_URL_TTL_SECONDS);
+
+        if (signedError || !signedData?.signedUrl) {
+          console.error("Signed URL error:", signedError);
+          setImgError("Could not load image. Please try again.");
+          setLoading(false);
+          return;
+        }
+
+        setImageUrl(signedData.signedUrl);
+        setLoading(false);
+      } catch (e) {
+        console.error("Failed to load media detail:", e);
+        setImgError("Failed to load item.");
+        setLoading(false);
+      }
+    }
+
+    loadItem();
+  }, [id, session, profile, isAdmin, userId, ageVerified]);
 
   async function confirmAgeVerification() {
     setAgeVerifiedLocal(true);
@@ -413,10 +302,12 @@ export default function MediaDetailPage() {
       .eq("id", userId);
 
     if (error) {
-      console.error("Failed to persist age verification to DB:", error);
+      console.error("Failed to persist age verification:", error);
     } else {
-      setProfile((prev) => ({ ...(prev || {}), is_age_verified: true }));
-      setReloadTick((v) => v + 1);
+      setProfile((prev) => ({
+        ...(prev || {}),
+        is_age_verified: true,
+      }));
     }
   }
 
@@ -430,7 +321,7 @@ export default function MediaDetailPage() {
     try {
       await startSupremeCheckout();
     } catch (e) {
-      if (!isAbortError(e)) console.error("Stripe checkout failed:", e);
+      console.error("Stripe checkout failed:", e);
       alert("Could not start checkout. Please try again.");
     }
   }
@@ -465,8 +356,11 @@ export default function MediaDetailPage() {
     const previous = new Set(favoriteIds);
     const next = new Set(favoriteIds);
 
-    if (isFavLocal) next.delete(mediaItemId);
-    else next.add(mediaItemId);
+    if (isFavLocal) {
+      next.delete(mediaItemId);
+    } else {
+      next.add(mediaItemId);
+    }
 
     setFavoriteIds(next);
 
@@ -477,7 +371,7 @@ export default function MediaDetailPage() {
         await addFavorite({ userId, mediaItemId });
       }
     } catch (e) {
-      if (!isAbortError(e)) console.error("Favorite toggle failed:", e);
+      console.error("Favorite toggle failed:", e);
       setFavoriteIds(previous);
       alert("Something went wrong. Please try again.");
     }
@@ -488,34 +382,37 @@ export default function MediaDetailPage() {
   const signedIn = !!userId;
   const isFav = item ? favoriteIds.has(item.id) : false;
 
-  const gNow = useMemo(() => {
+  const gateNow = useMemo(() => {
     if (!item) return null;
+
     if (item.access_level === "public") {
       return { allowed: true, gate: "public" };
     }
+
     return (
-      gate ||
-      getAccessGate({ user: session?.user, profile, mediaItem: item }) ||
+      getAccessGate({
+        user: session?.user,
+        profile,
+        mediaItem: item,
+      }) ||
       canAccessMediaItem({
         item,
         profile,
         session,
       })
     );
-  }, [gate, item, session, profile]);
+  }, [item, session, profile]);
 
-  const isLocked = !!gNow && !gNow.allowed;
+  const isLocked = !!gateNow && !gateNow.allowed;
   const isBoudoir = item?.access_level === "boudoir";
-
   const commentsDisabled =
     isLocked || item?.hidden === true || norm(item?.status) !== "published";
-
-  const showSupremeCTA = !!gNow?.needsSupreme && !isAdmin;
+  const showSupremeCTA = !!gateNow?.needsSupreme && !isAdmin;
 
   if (loading) {
     return (
       <div style={{ padding: 16, maxWidth: 1000, margin: "0 auto" }}>
-        <p>Loading…</p>
+        <p>Loading...</p>
       </div>
     );
   }
@@ -642,10 +539,8 @@ export default function MediaDetailPage() {
               alt={titleText}
               style={{ width: "100%", height: "auto", display: "block" }}
               onError={() => {
-                setImageUrl(null);
-                setImgError(
-                  "Image failed to load. Click retry to regenerate the signed URL."
-                );
+                setImageUrl("");
+                setImgError("Image failed to load.");
               }}
             />
           ) : (
@@ -658,28 +553,8 @@ export default function MediaDetailPage() {
                 {imgError ||
                   (isLocked
                     ? "Please sign in / verify access to view this item."
-                    : "Loading image…")}
+                    : "Image unavailable.")}
               </div>
-
-              {!isLocked ? (
-                <div style={{ marginTop: 12 }}>
-                  <button
-                    type="button"
-                    onClick={() => setReloadTick((v) => v + 1)}
-                    style={{
-                      padding: "10px 12px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,0.2)",
-                      background: "rgba(255,255,255,0.10)",
-                      color: "inherit",
-                      cursor: "pointer",
-                      fontWeight: 700,
-                    }}
-                  >
-                    Retry image load
-                  </button>
-                </div>
-              ) : null}
 
               {isLocked && isBoudoir && signedIn && !ageVerified ? (
                 <div style={{ marginTop: 12, opacity: 0.85 }}>
@@ -687,7 +562,7 @@ export default function MediaDetailPage() {
                 </div>
               ) : null}
 
-              {isLocked && gNow?.needsSupreme ? (
+              {isLocked && gateNow?.needsSupreme ? (
                 <div style={{ marginTop: 12 }}>
                   <div style={{ opacity: 0.85, marginBottom: 8 }}>
                     This is Supreme content. Supreme Access required to unlock.
@@ -713,7 +588,7 @@ export default function MediaDetailPage() {
                 </div>
               ) : null}
 
-              {isLocked && gNow?.needsLogin ? (
+              {isLocked && gateNow?.needsLogin ? (
                 <div style={{ marginTop: 12 }}>
                   <Link to="/auth">Sign in</Link>
                 </div>

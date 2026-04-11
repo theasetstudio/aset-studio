@@ -196,43 +196,190 @@ export default function MessagesPage() {
   }
 
   if (!authChecked) {
-    return <div style={{ padding: 40 }}>Loading messages...</div>;
+    return (
+      <div style={styles.page}>
+        <div style={styles.stateCard}>Loading messages...</div>
+      </div>
+    );
   }
 
   if (!user) {
     return (
-      <div style={{ padding: 40 }}>
-        <h1>Messages</h1>
-        <p>You must be signed in to view your messages.</p>
-        <button
-          type="button"
-          onClick={() => navigate("/auth")}
-          style={{
-            marginTop: 16,
-            padding: "10px 16px",
-            borderRadius: 10,
-            border: "1px solid #ccc",
-            backgroundColor: "#fff",
-            cursor: "pointer",
-          }}
-        >
-          Go to Sign In
-        </button>
+      <div style={styles.page}>
+        <div style={styles.authCard}>
+          <h1 style={styles.authTitle}>Messages</h1>
+          <p style={styles.authText}>
+            You must be signed in to view your messages.
+          </p>
+          <button type="button" onClick={() => navigate("/auth")} style={styles.authButton}>
+            Go to Sign In
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", height: "80vh" }}>
-      <ConversationList
-        conversations={conversations}
-        onSelect={handleSelectConversation}
-      />
+    <div style={styles.page}>
+      <div style={styles.shell}>
+        <div style={styles.headerBlock}>
+          <div style={styles.eyebrow}>MESSAGES</div>
+          <h1 style={styles.title}>Creator &amp; User Messages</h1>
+        </div>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <MessageThread messages={messages} currentUserId={user?.id} />
-        {selectedConversation && <SendMessageForm onSend={sendMessage} />}
+        <div style={styles.layout}>
+          <aside style={styles.sidebar}>
+            <ConversationList
+              conversations={conversations}
+              onSelect={handleSelectConversation}
+            />
+          </aside>
+
+          <section style={styles.threadPanel}>
+            <div style={styles.threadInner}>
+              <div style={styles.threadArea}>
+                <MessageThread messages={messages} currentUserId={user?.id} />
+              </div>
+
+              {selectedConversation ? (
+                <div style={styles.formWrap}>
+                  <SendMessageForm onSend={sendMessage} />
+                </div>
+              ) : (
+                <div style={styles.emptyThreadCard}>
+                  Select a conversation to start messaging.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );
 }
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#000",
+    color: "#fff",
+    padding: "clamp(16px, 4vw, 24px)",
+  },
+
+  shell: {
+    maxWidth: 1300,
+    margin: "0 auto",
+  },
+
+  headerBlock: {
+    marginBottom: 18,
+  },
+
+  eyebrow: {
+    letterSpacing: "0.18em",
+    fontSize: "clamp(11px, 1.8vw, 12px)",
+    color: "rgba(255,255,255,0.7)",
+    marginBottom: 8,
+  },
+
+  title: {
+    margin: 0,
+    fontSize: "clamp(28px, 5vw, 38px)",
+    lineHeight: 1.08,
+    fontFamily: 'Georgia, "Times New Roman", serif',
+  },
+
+  layout: {
+    display: "grid",
+    gridTemplateColumns: "minmax(280px, 360px) minmax(0, 1fr)",
+    gap: 16,
+    alignItems: "stretch",
+  },
+
+  sidebar: {
+    minWidth: 0,
+    borderRadius: 18,
+    overflow: "hidden",
+    border: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.03)",
+    minHeight: "72vh",
+  },
+
+  threadPanel: {
+    minWidth: 0,
+    borderRadius: 18,
+    overflow: "hidden",
+    border: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.03)",
+    minHeight: "72vh",
+  },
+
+  threadInner: {
+    display: "flex",
+    flexDirection: "column",
+    minHeight: "72vh",
+  },
+
+  threadArea: {
+    flex: 1,
+    minHeight: 0,
+    overflow: "hidden",
+  },
+
+  formWrap: {
+    borderTop: "1px solid rgba(255,255,255,0.08)",
+    padding: 12,
+    background: "rgba(0,0,0,0.22)",
+  },
+
+  emptyThreadCard: {
+    borderTop: "1px solid rgba(255,255,255,0.08)",
+    padding: 18,
+    color: "rgba(255,255,255,0.72)",
+    lineHeight: 1.6,
+  },
+
+  stateCard: {
+    maxWidth: 1200,
+    margin: "0 auto",
+    padding: 24,
+    color: "#fff",
+    borderRadius: 18,
+    border: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.03)",
+  },
+
+  authCard: {
+    maxWidth: 720,
+    margin: "0 auto",
+    padding: 24,
+    borderRadius: 18,
+    border: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.03)",
+  },
+
+  authTitle: {
+    marginTop: 0,
+    marginBottom: 10,
+    fontSize: "clamp(26px, 5vw, 34px)",
+  },
+
+  authText: {
+    marginTop: 0,
+    marginBottom: 16,
+    color: "rgba(255,255,255,0.78)",
+    lineHeight: 1.6,
+  },
+
+  authButton: {
+    marginTop: 4,
+    padding: "11px 16px",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.18)",
+    backgroundColor: "#fff",
+    color: "#111",
+    cursor: "pointer",
+    fontWeight: 700,
+    minHeight: 44,
+  },
+};

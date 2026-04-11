@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { getOrCreateConversation } from "../utils/messaging";
@@ -50,6 +50,17 @@ export default function CreatorsHubPage() {
     return parts[parts.length - 1].toLowerCase();
   }
 
+  function getInputHandlers() {
+    return {
+      onFocus: (e) => {
+        e.target.style.border = "1px solid #111";
+      },
+      onBlur: (e) => {
+        e.target.style.border = "1px solid #cfcfcf";
+      },
+    };
+  }
+
   async function getSignedProfileImageUrl(pathOrUrl) {
     if (!pathOrUrl) return "";
 
@@ -96,8 +107,10 @@ export default function CreatorsHubPage() {
   }
 
   async function refreshProfileImages(profileRecord) {
-    const signedAvatarUrl = await getSignedProfileImageUrl(profileRecord?.avatar_url);
-    const signedBannerUrl = await getSignedProfileImageUrl(profileRecord?.banner_url);
+    const [signedAvatarUrl, signedBannerUrl] = await Promise.all([
+      getSignedProfileImageUrl(profileRecord?.avatar_url),
+      getSignedProfileImageUrl(profileRecord?.banner_url),
+    ]);
 
     setProfile(profileRecord || null);
     setProfileForm((prev) => ({
@@ -259,66 +272,90 @@ export default function CreatorsHubPage() {
   }
 
   const fetchUploads = useCallback(async (userId) => {
-    try {
-      setError("");
-      setLoadingUploads(true);
+    let cancelled = false;
 
-      if (!userId) {
-        setUploads([]);
-        return;
-      }
+    const run = async () => {
+      try {
+        setError("");
+        setLoadingUploads(true);
 
-      const { data, error: uploadsError } = await supabase
-        .from("media_items")
-        .select(
-          "id, created_at, title, tagline, quote, category, tags, status, hidden, access_level, file_path, owner_id"
-        )
-        .eq("owner_id", userId)
-        .order("created_at", { ascending: false });
+        if (!userId) {
+          setUploads([]);
+          return;
+        }
 
-      if (uploadsError) {
-        throw uploadsError;
-      }
+        const { data, error: uploadsError } = await supabase
+          .from("media_items")
+          .select(
+            "id, created_at, title, tagline, quote, category, tags, status, hidden, access_level, file_path, owner_id"
+          )
+          .eq("owner_id", userId)
+          .order("created_at", { ascending: false });
 
-      const mappedUploads = await Promise.all(
-        (data || []).map(async (item) => {
-          let previewUrl = null;
+        if (uploadsError) {
+          throw uploadsError;
+        }
 
-          if (item.file_path) {
-            const cleanPath = String(item.file_path).replace(/^\/+/, "");
+        const baseUploads = (data || []).map((item) => ({
+          ...item,
+          previewUrl: null,
+        }));
 
-            const { data: signed, error: signedError } = await supabase.storage
-              .from("media")
-              .createSignedUrl(cleanPath, 3600);
+        if (cancelled) return;
 
-            if (signedError) {
-              console.error("Signed URL error:", item.id, signedError);
-            } else {
-              previewUrl = signed?.signedUrl || null;
-            }
+        setUploads(baseUploads);
+        setLoadingUploads(false);
+
+        for (const item of baseUploads) {
+          if (cancelled) return;
+          if (!item.file_path) continue;
+
+          const cleanPath = String(item.file_path).replace(/^\/+/, "");
+
+          const { data: signed, error: signedError } = await supabase.storage
+            .from("media")
+            .createSignedUrl(cleanPath, 3600);
+
+          if (cancelled) return;
+
+          if (signedError) {
+            console.error("Signed URL error:", item.id, signedError);
+            continue;
           }
 
-          return {
-            ...item,
-            previewUrl,
-          };
-        })
-      );
+          const previewUrl = signed?.signedUrl || null;
 
-      setUploads(mappedUploads);
-    } catch (err) {
-      console.error("Fetch uploads error:", err);
-      setError(err.message || "Failed to load uploads.");
-    } finally {
-      setLoadingUploads(false);
-    }
+          setUploads((prev) =>
+            prev.map((upload) =>
+              upload.id === item.id
+                ? {
+                    ...upload,
+                    previewUrl,
+                  }
+                : upload
+            )
+          );
+        }
+      } catch (err) {
+        console.error("Fetch uploads error:", err);
+        setError(err.message || "Failed to load uploads.");
+        setLoadingUploads(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const loadDashboard = useCallback(async () => {
+    let uploadsCleanup = null;
+
     try {
       setError("");
       setLoadingProfile(true);
-      setLoadingUploads(true);
 
       const {
         data: { user },
@@ -334,6 +371,7 @@ export default function CreatorsHubPage() {
       if (!user) {
         setProfile(null);
         setUploads([]);
+        setLoadingUploads(false);
         return;
       }
 
@@ -353,9 +391,6 @@ export default function CreatorsHubPage() {
 
       setProfile(nextProfile);
 
-      const signedAvatarUrl = await getSignedProfileImageUrl(nextProfile?.avatar_url);
-      const signedBannerUrl = await getSignedProfileImageUrl(nextProfile?.banner_url);
-
       setProfileForm({
         display_name: nextProfile?.display_name || "",
         username: nextProfile?.username || "",
@@ -363,22 +398,72 @@ export default function CreatorsHubPage() {
         bio: nextProfile?.bio || "",
         location: nextProfile?.location || "",
         quote: nextProfile?.quote || "",
-        avatar_url: signedAvatarUrl || "",
-        banner_url: signedBannerUrl || "",
+        avatar_url: "",
+        banner_url: "",
       });
 
-      await fetchUploads(user.id);
+      const [signedAvatarUrl, signedBannerUrl] = await Promise.all([
+        getSignedProfileImageUrl(nextProfile?.avatar_url),
+        getSignedProfileImageUrl(nextProfile?.banner_url),
+      ]);
+
+      setProfileForm((prev) => ({
+        ...prev,
+        avatar_url: signedAvatarUrl || "",
+        banner_url: signedBannerUrl || "",
+      }));
+
+      setLoadingProfile(false);
+
+      uploadsCleanup = fetchUploads(user.id);
     } catch (err) {
       console.error("Load creator hub error:", err);
       setError(err.message || "Failed to load Creator Hub.");
-    } finally {
-      setLoadingProfile(false);
       setLoadingUploads(false);
+      setLoadingProfile(false);
     }
+
+    return () => {
+      if (typeof uploadsCleanup === "function") {
+        uploadsCleanup();
+      }
+    };
   }, [fetchUploads]);
 
   useEffect(() => {
-    loadDashboard();
+    let cleanup;
+
+    async function runLoad() {
+      cleanup = await loadDashboard();
+    }
+
+    runLoad();
+
+    return () => {
+      if (typeof cleanup === "function") {
+        cleanup();
+      }
+    };
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    function handleRefreshOnReturn() {
+      loadDashboard();
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        loadDashboard();
+      }
+    }
+
+    window.addEventListener("focus", handleRefreshOnReturn);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleRefreshOnReturn);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [loadDashboard]);
 
   const filteredUploads = useMemo(() => {
@@ -433,8 +518,10 @@ export default function CreatorsHubPage() {
         throw updateError;
       }
 
-      const refreshedAvatarUrl = await getSignedProfileImageUrl(data?.avatar_url);
-      const refreshedBannerUrl = await getSignedProfileImageUrl(data?.banner_url);
+      const [refreshedAvatarUrl, refreshedBannerUrl] = await Promise.all([
+        getSignedProfileImageUrl(data?.avatar_url),
+        getSignedProfileImageUrl(data?.banner_url),
+      ]);
 
       setProfile(data || null);
       setProfileForm((prev) => ({
@@ -642,7 +729,7 @@ export default function CreatorsHubPage() {
             <div
               style={{
                 position: "relative",
-                marginTop: "-54px",
+                marginTop: "-82px",
                 paddingLeft: "24px",
                 paddingRight: "24px",
               }}
@@ -667,8 +754,8 @@ export default function CreatorsHubPage() {
                   <div
                     style={{
                       position: "relative",
-                      width: "124px",
-                      height: "124px",
+                      width: "138px",
+                      height: "138px",
                       borderRadius: "999px",
                       overflow: "hidden",
                       border: "4px solid #fff",
@@ -729,14 +816,15 @@ export default function CreatorsHubPage() {
                     </button>
                   </div>
 
-                  <div style={{ paddingBottom: "8px" }}>
+                  <div style={{ paddingBottom: "16px" }}>
                     <p
                       style={{
                         margin: 0,
-                        fontSize: "12px",
+                        fontSize: "11px",
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
                         color: "#666",
+                        fontWeight: "700",
                       }}
                     >
                       Creator profile
@@ -744,8 +832,10 @@ export default function CreatorsHubPage() {
                     <p
                       style={{
                         margin: "6px 0 0 0",
-                        fontSize: "15px",
-                        color: "#555",
+                        fontSize: "14px",
+                        color: "#444",
+                        lineHeight: 1.5,
+                        maxWidth: "420px",
                       }}
                     >
                       Upload your banner and profile image, then update your public
@@ -754,7 +844,7 @@ export default function CreatorsHubPage() {
                   </div>
                 </div>
 
-                <div style={{ paddingBottom: "8px" }}>
+                <div style={{ paddingBottom: "16px" }}>
                   <button
                     type="submit"
                     disabled={savingProfile}
@@ -782,12 +872,15 @@ export default function CreatorsHubPage() {
               style={{
                 border: "1px solid #ececec",
                 borderRadius: "18px",
-                padding: "24px",
+                padding: "20px 24px 24px 24px",
                 backgroundColor: "#fcfcfc",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.04)",
               }}
             >
               <div style={{ marginBottom: "24px" }}>
-                <h3 style={{ margin: 0, marginBottom: "6px" }}>Basic Identity</h3>
+                <h3 style={{ margin: 0, marginBottom: "6px", fontSize: "18px" }}>
+                  Basic Identity
+                </h3>
                 <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
                   These details shape how your creator profile appears publicly.
                 </p>
@@ -821,10 +914,12 @@ export default function CreatorsHubPage() {
                       width: "100%",
                       padding: "14px",
                       borderRadius: "12px",
-                      border: "1px solid #d8d8d8",
+                      border: "1px solid #cfcfcf",
                       backgroundColor: "#fff",
                       fontSize: "14px",
+                      transition: "all 0.2s ease",
                     }}
+                    {...getInputHandlers()}
                   />
                 </div>
 
@@ -849,16 +944,20 @@ export default function CreatorsHubPage() {
                       width: "100%",
                       padding: "14px",
                       borderRadius: "12px",
-                      border: "1px solid #d8d8d8",
+                      border: "1px solid #cfcfcf",
                       backgroundColor: "#fff",
                       fontSize: "14px",
+                      transition: "all 0.2s ease",
                     }}
+                    {...getInputHandlers()}
                   />
                 </div>
               </div>
 
               <div style={{ marginTop: "24px" }}>
-                <h3 style={{ margin: 0, marginBottom: "6px" }}>Creator Details</h3>
+                <h3 style={{ margin: 0, marginBottom: "6px", fontSize: "18px" }}>
+                  Creator Details
+                </h3>
                 <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
                   Add your role, identity, and signature voice.
                 </p>
@@ -885,10 +984,12 @@ export default function CreatorsHubPage() {
                     width: "100%",
                     padding: "14px",
                     borderRadius: "12px",
-                    border: "1px solid #d8d8d8",
+                    border: "1px solid #cfcfcf",
                     backgroundColor: "#fff",
                     fontSize: "14px",
+                    transition: "all 0.2s ease",
                   }}
+                  {...getInputHandlers()}
                 />
               </div>
 
@@ -911,15 +1012,19 @@ export default function CreatorsHubPage() {
                     width: "100%",
                     padding: "14px",
                     borderRadius: "12px",
-                    border: "1px solid #d8d8d8",
+                    border: "1px solid #cfcfcf",
                     backgroundColor: "#fff",
                     fontSize: "14px",
+                    transition: "all 0.2s ease",
                   }}
+                  {...getInputHandlers()}
                 />
               </div>
 
               <div style={{ marginTop: "24px" }}>
-                <h3 style={{ margin: 0, marginBottom: "6px" }}>Bio & Location</h3>
+                <h3 style={{ margin: 0, marginBottom: "6px", fontSize: "18px" }}>
+                  Bio & Location
+                </h3>
                 <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
                   Let visitors know who you are and where your work is rooted.
                 </p>
@@ -945,11 +1050,13 @@ export default function CreatorsHubPage() {
                     width: "100%",
                     padding: "14px",
                     borderRadius: "12px",
-                    border: "1px solid #d8d8d8",
+                    border: "1px solid #cfcfcf",
                     backgroundColor: "#fff",
                     fontSize: "14px",
                     resize: "vertical",
+                    transition: "all 0.2s ease",
                   }}
+                  {...getInputHandlers()}
                 />
               </div>
 
@@ -974,10 +1081,12 @@ export default function CreatorsHubPage() {
                     width: "100%",
                     padding: "14px",
                     borderRadius: "12px",
-                    border: "1px solid #d8d8d8",
+                    border: "1px solid #cfcfcf",
                     backgroundColor: "#fff",
                     fontSize: "14px",
+                    transition: "all 0.2s ease",
                   }}
+                  {...getInputHandlers()}
                 />
               </div>
             </div>
@@ -1040,16 +1149,28 @@ export default function CreatorsHubPage() {
                 <div
                   key={item.id}
                   style={{
-                    border: "1px solid #ddd",
-                    borderRadius: "12px",
-                    padding: "16px",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "18px",
+                    padding: "18px",
+                    background: "linear-gradient(145deg, #0c0c0c, #111)",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+                    transition: "all 0.25s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow = "0 20px 40px rgba(0,0,0,0.5)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0px)";
+                    e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.35)";
                   }}
                 >
                   <div
                     style={{
                       display: "grid",
                       gridTemplateColumns: "220px 1fr",
-                      gap: "16px",
+                      gap: "18px",
+                      alignItems: "start",
                     }}
                   >
                     <div>
@@ -1062,8 +1183,9 @@ export default function CreatorsHubPage() {
                             maxWidth: "220px",
                             height: "220px",
                             objectFit: "cover",
-                            borderRadius: "12px",
-                            border: "1px solid #ddd",
+                            borderRadius: "14px",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            display: "block",
                           }}
                         />
                       ) : (
@@ -1075,9 +1197,11 @@ export default function CreatorsHubPage() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            borderRadius: "12px",
-                            border: "1px solid #ddd",
+                            borderRadius: "14px",
+                            border: "1px solid rgba(255,255,255,0.08)",
                             opacity: 0.7,
+                            color: "#bbb",
+                            backgroundColor: "#111",
                           }}
                         >
                           No preview
@@ -1085,20 +1209,20 @@ export default function CreatorsHubPage() {
                       )}
                     </div>
 
-                    <div>
+                    <div style={{ color: "#fff" }}>
                       <div
                         style={{
                           display: "flex",
                           gap: "10px",
                           flexWrap: "wrap",
-                          marginBottom: "12px",
+                          marginBottom: "10px",
                         }}
                       >
                         <span
                           style={{
                             borderRadius: "999px",
                             padding: "4px 10px",
-                            fontSize: "14px",
+                            fontSize: "12px",
                             fontWeight: "600",
                             ...statusBadge.style,
                           }}
@@ -1108,47 +1232,62 @@ export default function CreatorsHubPage() {
 
                         <span
                           style={{
-                            border: "1px solid #ccc",
+                            border: "1px solid rgba(255,255,255,0.14)",
                             borderRadius: "999px",
                             padding: "4px 10px",
-                            fontSize: "14px",
+                            fontSize: "12px",
+                            color: "#f5f5f5",
+                            backgroundColor: "rgba(255,255,255,0.03)",
                           }}
                         >
                           Access: {item.access_level || "public"}
                         </span>
                       </div>
 
-                      <p style={{ margin: "0 0 12px 0", opacity: 0.7 }}>
+                      <p
+                        style={{
+                          margin: "0 0 8px 0",
+                          opacity: 0.6,
+                          fontSize: "13px",
+                        }}
+                      >
                         Uploaded {new Date(item.created_at).toLocaleString()}
                       </p>
 
                       {item.title && (
-                        <p style={{ margin: "0 0 8px 0" }}>
-                          <strong>Title:</strong> {item.title}
+                        <p
+                          style={{
+                            margin: "0 0 8px 0",
+                            fontSize: "16px",
+                            fontWeight: "600",
+                            color: "#fff",
+                          }}
+                        >
+                          {item.title}
                         </p>
                       )}
 
                       {item.tagline && (
-                        <p style={{ margin: "0 0 8px 0" }}>
-                          <strong>Tagline:</strong> {item.tagline}
+                        <p style={{ margin: "0 0 8px 0", color: "#d6d6d6" }}>
+                          <strong style={{ color: "#fff" }}>Tagline:</strong> {item.tagline}
                         </p>
                       )}
 
                       {item.quote && (
-                        <p style={{ margin: "0 0 8px 0" }}>
-                          <strong>Quote:</strong> {item.quote}
+                        <p style={{ margin: "0 0 8px 0", color: "#d6d6d6" }}>
+                          <strong style={{ color: "#fff" }}>Quote:</strong> {item.quote}
                         </p>
                       )}
 
                       {item.category && (
-                        <p style={{ margin: "0 0 8px 0" }}>
-                          <strong>Category:</strong> {item.category}
+                        <p style={{ margin: "0 0 8px 0", color: "#d6d6d6" }}>
+                          <strong style={{ color: "#fff" }}>Category:</strong> {item.category}
                         </p>
                       )}
 
                       {Array.isArray(item.tags) && item.tags.length > 0 && (
-                        <p style={{ margin: "0" }}>
-                          <strong>Tags:</strong> {item.tags.join(", ")}
+                        <p style={{ margin: 0, color: "#d6d6d6" }}>
+                          <strong style={{ color: "#fff" }}>Tags:</strong> {item.tags.join(", ")}
                         </p>
                       )}
                     </div>

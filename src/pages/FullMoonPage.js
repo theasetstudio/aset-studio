@@ -1,159 +1,177 @@
-import React from "react";
-import "./PiscesStonePage.css";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+import lockedPreview from "../assets/locked-preview.jpg";
+import AgeVerificationModal from "../components/AgeVerificationModal";
 
-export default function FullMoonPage() {
-  const floatingSymbols = [
-    { id: 1, top: "6%", left: "4%" },
-    { id: 2, top: "12%", right: "8%" },
-    { id: 3, top: "20%", left: "14%" },
-    { id: 4, top: "30%", right: "12%" },
-    { id: 5, top: "40%", left: "6%" },
-    { id: 6, top: "52%", right: "10%" },
-    { id: 7, top: "64%", left: "10%" },
-    { id: 8, top: "74%", right: "14%" },
-    { id: 9, top: "84%", left: "18%" },
-    { id: 10, top: "46%", left: "44%" },
-    { id: 11, top: "60%", left: "30%" },
-    { id: 12, top: "18%", right: "24%" },
-  ];
+export default function GalleryPage() {
+  const navigate = useNavigate();
 
-  const stones = [
-    {
-      name: "Moonstone",
-      description:
-        "Strengthens intuition, emotional reflection, and connection to lunar cycles.",
-    },
-    {
-      name: "Citrine",
-      description:
-        "Amplifies manifestation energy, clarity of intention, and radiant positivity.",
-    },
-    {
-      name: "Black Tourmaline",
-      description:
-        "Provides powerful energetic protection and grounding during spiritual work.",
-    },
-    {
-      name: "Selenite",
-      description:
-        "Cleanses energy, raises vibration, and purifies spaces and spiritual tools.",
-    },
-    {
-      name: "Amethyst",
-      description:
-        "Encourages spiritual awareness, peace of mind, and intuitive clarity.",
-    },
-    {
-      name: "Aquamarine",
-      description:
-        "Supports emotional flow, calm expression, and gentle lunar water energy.",
-    },
-    {
-      name: "Clear Quartz",
-      description:
-        "Amplifies intentions, rituals, and energetic alignment during the full moon.",
-    },
-    {
-      name: "Labradorite",
-      description:
-        "Enhances psychic protection, transformation, and spiritual insight.",
-    },
-    {
-      name: "Peach Moonstone",
-      description:
-        "Supports emotional balance, feminine energy, and gentle inner reflection.",
-    },
-    {
-      name: "Angelite",
-      description:
-        "Encourages peaceful communication with higher guidance and angelic energy.",
-    },
-    {
-      name: "Lepidolite",
-      description:
-        "Brings emotional calm, stress release, and balance during powerful lunar shifts.",
-    },
-    {
-      name: "Mystic Merlinite",
-      description:
-        "Connects spiritual and earthly realms, enhancing magic, intuition, and deep wisdom.",
-    },
-  ];
+  const [items, setItems] = useState([]);
+  const [signedUrls, setSignedUrls] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [ageModalOpen, setAgeModalOpen] = useState(false);
+
+  useEffect(() => {
+    async function loadUser() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.user) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("role, is_age_verified")
+        .eq("id", session.user.id)
+        .single();
+
+      setProfile(data || null);
+    }
+
+    loadUser();
+  }, []);
+
+  useEffect(() => {
+    async function loadMedia() {
+      const { data } = await supabase
+        .from("media_items")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(24);
+
+      setItems(data || []);
+      setLoading(false);
+    }
+
+    loadMedia();
+  }, []);
+
+  useEffect(() => {
+    async function hydrate() {
+      const map = {};
+
+      for (const item of items) {
+        const path = item.watermarked_path || item.file_path;
+        if (!path) continue;
+
+        const { data } = await supabase.storage
+          .from("media")
+          .createSignedUrl(path, 600);
+
+        if (data?.signedUrl) {
+          map[item.id] = data.signedUrl;
+        }
+      }
+
+      setSignedUrls(map);
+    }
+
+    if (items.length > 0) {
+      hydrate();
+    }
+  }, [items]);
+
+  function canView(item) {
+    if (!profile) return item.access_level === "public";
+
+    if (profile.role === "admin") return true;
+    if (item.access_level === "public") return true;
+
+    if (item.access_level === "supreme") {
+      return profile.role === "supreme";
+    }
+
+    if (item.access_level === "boudoir") {
+      return profile.is_age_verified === true;
+    }
+
+    return true;
+  }
+
+  function handleClick(item) {
+    const allowed = canView(item);
+
+    if (!allowed) {
+      if (item.access_level === "boudoir") {
+        setAgeModalOpen(true);
+        return;
+      }
+
+      navigate("/supreme");
+      return;
+    }
+
+    window.open(`/media/${item.id}`, "_blank");
+  }
 
   return (
-    <div className="pisces-page">
-      {floatingSymbols.map((symbol) => (
-        <span
-          key={symbol.id}
-          className="pisces-float"
+    <div
+      style={{
+        padding: 24,
+        background: "#000",
+        minHeight: "100vh",
+        color: "#fff",
+      }}
+    >
+      <h1>Gallery</h1>
+
+      {loading ? (
+        <div>Loading...</div>
+      ) : items.length === 0 ? (
+        <div>No media found.</div>
+      ) : (
+        <div
           style={{
-            top: symbol.top,
-            left: symbol.left,
-            right: symbol.right,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: 20,
           }}
         >
-          🌕
-        </span>
-      ))}
+          {items.map((item) => {
+            const img = signedUrls[item.id];
+            const allowed = canView(item);
 
-      <div className="pisces-content">
-        <header className="pisces-hero">
-          <span className="pisces-symbol-main">🌕</span>
-          <h1 className="pisces-title">Full Moon</h1>
-          <p className="pisces-subtitle">
-            Sacred crystals aligned with the illumination, intuition, release,
-            and spiritual power of the Full Moon.
-          </p>
-        </header>
+            return (
+              <div
+                key={item.id}
+                onClick={() => handleClick(item)}
+                style={{ cursor: "pointer" }}
+              >
+                <img
+                  src={img || lockedPreview}
+                  alt={item.title || "media"}
+                  style={{ width: "100%", height: 300, objectFit: "cover" }}
+                />
 
-        <section className="pisces-info-card">
-          <h2>Full Moon Energy</h2>
+                <div>{item.title || "Untitled"}</div>
 
-          <div className="pisces-info-grid">
-            <div>
-              <div className="label">Cycle</div>
-              <div className="value">Lunar Peak</div>
-            </div>
-
-            <div>
-              <div className="label">Element</div>
-              <div className="value">Water & Light</div>
-            </div>
-
-            <div>
-              <div className="label">Focus</div>
-              <div className="value">Clarity, Release, Manifestation</div>
-            </div>
-
-            <div>
-              <div className="label">Energy</div>
-              <div className="value">Intuition, Reflection, Protection</div>
-            </div>
-          </div>
-        </section>
-
-        <section className="pisces-stones-section">
-          <h2>Primary Full Moon Stones</h2>
-
-          <div className="pisces-stones-grid">
-            {stones.map((stone) => (
-              <div className="stone-card" key={stone.name}>
-                <h3>{stone.name}</h3>
-                <p>{stone.description}</p>
+                <div style={{ fontSize: 12, opacity: 0.7 }}>
+                  {!allowed
+                    ? item.access_level === "boudoir"
+                      ? "Age verification required"
+                      : "Supreme access required"
+                    : item.category || "Gallery"}
+                </div>
               </div>
-            ))}
-          </div>
-        </section>
+            );
+          })}
+        </div>
+      )}
 
-        <section className="pisces-closing">
-          <p>
-            The Full Moon is a sacred moment of illumination where emotions,
-            intentions, and spiritual awareness rise fully into the light.
-            These stones support clarity, protection, intuition, and powerful
-            manifestation during lunar rituals and reflection.
-          </p>
-        </section>
-      </div>
+      <AgeVerificationModal
+        open={ageModalOpen}
+        onCancel={() => setAgeModalOpen(false)}
+        onConfirm={() => {
+          localStorage.setItem("is_age_verified", "true");
+          setAgeModalOpen(false);
+          setProfile((prev) => ({
+            ...(prev || {}),
+            is_age_verified: true,
+          }));
+        }}
+      />
     </div>
   );
 }
