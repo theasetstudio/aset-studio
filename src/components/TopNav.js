@@ -38,9 +38,7 @@ export default function TopNav() {
 
       {/* RIGHT: ACTIONS */}
       <div style={styles.actions}>
-        <button style={styles.button} onClick={() => navigate("/studio/writer")}>
-          Scene Architect
-        </button>
+        {/* 🚫 Scene Architect button removed */}
 
         {user ? (
           <>

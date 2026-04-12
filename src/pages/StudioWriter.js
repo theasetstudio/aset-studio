@@ -267,8 +267,8 @@ ${promptValue.charAt(0).toUpperCase()}${promptValue.slice(1)} The emotional cent
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({
           prompt: promptValue,
@@ -297,6 +297,7 @@ ${promptValue.charAt(0).toUpperCase()}${promptValue.slice(1)} The emotional cent
       };
     } catch (error) {
       console.error("Scene Architect AI error:", error);
+      setErrorMessage(error instanceof Error ? error.message : "AI generation failed.");
       return buildMockOutput(promptValue, modeValue, toneValue, intensityValue);
     }
   };

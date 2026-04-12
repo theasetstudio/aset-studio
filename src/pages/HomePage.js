@@ -73,7 +73,7 @@ export default function HomePage() {
     async function loadFeaturedVideo() {
       const { data, error: videoError } = await supabase.storage
         .from("media")
-        .createSignedUrl("videos/The_Aset_Studio_Welcome_0.MOV", 60 * 60);
+        .createSignedUrl("videos/whoistheasetstudio.mp4", 60 * 60);
 
       if (!mounted) return;
 
@@ -510,8 +510,14 @@ export default function HomePage() {
 
           <div style={styles.videoFrame}>
             {videoUrl ? (
-              <video controls playsInline preload="metadata" style={styles.video}>
-                <source src={videoUrl} type="video/quicktime" />
+              <video
+                controls
+                playsInline
+                muted
+                preload="metadata"
+                style={styles.video}
+              >
+                <source src={videoUrl} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
             ) : (

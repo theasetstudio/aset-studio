@@ -54,12 +54,10 @@ import ReturnToSenderDeities from "./pages/ReturnToSenderDeities";
 
 import EliteGeneratorPage from "./pages/EliteGeneratorPage";
 import SupremeAccessPage from "./pages/SupremeAccessPage";
-import StudioWriter from "./pages/StudioWriter";
 
 function App() {
   return (
     <Router>
-      {/* 🔥 CLEAN NAVBAR ONLY — NO RED BAR */}
       <TopNav />
 
       <Routes>
@@ -127,7 +125,7 @@ function App() {
 
         {/* GENERATOR */}
         <Route path="/elite-generator" element={<EliteGeneratorPage />} />
-        <Route path="/studio/writer" element={<StudioWriter />} />
+        <Route path="/studio/writer" element={<Navigate to="/" replace />} />
 
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
