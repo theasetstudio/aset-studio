@@ -46,7 +46,6 @@ export default function HomePage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
 
   const [authMode, setAuthMode] = useState("signin");
   const [email, setEmail] = useState("");
@@ -70,25 +69,7 @@ export default function HomePage() {
       setSession(data?.session || null);
     }
 
-    async function loadFeaturedVideo() {
-      const { data, error: videoError } = await supabase.storage
-        .from("media")
-        .createSignedUrl("videos/whoistheasetstudio.mp4", 60 * 60);
-
-      if (!mounted) return;
-
-      if (videoError) {
-        console.error("Featured video signed URL error:", videoError.message);
-        return;
-      }
-
-      if (data?.signedUrl) {
-        setVideoUrl(data.signedUrl);
-      }
-    }
-
     loadSession();
-    loadFeaturedVideo();
 
     const {
       data: { subscription },
@@ -509,22 +490,13 @@ export default function HomePage() {
           </p>
 
           <div style={styles.videoFrame}>
-            {videoUrl ? (
-              <video
-                controls
-                playsInline
-                muted
-                preload="metadata"
-                style={styles.video}
-              >
-                <source src={videoUrl} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-            ) : (
-              <div style={styles.videoPlaceholder}>
-                Featured video is loading...
-              </div>
-            )}
+            <video controls playsInline preload="metadata" style={styles.video}>
+              <source
+                src="/videos/who-is-the-aset-studio.mp4"
+                type="video/mp4"
+              />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </div>
       </section>
@@ -936,18 +908,6 @@ const styles = {
     width: "100%",
     height: "auto",
     background: "#000",
-  },
-  videoPlaceholder: {
-    width: "100%",
-    minHeight: 320,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-    color: "rgba(242,240,234,0.78)",
-    fontSize: 15,
-    lineHeight: 1.5,
-    background: "linear-gradient(to bottom, #050507, #111117)",
   },
   section: {
     maxWidth: 1100,
