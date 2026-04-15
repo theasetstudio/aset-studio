@@ -23,26 +23,7 @@ function norm(v) {
 
 function normalizeStoragePath(input) {
   if (!input) return "";
-
-  let p = String(input).trim();
-
-  while (p.startsWith("/")) {
-    p = p.slice(1);
-  }
-
-  if (p.toLowerCase().startsWith("media/")) {
-    p = p.slice(6);
-  }
-
-  if (p.toLowerCase().startsWith("public/")) {
-    p = p.slice(7);
-  }
-
-  while (p.includes("//")) {
-    p = p.replace("//", "/");
-  }
-
-  return p;
+  return String(input).trim();
 }
 
 function normalizeItem(item) {

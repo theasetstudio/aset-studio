@@ -167,7 +167,7 @@ export default function AdminPage() {
       const { data, error } = await supabase
         .from('media_items')
         .select(
-          'id, owner_id, title, slug, description, tagline, quote, file_path, watermarked_path, category, subcategory, status, hidden, access_level, type, created_at'
+          'id, owner_id, title, slug, description, tagline, quote, file_path, watermarked_path, category, subcategory, status, hidden, access_level, type, featured, created_at'
         )
         .order('created_at', { ascending: false })
         .limit(24);
@@ -476,6 +476,22 @@ export default function AdminPage() {
     }
   }
 
+  async function toggleFeatured(id, currentValue) {
+    try {
+      const { error } = await supabase
+        .from('media_items')
+        .update({ featured: !currentValue })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await fetchMediaItems();
+    } catch (error) {
+      console.error('Error updating featured:', error);
+      alert(error.message || 'Failed to update featured status.');
+    }
+  }
+
   async function handleDeleteMedia(item) {
     const confirmed = window.confirm(
       `Delete this media item forever?\n\n${item.title || item.file_path || 'Untitled media'}`
@@ -533,12 +549,14 @@ export default function AdminPage() {
     const published = mediaItems.filter((item) => item.status === 'published').length;
     const hidden = mediaItems.filter((item) => item.hidden).length;
     const videos = mediaItems.filter((item) => item.type === 'video').length;
+    const featured = mediaItems.filter((item) => item.featured).length;
 
     return {
       total: mediaItems.length,
       published,
       hidden,
       videos,
+      featured,
     };
   }, [mediaItems]);
 
@@ -595,6 +613,11 @@ export default function AdminPage() {
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Video Items</div>
           <div style={styles.statValue}>{mediaCounts.videos}</div>
+        </div>
+
+        <div style={styles.statCard}>
+          <div style={styles.statLabel}>Featured Items</div>
+          <div style={styles.statValue}>{mediaCounts.featured}</div>
         </div>
 
         <div style={styles.statCard}>
@@ -868,6 +891,7 @@ export default function AdminPage() {
                   <span style={styles.metaBadge}>{item.access_level || '—'}</span>
                   <span style={styles.metaBadge}>{item.status || '—'}</span>
                   {item.hidden ? <span style={styles.metaBadge}>Hidden</span> : null}
+                  {item.featured ? <span style={styles.featuredBadge}>Featured</span> : null}
                 </div>
 
                 <div style={styles.mediaInfoBlock}>
@@ -892,6 +916,14 @@ export default function AdminPage() {
                 </div>
 
                 <div style={styles.actionRow}>
+                  <button
+                    type="button"
+                    onClick={() => toggleFeatured(item.id, item.featured)}
+                    style={item.featured ? styles.featuredOnButton : styles.featuredOffButton}
+                  >
+                    {item.featured ? '⭐ Featured' : '☆ Feature'}
+                  </button>
+
                   <button
                     type="button"
                     style={styles.dangerButton}
@@ -1228,6 +1260,24 @@ const styles = {
     fontWeight: 700,
     cursor: 'pointer',
   },
+  featuredOnButton: {
+    padding: '12px 16px',
+    borderRadius: '12px',
+    border: '1px solid #d4af37',
+    background: '#d4af37',
+    color: '#111111',
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  featuredOffButton: {
+    padding: '12px 16px',
+    borderRadius: '12px',
+    border: '1px solid #3a3a49',
+    background: '#1d1d27',
+    color: '#ffffff',
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
   promptList: {
     display: 'grid',
     gap: '16px',
@@ -1266,6 +1316,16 @@ const styles = {
     fontWeight: 700,
     background: '#232331',
     color: '#f1f1f5',
+  },
+  featuredBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '6px 10px',
+    borderRadius: '999px',
+    fontSize: '12px',
+    fontWeight: 700,
+    background: '#d4af37',
+    color: '#111111',
   },
   publishedBadge: {
     background: '#1f3b28',
