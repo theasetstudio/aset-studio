@@ -194,11 +194,6 @@ export default function HomePage() {
                   {featuredVideo.title || "Featured Overview"}
                 </h3>
 
-                <p style={styles.featuredVideoDescription}>
-                  {featuredVideo.description ||
-                    "Watch the overview and enter the full world of The Aset Studio."}
-                </p>
-
                 <Link
                   to={featuredVideo.slug ? `/video/${featuredVideo.slug}` : "/videos"}
                   style={styles.featuredVideoButton}
@@ -474,12 +469,6 @@ const styles = {
     fontWeight: 600,
     lineHeight: 1.16,
     margin: "0 0 14px",
-  },
-  featuredVideoDescription: {
-    opacity: 0.88,
-    lineHeight: 1.7,
-    fontSize: 15,
-    margin: "0 0 22px",
   },
   featuredVideoButton: {
     display: "inline-flex",
