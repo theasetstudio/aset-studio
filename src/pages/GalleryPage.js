@@ -241,6 +241,7 @@ export default function GalleryPage() {
       access_level: String(item?.access_level || "").toLowerCase(),
       status: String(item?.status || "").toLowerCase(),
       hidden: Boolean(item?.hidden),
+      type: String(item?.type || "image").toLowerCase(),
       uploader_id: item?.uploader_id || item?.owner_id || null,
     };
   }
@@ -313,6 +314,7 @@ export default function GalleryPage() {
       console.log("HYDRATE ITEM:", {
         id: item.id,
         title: item.title,
+        type: item.type,
         access_level: item.access_level,
         status: item.status,
         hidden: item.hidden,
@@ -362,6 +364,7 @@ export default function GalleryPage() {
           quote,
           category,
           tags,
+          type,
           access_level,
           status,
           hidden,
@@ -566,7 +569,8 @@ export default function GalleryPage() {
             user-select: none;
           }
 
-          .gallery-thumb img {
+          .gallery-thumb img,
+          .gallery-thumb video {
             display: block;
             width: 100%;
             height: auto;
@@ -741,12 +745,22 @@ export default function GalleryPage() {
                   tabIndex={0}
                 >
                   {signedUrl ? (
-                    <img
-                      src={signedUrl}
-                      alt={item.title ?? "Media"}
-                      loading="lazy"
-                      draggable="false"
-                    />
+                    item.type === "video" ? (
+                      <video
+                        src={signedUrl}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        draggable="false"
+                      />
+                    ) : (
+                      <img
+                        src={signedUrl}
+                        alt={item.title ?? "Media"}
+                        loading="lazy"
+                        draggable="false"
+                      />
+                    )
                   ) : (
                     <div className="gallery-thumb-skeleton" />
                   )}
