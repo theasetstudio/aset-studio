@@ -275,20 +275,11 @@ export default function GalleryPage() {
   }
 
   async function createSignedUrlForPath(path) {
-    if (!path) {
-      console.log("SIGNED URL: missing path");
-      return null;
-    }
+    if (!path) return null;
 
     const { data, error } = await supabase.storage
       .from("media")
       .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-
-    console.log("SIGNED URL RESULT:", {
-      path,
-      data,
-      error,
-    });
 
     if (error) {
       console.error("createSignedUrl error:", error, "for path:", path);
@@ -299,32 +290,26 @@ export default function GalleryPage() {
   }
 
   async function hydrateSignedUrlsForAllowed(newItems) {
-    const updates = {};
+    const entries = await Promise.all(
+      newItems.map(async (raw) => {
+        const item = normalizeItem(raw);
 
-    for (const raw of newItems) {
-      const item = normalizeItem(raw);
+        if (signedUrlsById[item.id]) return null;
 
-      if (signedUrlsById[item.id]) continue;
+        const decision = getDecision(item);
+        if (!decision?.allowed) return null;
 
-      const decision = getDecision(item);
-      if (!decision?.allowed) continue;
+        const path = getDisplayPathForItem(item);
+        if (!path) return null;
 
-      const path = getDisplayPathForItem(item);
+        const url = await createSignedUrlForPath(path);
+        if (!url) return null;
 
-      console.log("HYDRATE ITEM:", {
-        id: item.id,
-        title: item.title,
-        type: item.type,
-        access_level: item.access_level,
-        status: item.status,
-        hidden: item.hidden,
-        path,
-        decision,
-      });
+        return [item.id, url];
+      })
+    );
 
-      const url = await createSignedUrlForPath(path);
-      if (url) updates[item.id] = url;
-    }
+    const updates = Object.fromEntries(entries.filter(Boolean));
 
     if (Object.keys(updates).length > 0) {
       setSignedUrlsById((prev) => ({ ...prev, ...updates }));
@@ -386,8 +371,6 @@ export default function GalleryPage() {
 
       const { data, error } = await q;
 
-      console.log("GALLERY QUERY RESULT:", { data, error });
-
       if (error) {
         console.error("Media fetch error:", error);
         setHasMore(false);
@@ -399,8 +382,6 @@ export default function GalleryPage() {
         uploader_id: item.owner_id,
         uploader: null,
       }));
-
-      console.log("GALLERY BATCH AFTER MAP:", batch);
 
       setItems((prev) => (page === 0 ? batch : [...prev, ...batch]));
       initializeFavoriteCounts(batch, page === 0);
@@ -792,19 +773,17 @@ export default function GalleryPage() {
                   tabIndex={0}
                 >
                   {signedUrl ? (
-                    isVideo ? (
-                      <div className="gallery-video-poster">
-                        <div className="gallery-video-pill">VIDEO</div>
-                        <div className="gallery-video-play">▶</div>
-                      </div>
-                    ) : (
-                      <img
-                        src={signedUrl}
-                        alt={item.title ?? "Media"}
-                        loading="lazy"
-                        draggable="false"
-                      />
-                    )
+                    <img
+                      src={signedUrl}
+                      alt={item.title ?? "Media"}
+                      loading="lazy"
+                      draggable="false"
+                    />
+                  ) : isVideo ? (
+                    <div className="gallery-video-poster">
+                      <div className="gallery-video-pill">VIDEO</div>
+                      <div className="gallery-video-play">▶</div>
+                    </div>
                   ) : (
                     <div className="gallery-thumb-skeleton" />
                   )}

@@ -1,17 +1,6 @@
-// src/pages/FeaturedPage.js
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Link } from "react-router-dom";
-
-function norm(v) {
-  return String(v || "").trim().toLowerCase();
-}
-
-function hasFeaturedTag(tags) {
-  if (!tags) return false;
-  if (!Array.isArray(tags)) return false;
-  return tags.map(norm).includes("featured");
-}
 
 export default function FeaturedPage() {
   const [items, setItems] = useState([]);
@@ -20,120 +9,144 @@ export default function FeaturedPage() {
 
   useEffect(() => {
     loadFeatured();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadFeatured() {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("media_items")
-      .select("id, created_at, title, tagline, tags, file_path, watermarked_path, access_level, hidden, status, category")
-      .eq("status", "approved")
-      .eq("hidden", false)
-      .order("created_at", { ascending: false })
-      .limit(200);
+    try {
+      const { data, error } = await supabase
+        .from("media_items")
+        .select(
+          "id, created_at, title, slug, tagline, description, file_path, access_level, hidden, status, category, type, featured"
+        )
+        .eq("featured", true)
+        .eq("hidden", false)
+        .eq("status", "published")
+        .order("created_at", { ascending: false })
+        .limit(200);
 
-    if (error) {
+      if (error) throw error;
+
+      const featuredItems = data || [];
+      setItems(featuredItems);
+
+      const signedUrlMap = {};
+
+      for (const row of featuredItems) {
+        if (!row.file_path) continue;
+
+        const { data: signed, error: signErr } = await supabase.storage
+          .from("media")
+          .createSignedUrl(row.file_path, 60 * 60);
+
+        if (signErr) {
+          console.warn("Signed URL error:", signErr);
+          continue;
+        }
+
+        signedUrlMap[row.id] = signed?.signedUrl || null;
+      }
+
+      setUrlById(signedUrlMap);
+    } catch (error) {
       console.error("Featured load error:", error);
       setItems([]);
       setUrlById({});
+    } finally {
       setLoading(false);
-      return;
+    }
+  }
+
+  function getItemLink(item) {
+    if (item.type === "video" && item.slug) {
+      return `/video/${item.slug}`;
     }
 
-    const featured = (data || []).filter((row) => hasFeaturedTag(row.tags));
-    setItems(featured);
-
-    // Build signed URLs
-    const map = {};
-    for (const row of featured) {
-      const path = row.file_path;
-      if (!path) continue;
-
-      const { data: signed, error: signErr } = await supabase.storage
-        .from("media")
-        .createSignedUrl(path, 60 * 60); // 1 hour
-
-      if (signErr) {
-        console.warn("Signed URL error:", signErr);
-        continue;
-      }
-
-      map[row.id] = signed?.signedUrl || null;
+    if (item.slug) {
+      return `/gallery/${item.slug}`;
     }
 
-    setUrlById(map);
-    setLoading(false);
+    return `/media/${item.id}`;
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
-        <h1 style={{ marginBottom: 10 }}>Featured</h1>
-        <div style={{ opacity: 0.75, fontSize: 13 }}>
-          Curated releases. Add the tag <b>featured</b> in Admin to show it here.
+    <div style={styles.page}>
+      <div style={styles.headerWrap}>
+        <div>
+          <h1 style={styles.title}>Featured</h1>
+          <p style={styles.subtitle}>
+            A curated showcase of featured work across image and video.
+          </p>
         </div>
       </div>
 
-      {loading ? <p>Loading featured work…</p> : null}
+      {loading ? <p style={styles.message}>Loading featured work...</p> : null}
 
-      {!loading && items.length === 0 ? <p>No featured items yet.</p> : null}
+      {!loading && items.length === 0 ? (
+        <p style={styles.message}>No featured items yet.</p>
+      ) : null}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))",
-          gap: 16,
-          marginTop: 14,
-        }}
-      >
+      <div style={styles.grid}>
         {items.map((item) => {
-          const imgUrl = urlById[item.id];
+          const mediaUrl = urlById[item.id];
 
           return (
             <Link
               key={item.id}
-              to={`/media/${item.id}`}
-              style={{ textDecoration: "none", color: "inherit" }}
+              to={getItemLink(item)}
+              style={styles.cardLink}
             >
-              <div
-                style={{
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  background: "rgba(255,255,255,0.03)",
-                }}
-              >
-                <div style={{ width: "100%", aspectRatio: "4 / 5", background: "rgba(255,255,255,0.04)" }}>
-                  {imgUrl ? (
-                    <img
-                      src={imgUrl}
-                      alt={item.title || ""}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
-                    />
+              <div style={styles.card}>
+                <div style={styles.mediaWrap}>
+                  {mediaUrl ? (
+                    item.type === "video" ? (
+                      <video
+                        src={mediaUrl}
+                        style={styles.media}
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img
+                        src={mediaUrl}
+                        alt={item.title || "Featured media"}
+                        style={styles.media}
+                      />
+                    )
                   ) : (
-                    <div style={{ padding: 14, opacity: 0.7 }}>Image unavailable</div>
+                    <div style={styles.placeholder}>Preview unavailable</div>
                   )}
+
+                  <div style={styles.topBadges}>
+                    <span style={styles.featuredBadge}>Featured</span>
+                    {item.type ? (
+                      <span style={styles.typeBadge}>
+                        {item.type}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
-                <div style={{ padding: 12 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>
-                    {item.title || "Untitled"}
+                <div style={styles.content}>
+                  <div style={styles.metaRow}>
+                    {item.category ? (
+                      <span style={styles.metaChip}>{item.category}</span>
+                    ) : null}
+                    {item.access_level ? (
+                      <span style={styles.metaChip}>{item.access_level}</span>
+                    ) : null}
                   </div>
+
+                  <h2 style={styles.cardTitle}>{item.title || "Untitled"}</h2>
+
                   {item.tagline ? (
-                    <div style={{ opacity: 0.85, marginTop: 6, fontSize: 13 }}>
-                      {item.tagline}
-                    </div>
+                    <p style={styles.tagline}>{item.tagline}</p>
+                  ) : item.description ? (
+                    <p style={styles.tagline}>{item.description}</p>
                   ) : (
-                    <div style={{ opacity: 0.55, marginTop: 6, fontSize: 12 }}>
-                      —
-                    </div>
+                    <p style={styles.taglineMuted}>Curated featured release</p>
                   )}
                 </div>
               </div>
@@ -144,3 +157,151 @@ export default function FeaturedPage() {
     </div>
   );
 }
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#08080d",
+    color: "#f5f5f5",
+    padding: "32px 20px 60px",
+    maxWidth: "1400px",
+    margin: "0 auto",
+  },
+  headerWrap: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: "16px",
+    flexWrap: "wrap",
+    marginBottom: "28px",
+  },
+  title: {
+    margin: 0,
+    fontSize: "40px",
+    fontWeight: 700,
+    letterSpacing: "-0.02em",
+  },
+  subtitle: {
+    margin: "10px 0 0 0",
+    color: "#b8b8c7",
+    fontSize: "15px",
+    lineHeight: 1.6,
+    maxWidth: "720px",
+  },
+  message: {
+    color: "#b8b8c7",
+    fontSize: "15px",
+    marginTop: "10px",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "20px",
+    marginTop: "24px",
+  },
+  cardLink: {
+    textDecoration: "none",
+    color: "inherit",
+  },
+  card: {
+    borderRadius: "18px",
+    overflow: "hidden",
+    border: "1px solid #252533",
+    background: "#111119",
+    transition: "transform 0.2s ease, border-color 0.2s ease",
+    height: "100%",
+  },
+  mediaWrap: {
+    position: "relative",
+    width: "100%",
+    aspectRatio: "4 / 5",
+    background: "#0f0f15",
+  },
+  media: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "block",
+    background: "#0f0f15",
+  },
+  placeholder: {
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#9b9bac",
+    fontSize: "14px",
+    padding: "16px",
+    textAlign: "center",
+  },
+  topBadges: {
+    position: "absolute",
+    top: "12px",
+    left: "12px",
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+  featuredBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "6px 10px",
+    borderRadius: "999px",
+    background: "#d4af37",
+    color: "#111111",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+  typeBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "6px 10px",
+    borderRadius: "999px",
+    background: "rgba(0,0,0,0.6)",
+    color: "#ffffff",
+    fontSize: "12px",
+    fontWeight: 700,
+    textTransform: "capitalize",
+    border: "1px solid rgba(255,255,255,0.12)",
+  },
+  content: {
+    padding: "16px",
+  },
+  metaRow: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+    marginBottom: "10px",
+  },
+  metaChip: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "5px 9px",
+    borderRadius: "999px",
+    background: "#232331",
+    color: "#f1f1f5",
+    fontSize: "11px",
+    fontWeight: 700,
+    textTransform: "capitalize",
+  },
+  cardTitle: {
+    margin: 0,
+    fontSize: "18px",
+    fontWeight: 700,
+    lineHeight: 1.25,
+    color: "#f5f5f5",
+  },
+  tagline: {
+    margin: "10px 0 0 0",
+    color: "#d5d5df",
+    fontSize: "14px",
+    lineHeight: 1.6,
+  },
+  taglineMuted: {
+    margin: "10px 0 0 0",
+    color: "#8f8fa3",
+    fontSize: "14px",
+    lineHeight: 1.6,
+  },
+};
