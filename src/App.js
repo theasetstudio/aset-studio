@@ -23,6 +23,8 @@ import CreatorsHubPage from "./pages/CreatorsHubPage";
 import CreatorsCornerPage from "./pages/CreatorsCornerPage";
 import FeaturedPage from "./pages/FeaturedPage";
 import DebugAuthPage from "./pages/DebugAuthPage";
+import VideosPage from "./pages/VideosPage";
+import VideoPlayerPage from "./pages/VideoPlayerPage";
 
 import AsetLoungePage from "./pages/AsetLoungePage";
 import PuzzleLibraryPage from "./pages/PuzzleLibraryPage";
@@ -48,10 +50,12 @@ import RisingSignPage from "./pages/RisingSignPage";
 import MotivationPage from "./pages/MotivationPage";
 import VeteransPage from "./pages/VeteransPage";
 import LovePage from "./pages/LovePage";
-import FriendshipPage from "./pages/FriendshipPage";
 import CreativeMusePage from "./pages/CreativeMusePage";
 import BluePage from "./pages/BluePage";
 import ReturnToSenderDeities from "./pages/ReturnToSenderDeities";
+
+import FriendshipPage from "./pages/stones/FriendshipPage";
+import PurplePage from "./pages/stones/PurplePage";
 
 import EliteGeneratorPage from "./pages/EliteGeneratorPage";
 import SupremeAccessPage from "./pages/SupremeAccessPage";
@@ -81,18 +85,18 @@ function App() {
         <Route path="/creators" element={<CreatorsDirectoryPage />} />
         <Route path="/creator-profile/edit" element={<CreatorProfileEditorPage />} />
         <Route path="/creator/setup" element={<CreatorProfileSetupPage />} />
-
         <Route path="/creator/:username" element={<CreatorProfilePage />} />
         <Route path="/creator/:username/portfolio" element={<CreatorPortfolioPage />} />
         <Route path="/creator/:username/followers" element={<CreatorConnectionsPage />} />
         <Route path="/creator/:username/following" element={<CreatorConnectionsPage />} />
-
         <Route path="/creator-hub" element={<CreatorsHubPage />} />
         <Route path="/creators-corner" element={<CreatorsCornerPage />} />
 
         {/* DISCOVERY */}
         <Route path="/featured" element={<FeaturedPage />} />
         <Route path="/debug-auth" element={<DebugAuthPage />} />
+        <Route path="/videos" element={<VideosPage />} />
+        <Route path="/video/:slug" element={<VideoPlayerPage />} />
 
         {/* ASET LOUNGE */}
         <Route path="/aset-lounge" element={<AsetLoungePage />} />
@@ -123,6 +127,7 @@ function App() {
         <Route path="/sirens-realm/friendship" element={<FriendshipPage />} />
         <Route path="/sirens-realm/creative-muse" element={<CreativeMusePage />} />
         <Route path="/sirens-realm/blue" element={<BluePage />} />
+        <Route path="/sirens-realm/purple" element={<PurplePage />} />
         <Route path="/sirens-realm/return-to-sender-deities" element={<ReturnToSenderDeities />} />
 
         {/* GENERATOR */}

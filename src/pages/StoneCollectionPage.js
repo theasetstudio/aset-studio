@@ -98,6 +98,12 @@ const featuredCollections = [
       "A calming and expressive color-led collection tied to communication, peace, truth, and emotional cooling.",
     path: "/sirens-realm/blue",
   },
+  {
+    title: "Purple",
+    description:
+      "A mystical color-led collection tied to intuition, spiritual depth, emotional healing, peace, and transformation.",
+    path: "/sirens-realm/purple",
+  },
 ];
 
 const zodiacCollections = [
