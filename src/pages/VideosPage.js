@@ -22,9 +22,11 @@ export default function VideosPage() {
       try {
         const { data, error: fetchError } = await supabase
           .from("media_items")
-          .select("id, title, slug, description, category, file_path, type, status, hidden, tags, created_at")
+          .select(
+            "id, title, slug, description, category, file_path, type, status, hidden, tags, created_at"
+          )
           .eq("type", "video")
-          .eq("status", "approved")
+          .eq("status", "published")
           .eq("hidden", false)
           .order("created_at", { ascending: false });
 

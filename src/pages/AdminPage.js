@@ -1,6 +1,29 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../supabaseClient';
 
+const IMAGE_CATEGORIES = [
+  'editorial',
+  'boudoir',
+  'portraits',
+  'sirens realm',
+  'aset lounge',
+  'fashion',
+  'beauty',
+  'lifestyle',
+  'storybook land',
+];
+
+const VIDEO_CATEGORIES = ['interview', 'hot_take', 'cinematic'];
+
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export default function AdminPage() {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -20,8 +43,11 @@ export default function AdminPage() {
   const [mediaMessage, setMediaMessage] = useState('');
   const [mediaItems, setMediaItems] = useState([]);
 
+  const [mediaType, setMediaType] = useState('image');
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaTitle, setMediaTitle] = useState('');
+  const [mediaSlug, setMediaSlug] = useState('');
+  const [mediaDescription, setMediaDescription] = useState('');
   const [mediaTagline, setMediaTagline] = useState('');
   const [mediaQuote, setMediaQuote] = useState('');
   const [mediaCategory, setMediaCategory] = useState('');
@@ -31,18 +57,6 @@ export default function AdminPage() {
   const [mediaAccessLevel, setMediaAccessLevel] = useState('public');
   const [mediaStatus, setMediaStatus] = useState('published');
   const [mediaHidden, setMediaHidden] = useState(false);
-
-  const categoryOptions = [
-    'editorial',
-    'boudoir',
-    'portraits',
-    'sirens realm',
-    'aset lounge',
-    'fashion',
-    'beauty',
-    'lifestyle',
-    'storybook land',
-  ];
 
   useEffect(() => {
     checkAdminAccess();
@@ -54,6 +68,12 @@ export default function AdminPage() {
       fetchMediaItems();
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!mediaSlug.trim() && mediaTitle.trim()) {
+      setMediaSlug(slugify(mediaTitle));
+    }
+  }, [mediaTitle, mediaSlug]);
 
   async function checkAdminAccess() {
     try {
@@ -147,7 +167,7 @@ export default function AdminPage() {
       const { data, error } = await supabase
         .from('media_items')
         .select(
-          'id, owner_id, title, tagline, quote, file_path, watermarked_path, category, subcategory, status, hidden, access_level, created_at'
+          'id, owner_id, title, slug, description, tagline, quote, file_path, watermarked_path, category, subcategory, status, hidden, access_level, type, created_at'
         )
         .order('created_at', { ascending: false })
         .limit(24);
@@ -322,12 +342,36 @@ export default function AdminPage() {
     setMediaMessage('');
 
     if (!mediaFile) {
-      setMediaMessage('Please choose an image file.');
+      setMediaMessage(`Please choose a ${mediaType} file.`);
       return;
     }
 
+    const cleanTitle = mediaTitle.trim();
+    const cleanDescription = mediaDescription.trim();
+    const cleanTagline = mediaTagline.trim();
+    const cleanQuote = mediaQuote.trim();
+    const cleanSubcategory = mediaSubcategory.trim();
+    const cleanSlug = slugify(mediaSlug || mediaTitle);
+    const finalCategory =
+      mediaCategoryMode === 'new' ? newMediaCategory.trim() : mediaCategory.trim();
+
     if (mediaCategoryMode === 'new' && !newMediaCategory.trim()) {
       setMediaMessage('Please enter a new category name.');
+      return;
+    }
+
+    if (!finalCategory) {
+      setMediaMessage('Please choose a category.');
+      return;
+    }
+
+    if (mediaType === 'video' && !VIDEO_CATEGORIES.includes(finalCategory)) {
+      setMediaMessage('Video category must be interview, hot_take, or cinematic.');
+      return;
+    }
+
+    if (mediaType === 'video' && !cleanSlug) {
+      setMediaMessage('Video slug is required.');
       return;
     }
 
@@ -347,9 +391,24 @@ export default function AdminPage() {
         throw new Error('You must be logged in to upload media.');
       }
 
+      if (cleanSlug) {
+        const { data: existingSlug, error: slugError } = await supabase
+          .from('media_items')
+          .select('id')
+          .eq('slug', cleanSlug)
+          .limit(1);
+
+        if (slugError) throw slugError;
+
+        if (existingSlug && existingSlug.length > 0) {
+          throw new Error('That slug already exists. Please use a different slug.');
+        }
+      }
+
       const fileExt = mediaFile.name.split('.').pop();
       const safeFileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-      const storagePath = `admin-uploads/${safeFileName}`;
+      const folder = mediaType === 'video' ? 'admin-videos' : 'admin-uploads';
+      const storagePath = `${folder}/${safeFileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('media')
@@ -360,21 +419,21 @@ export default function AdminPage() {
 
       if (uploadError) throw uploadError;
 
-      const finalCategory =
-        mediaCategoryMode === 'new' ? newMediaCategory.trim() : mediaCategory.trim();
-
       const payload = {
         owner_id: user.id,
-        title: mediaTitle.trim() || null,
-        tagline: mediaTagline.trim() || null,
-        quote: mediaQuote.trim() || null,
+        title: cleanTitle || null,
+        slug: cleanSlug || null,
+        description: cleanDescription || null,
+        tagline: cleanTagline || null,
+        quote: cleanQuote || null,
         file_path: storagePath,
         watermarked_path: null,
         category: finalCategory || null,
-        subcategory: mediaSubcategory.trim() || null,
+        subcategory: cleanSubcategory || null,
         status: mediaStatus,
         hidden: mediaHidden,
         access_level: mediaAccessLevel,
+        type: mediaType,
       };
 
       const { error: insertError } = await supabase.from('media_items').insert([payload]);
@@ -384,8 +443,11 @@ export default function AdminPage() {
         throw insertError;
       }
 
+      setMediaType('image');
       setMediaFile(null);
       setMediaTitle('');
+      setMediaSlug('');
+      setMediaDescription('');
       setMediaTagline('');
       setMediaQuote('');
       setMediaCategory('');
@@ -395,7 +457,12 @@ export default function AdminPage() {
       setMediaAccessLevel('public');
       setMediaStatus('published');
       setMediaHidden(false);
-      setMediaMessage('Image uploaded successfully.');
+
+      setMediaMessage(
+        mediaType === 'video'
+          ? 'Video uploaded successfully.'
+          : 'Image uploaded successfully.'
+      );
 
       const fileInput = document.getElementById('admin-media-file-input');
       if (fileInput) fileInput.value = '';
@@ -465,13 +532,18 @@ export default function AdminPage() {
   const mediaCounts = useMemo(() => {
     const published = mediaItems.filter((item) => item.status === 'published').length;
     const hidden = mediaItems.filter((item) => item.hidden).length;
+    const videos = mediaItems.filter((item) => item.type === 'video').length;
 
     return {
       total: mediaItems.length,
       published,
       hidden,
+      videos,
     };
   }, [mediaItems]);
+
+  const mediaCategoryOptions = mediaType === 'video' ? VIDEO_CATEGORIES : IMAGE_CATEGORIES;
+  const mediaAcceptValue = mediaType === 'video' ? 'video/*' : 'image/*';
 
   if (checkingAccess) {
     return (
@@ -500,7 +572,7 @@ export default function AdminPage() {
       <div style={styles.headerCard}>
         <h1 style={styles.pageTitle}>Admin Dashboard</h1>
         <p style={styles.mutedText}>
-          Upload gallery images and manage Supreme Access prompts from one place.
+          Upload gallery images, load videos, and manage Supreme Access prompts from one place.
         </p>
       </div>
 
@@ -521,6 +593,11 @@ export default function AdminPage() {
         </div>
 
         <div style={styles.statCard}>
+          <div style={styles.statLabel}>Video Items</div>
+          <div style={styles.statValue}>{mediaCounts.videos}</div>
+        </div>
+
+        <div style={styles.statCard}>
           <div style={styles.statLabel}>Total Prompts</div>
           <div style={styles.statValue}>{promptCounts.total}</div>
         </div>
@@ -537,19 +614,42 @@ export default function AdminPage() {
       </div>
 
       <section style={styles.card}>
-        <h2 style={styles.sectionTitle}>Upload Image</h2>
+        <h2 style={styles.sectionTitle}>Upload Media</h2>
 
         <form onSubmit={handleMediaSubmit} style={styles.form}>
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Image File</label>
-            <input
-              id="admin-media-file-input"
-              type="file"
-              accept="image/*"
-              onChange={(e) => setMediaFile(e.target.files?.[0] || null)}
-              style={styles.fileInput}
-              required
-            />
+          <div style={styles.twoColumnGrid}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Media Type</label>
+              <select
+                value={mediaType}
+                onChange={(e) => {
+                  const nextType = e.target.value;
+                  setMediaType(nextType);
+                  setMediaCategory('');
+                  setNewMediaCategory('');
+                  setMediaCategoryMode('existing');
+                  setMediaFile(null);
+                  const fileInput = document.getElementById('admin-media-file-input');
+                  if (fileInput) fileInput.value = '';
+                }}
+                style={styles.select}
+              >
+                <option value="image">image</option>
+                <option value="video">video</option>
+              </select>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>{mediaType === 'video' ? 'Video File' : 'Image File'}</label>
+              <input
+                id="admin-media-file-input"
+                type="file"
+                accept={mediaAcceptValue}
+                onChange={(e) => setMediaFile(e.target.files?.[0] || null)}
+                style={styles.fileInput}
+                required
+              />
+            </div>
           </div>
 
           <div style={styles.fieldGroup}>
@@ -558,8 +658,74 @@ export default function AdminPage() {
               type="text"
               value={mediaTitle}
               onChange={(e) => setMediaTitle(e.target.value)}
-              placeholder="Enter image title"
+              placeholder={mediaType === 'video' ? 'Enter video title' : 'Enter image title'}
               style={styles.input}
+            />
+          </div>
+
+          <div style={styles.twoColumnGrid}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Slug</label>
+              <input
+                type="text"
+                value={mediaSlug}
+                onChange={(e) => setMediaSlug(slugify(e.target.value))}
+                placeholder="example-video-title"
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Category</label>
+              <select
+                value={mediaCategoryMode === 'new' ? '__new__' : mediaCategory}
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  if (value === '__new__') {
+                    setMediaCategoryMode('new');
+                    setMediaCategory('');
+                  } else {
+                    setMediaCategoryMode('existing');
+                    setMediaCategory(value);
+                    setNewMediaCategory('');
+                  }
+                }}
+                style={styles.select}
+              >
+                <option value="">Select category</option>
+                {mediaCategoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+                {mediaType !== 'video' ? <option value="__new__">+ Create New Category</option> : null}
+              </select>
+
+              {mediaCategoryMode === 'new' && mediaType !== 'video' ? (
+                <input
+                  type="text"
+                  value={newMediaCategory}
+                  onChange={(e) => setNewMediaCategory(e.target.value)}
+                  placeholder="Enter new category name"
+                  style={styles.input}
+                />
+              ) : null}
+            </div>
+          </div>
+
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>Description</label>
+            <textarea
+              value={mediaDescription}
+              onChange={(e) => setMediaDescription(e.target.value)}
+              placeholder={
+                mediaType === 'video'
+                  ? 'Enter video description'
+                  : 'Enter image description'
+              }
+              rows={4}
+              style={styles.textarea}
             />
           </div>
 
@@ -583,44 +749,6 @@ export default function AdminPage() {
               rows={4}
               style={styles.textarea}
             />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Category</label>
-            <select
-              value={mediaCategoryMode === 'new' ? '__new__' : mediaCategory}
-              onChange={(e) => {
-                const value = e.target.value;
-
-                if (value === '__new__') {
-                  setMediaCategoryMode('new');
-                  setMediaCategory('');
-                } else {
-                  setMediaCategoryMode('existing');
-                  setMediaCategory(value);
-                  setNewMediaCategory('');
-                }
-              }}
-              style={styles.select}
-            >
-              <option value="">Select category</option>
-              {categoryOptions.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-              <option value="__new__">+ Create New Category</option>
-            </select>
-
-            {mediaCategoryMode === 'new' ? (
-              <input
-                type="text"
-                value={newMediaCategory}
-                onChange={(e) => setNewMediaCategory(e.target.value)}
-                placeholder="Enter new category name"
-                style={styles.input}
-              />
-            ) : null}
           </div>
 
           <div style={styles.fieldGroup}>
@@ -675,12 +803,25 @@ export default function AdminPage() {
 
           <div style={styles.buttonRow}>
             <button type="submit" style={styles.primaryButton} disabled={savingMedia}>
-              {savingMedia ? 'Uploading...' : 'Upload Image'}
+              {savingMedia
+                ? 'Uploading...'
+                : mediaType === 'video'
+                ? 'Upload Video'
+                : 'Upload Image'}
             </button>
           </div>
 
           {mediaMessage ? (
-            <p style={mediaMessage.toLowerCase().includes('failed') ? styles.errorText : styles.successText}>
+            <p
+              style={
+                mediaMessage.toLowerCase().includes('failed') ||
+                mediaMessage.toLowerCase().includes('required') ||
+                mediaMessage.toLowerCase().includes('exists') ||
+                mediaMessage.toLowerCase().includes('must')
+                  ? styles.errorText
+                  : styles.successText
+              }
+            >
               {mediaMessage}
             </p>
           ) : null}
@@ -699,16 +840,27 @@ export default function AdminPage() {
             {mediaItems.map((item) => (
               <div key={item.id} style={styles.mediaCard}>
                 {item.preview_url ? (
-                  <img
-                    src={item.preview_url}
-                    alt={item.title || item.category || 'Media item'}
-                    style={styles.mediaPreview}
-                  />
+                  item.type === 'video' ? (
+                    <video
+                      src={item.preview_url}
+                      style={styles.mediaPreview}
+                      muted
+                      controls
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img
+                      src={item.preview_url}
+                      alt={item.title || item.category || 'Media item'}
+                      style={styles.mediaPreview}
+                    />
+                  )
                 ) : (
                   <div style={styles.mediaPlaceholder}>No Preview</div>
                 )}
 
                 <div style={styles.metaRow}>
+                  <span style={styles.metaBadge}>{item.type || 'unknown'}</span>
                   <span style={styles.metaBadge}>{item.category || 'Uncategorized'}</span>
                   {item.subcategory ? (
                     <span style={styles.metaBadge}>{item.subcategory}</span>
@@ -720,6 +872,8 @@ export default function AdminPage() {
 
                 <div style={styles.mediaInfoBlock}>
                   {item.title ? <h3 style={styles.mediaTitle}>{item.title}</h3> : null}
+                  {item.slug ? <p style={styles.mediaSlug}>/{item.slug}</p> : null}
+                  {item.description ? <p style={styles.mediaDescription}>{item.description}</p> : null}
                   {item.tagline ? <p style={styles.mediaTagline}>{item.tagline}</p> : null}
                   {item.quote ? <p style={styles.mediaQuote}>“{item.quote}”</p> : null}
                 </div>
@@ -823,7 +977,13 @@ export default function AdminPage() {
           </div>
 
           {promptMessage ? (
-            <p style={promptMessage.toLowerCase().includes('failed') ? styles.errorText : styles.successText}>
+            <p
+              style={
+                promptMessage.toLowerCase().includes('failed')
+                  ? styles.errorText
+                  : styles.successText
+              }
+            >
               {promptMessage}
             </p>
           ) : null}
@@ -1160,6 +1320,7 @@ const styles = {
     borderRadius: '14px',
     border: '1px solid #2c2c39',
     marginBottom: '12px',
+    background: '#0f0f15',
   },
   mediaPlaceholder: {
     width: '100%',
@@ -1181,6 +1342,18 @@ const styles = {
     fontSize: '18px',
     fontWeight: 700,
     color: '#f5f5f5',
+  },
+  mediaSlug: {
+    margin: '0 0 8px 0',
+    color: '#8e8ea3',
+    fontSize: '13px',
+    wordBreak: 'break-word',
+  },
+  mediaDescription: {
+    margin: '0 0 8px 0',
+    color: '#d8d8e3',
+    fontSize: '14px',
+    lineHeight: 1.5,
   },
   mediaTagline: {
     margin: '0 0 8px 0',
