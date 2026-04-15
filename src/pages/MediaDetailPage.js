@@ -51,6 +51,7 @@ function normalizeItem(item) {
     access_level: norm(item?.access_level),
     status: norm(item?.status),
     hidden: Boolean(item?.hidden),
+    type: norm(item?.type) || "image",
     owner_id: item?.owner_id || null,
   };
 }
@@ -78,8 +79,8 @@ export default function MediaDetailPage() {
   const [ageVerified, setAgeVerified] = useState(getAgeVerified());
 
   const [item, setItem] = useState(null);
-  const [imageUrl, setImageUrl] = useState("");
-  const [imgError, setImgError] = useState("");
+  const [mediaUrl, setMediaUrl] = useState("");
+  const [mediaError, setMediaError] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [favoriteIds, setFavoriteIds] = useState(new Set());
@@ -147,14 +148,14 @@ export default function MediaDetailPage() {
     async function loadItem() {
       setLoading(true);
       setItem(null);
-      setImageUrl("");
-      setImgError("");
+      setMediaUrl("");
+      setMediaError("");
       setShowAgeModal(false);
       setUploaderName("The Aset Studio");
 
       try {
         if (!id) {
-          setImgError("Missing media id.");
+          setMediaError("Missing media id.");
           setLoading(false);
           return;
         }
@@ -168,6 +169,7 @@ export default function MediaDetailPage() {
             quote,
             category,
             tags,
+            type,
             access_level,
             status,
             hidden,
@@ -181,7 +183,7 @@ export default function MediaDetailPage() {
 
         if (error || !data) {
           console.error("Failed to load media item:", error);
-          setImgError("Failed to load item.");
+          setMediaError("Failed to load item.");
           setLoading(false);
           return;
         }
@@ -190,14 +192,14 @@ export default function MediaDetailPage() {
 
         if (normalized.hidden === true && !isAdmin) {
           setItem(null);
-          setImgError("This content is unavailable.");
+          setMediaError("This content is unavailable.");
           setLoading(false);
           return;
         }
 
         if (normalized.status !== "published" && !isAdmin) {
           setItem(null);
-          setImgError("This content is unavailable.");
+          setMediaError("This content is unavailable.");
           setLoading(false);
           return;
         }
@@ -236,16 +238,16 @@ export default function MediaDetailPage() {
 
         if (!accessDecision?.allowed) {
           if (normalized.access_level === "boudoir") {
-            setImgError("Age verification required to view this content.");
+            setMediaError("Age verification required to view this content.");
             if (userId && !ageVerified) {
               setShowAgeModal(true);
             }
           } else if (accessDecision?.needsLogin) {
-            setImgError("Please sign in to view this item.");
+            setMediaError("Please sign in to view this item.");
           } else if (accessDecision?.needsSupreme) {
-            setImgError("Supreme Access required to view this item.");
+            setMediaError("Supreme Access required to view this item.");
           } else {
-            setImgError("Locked content.");
+            setMediaError("Locked content.");
           }
 
           setLoading(false);
@@ -262,7 +264,11 @@ export default function MediaDetailPage() {
         const cleanPath = normalizeStoragePath(rawPath);
 
         if (!cleanPath) {
-          setImgError("Missing image path on this item.");
+          setMediaError(
+            normalized.type === "video"
+              ? "Missing video path on this item."
+              : "Missing image path on this item."
+          );
           setLoading(false);
           return;
         }
@@ -273,16 +279,20 @@ export default function MediaDetailPage() {
 
         if (signedError || !signedData?.signedUrl) {
           console.error("Signed URL error:", signedError);
-          setImgError("Could not load image. Please try again.");
+          setMediaError(
+            normalized.type === "video"
+              ? "Could not load video. Please try again."
+              : "Could not load image. Please try again."
+          );
           setLoading(false);
           return;
         }
 
-        setImageUrl(signedData.signedUrl);
+        setMediaUrl(signedData.signedUrl);
         setLoading(false);
       } catch (e) {
         console.error("Failed to load media detail:", e);
-        setImgError("Failed to load item.");
+        setMediaError("Failed to load item.");
         setLoading(false);
       }
     }
@@ -408,6 +418,7 @@ export default function MediaDetailPage() {
   const commentsDisabled =
     isLocked || item?.hidden === true || norm(item?.status) !== "published";
   const showSupremeCTA = !!gateNow?.needsSupreme && !isAdmin;
+  const isVideo = norm(item?.type) === "video";
 
   if (loading) {
     return (
@@ -420,7 +431,7 @@ export default function MediaDetailPage() {
   if (!item) {
     return (
       <div style={{ padding: 16, maxWidth: 1000, margin: "0 auto" }}>
-        <p style={{ opacity: 0.9 }}>{imgError || "Not found."}</p>
+        <p style={{ opacity: 0.9 }}>{mediaError || "Not found."}</p>
         <Link to="/gallery">Back to Gallery</Link>
       </div>
     );
@@ -533,27 +544,47 @@ export default function MediaDetailPage() {
             background: "rgba(255,255,255,0.06)",
           }}
         >
-          {imageUrl && !isLocked ? (
-            <img
-              src={imageUrl}
-              alt={titleText}
-              style={{ width: "100%", height: "auto", display: "block" }}
-              onError={() => {
-                setImageUrl("");
-                setImgError("Image failed to load.");
-              }}
-            />
+          {mediaUrl && !isLocked ? (
+            isVideo ? (
+              <video
+                src={mediaUrl}
+                controls
+                playsInline
+                preload="metadata"
+                style={{ width: "100%", height: "auto", display: "block" }}
+                onError={() => {
+                  setMediaUrl("");
+                  setMediaError("Video failed to load.");
+                }}
+              />
+            ) : (
+              <img
+                src={mediaUrl}
+                alt={titleText}
+                style={{ width: "100%", height: "auto", display: "block" }}
+                onError={() => {
+                  setMediaUrl("");
+                  setMediaError("Image failed to load.");
+                }}
+              />
+            )
           ) : (
             <div style={{ padding: 16, fontSize: 13, opacity: 0.9 }}>
               <div style={{ fontWeight: 700, marginBottom: 6 }}>
-                {isLocked ? "Locked content" : "Image unavailable"}
+                {isLocked
+                  ? "Locked content"
+                  : isVideo
+                    ? "Video unavailable"
+                    : "Image unavailable"}
               </div>
 
               <div style={{ opacity: 0.85 }}>
-                {imgError ||
+                {mediaError ||
                   (isLocked
                     ? "Please sign in / verify access to view this item."
-                    : "Image unavailable.")}
+                    : isVideo
+                      ? "Video unavailable."
+                      : "Image unavailable.")}
               </div>
 
               {isLocked && isBoudoir && signedIn && !ageVerified ? (
