@@ -25,6 +25,7 @@ import FeaturedPage from "./pages/FeaturedPage";
 import DebugAuthPage from "./pages/DebugAuthPage";
 import VideosPage from "./pages/VideosPage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
+import ExpressionVaultPage from "./pages/ExpressionVaultPage";
 
 import AsetLoungePage from "./pages/AsetLoungePage";
 import PuzzleLibraryPage from "./pages/PuzzleLibraryPage";
@@ -97,6 +98,9 @@ function App() {
         <Route path="/debug-auth" element={<DebugAuthPage />} />
         <Route path="/videos" element={<VideosPage />} />
         <Route path="/video/:slug" element={<VideoPlayerPage />} />
+
+        {/* THE STUDIO */}
+        <Route path="/studio/expression-vault" element={<ExpressionVaultPage />} />
 
         {/* ASET LOUNGE */}
         <Route path="/aset-lounge" element={<AsetLoungePage />} />
