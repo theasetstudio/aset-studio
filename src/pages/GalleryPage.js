@@ -567,13 +567,59 @@ export default function GalleryPage() {
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
+            background: rgba(255,255,255,0.04);
           }
 
-          .gallery-thumb img,
-          .gallery-thumb video {
+          .gallery-thumb img {
             display: block;
             width: 100%;
             height: auto;
+          }
+
+          .gallery-video-poster {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+              linear-gradient(to bottom, rgba(255,255,255,0.04), rgba(0,0,0,0.3)),
+              rgba(255,255,255,0.04);
+          }
+
+          .gallery-video-poster::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border: 1px solid rgba(255,255,255,0.08);
+            pointer-events: none;
+          }
+
+          .gallery-video-pill {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 2;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(0,0,0,0.55);
+            border: 1px solid rgba(255,255,255,0.12);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+          }
+
+          .gallery-video-play {
+            width: 64px;
+            height: 64px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.18);
+            font-size: 24px;
+            line-height: 1;
           }
 
           .gallery-heart-flash {
@@ -657,6 +703,7 @@ export default function GalleryPage() {
             const signedUrl = signedUrlsById[item.id] || null;
             const isFav = favoritesSet.has(item.id);
             const isHeartFlashing = Boolean(heartFlashById[item.id]);
+            const isVideo = item.type === "video";
 
             const favCount =
               favoriteCountsById[item.id] ?? item?.favorites?.[0]?.count ?? 0;
@@ -745,14 +792,11 @@ export default function GalleryPage() {
                   tabIndex={0}
                 >
                   {signedUrl ? (
-                    item.type === "video" ? (
-                      <video
-                        src={signedUrl}
-                        muted
-                        playsInline
-                        preload="metadata"
-                        draggable="false"
-                      />
+                    isVideo ? (
+                      <div className="gallery-video-poster">
+                        <div className="gallery-video-pill">VIDEO</div>
+                        <div className="gallery-video-play">▶</div>
+                      </div>
                     ) : (
                       <img
                         src={signedUrl}
