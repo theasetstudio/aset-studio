@@ -1,18 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function TopNav() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Get current session
     supabase.auth.getSession().then(({ data }) => {
       setUser(data?.session?.user || null);
     });
 
-    // Listen for auth changes
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user || null);
@@ -29,20 +28,32 @@ export default function TopNav() {
     window.location.reload();
   };
 
+  const isExpressionVault =
+    location.pathname === "/studio/expression-vault";
+
   return (
     <div style={styles.nav}>
-      {/* LEFT: LOGO */}
       <div style={styles.logo} onClick={() => navigate("/")}>
         THE ASET STUDIO
       </div>
 
-      {/* RIGHT: ACTIONS */}
       <div style={styles.actions}>
-        {/* 🚫 Scene Architect button removed */}
+        <button
+          style={{
+            ...styles.button,
+            ...(isExpressionVault ? styles.activeButton : {}),
+          }}
+          onClick={() => navigate("/studio/expression-vault")}
+        >
+          Expression Vault
+        </button>
 
         {user ? (
           <>
-            <button style={styles.button} onClick={() => navigate("/creator-hub")}>
+            <button
+              style={styles.button}
+              onClick={() => navigate("/creator-hub")}
+            >
               Hub
             </button>
 
@@ -100,5 +111,11 @@ const styles = {
     cursor: "pointer",
     fontSize: "12px",
     whiteSpace: "nowrap",
+  },
+
+  activeButton: {
+    border: "1px solid #8f7a5a",
+    color: "#d6c3a5",
+    boxShadow: "0 0 0 1px rgba(214,195,165,0.15) inset",
   },
 };

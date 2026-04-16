@@ -6,7 +6,6 @@ export default function FeaturedPage() {
   const [items, setItems] = useState([]);
   const [urlById, setUrlById] = useState({});
   const [loading, setLoading] = useState(true);
-  const [hoveredId, setHoveredId] = useState(null);
 
   useEffect(() => {
     loadFeatured();
@@ -19,146 +18,115 @@ export default function FeaturedPage() {
       const { data, error } = await supabase
         .from("media_items")
         .select(
-          "id, created_at, title, tagline, description, file_path, access_level, hidden, status, category, type, featured"
+          "id, title, tagline, description, file_path, category, access_level, type, featured, hidden, status"
         )
         .eq("featured", true)
         .eq("hidden", false)
         .eq("status", "published")
-        .order("created_at", { ascending: false })
-        .limit(200);
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       const featuredItems = data || [];
       setItems(featuredItems);
 
-      const signedUrlMap = {};
+      const map = {};
 
-      for (const row of featuredItems) {
-        if (!row.file_path) continue;
+      for (const item of featuredItems) {
+        if (!item.file_path) continue;
 
-        const { data: signed, error: signErr } = await supabase.storage
+        const { data: signed } = await supabase.storage
           .from("media")
-          .createSignedUrl(row.file_path, 60 * 60);
+          .createSignedUrl(item.file_path, 60 * 60);
 
-        if (signErr) {
-          console.warn("Signed URL error:", signErr);
-          continue;
-        }
-
-        signedUrlMap[row.id] = signed?.signedUrl || null;
+        map[item.id] = signed?.signedUrl || null;
       }
 
-      setUrlById(signedUrlMap);
-    } catch (error) {
-      console.error("Featured load error:", error);
-      setItems([]);
-      setUrlById({});
+      setUrlById(map);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }
 
-  function getItemLink(item) {
-    return `/media/${item.id}`;
-  }
-
   return (
     <div style={styles.page}>
-      <div style={styles.headerWrap}>
-        <div>
-          <h1 style={styles.title}>Featured</h1>
-          <p style={styles.subtitle}>
-            A curated showcase of featured work across image and video.
-          </p>
-        </div>
-      </div>
+      <h1 style={styles.title}>Featured</h1>
+      <p style={styles.subtitle}>
+        A curated showcase of featured work across image and video.
+      </p>
 
-      {loading ? <p style={styles.message}>Loading featured work...</p> : null}
+      {loading && <p style={styles.message}>Loading...</p>}
 
-      {!loading && items.length === 0 ? (
-        <p style={styles.message}>No featured items yet.</p>
-      ) : null}
+      {/* HERO ITEM */}
+      {items[0] && (
+        <Link to={`/media/${items[0].id}`} style={styles.heroLink}>
+          <div style={styles.hero}>
+            <img src={urlById[items[0].id]} style={styles.heroImage} />
 
+            <div style={styles.heroOverlay} />
+
+            <div style={styles.heroContent}>
+              <span style={styles.featuredBadge}>Featured</span>
+
+              <h2 style={styles.heroTitle}>
+                {items[0].title || "Untitled"}
+              </h2>
+
+              <p style={styles.heroText}>
+                {items[0].tagline ||
+                  items[0].description ||
+                  "Curated featured release"}
+              </p>
+            </div>
+          </div>
+        </Link>
+      )}
+
+      {/* GRID */}
       <div style={styles.grid}>
-        {items.map((item) => {
-          const mediaUrl = urlById[item.id];
-          const isHovered = hoveredId === item.id;
+        {items.slice(1).map((item) => (
+          <Link
+            key={item.id}
+            to={`/media/${item.id}`}
+            style={styles.cardLink}
+          >
+            <div style={styles.card}>
+              <div style={styles.mediaWrap}>
+                <img
+                  src={urlById[item.id]}
+                  style={styles.media}
+                />
 
-          return (
-            <Link
-              key={item.id}
-              to={getItemLink(item)}
-              style={styles.cardLink}
-              onMouseEnter={() => setHoveredId(item.id)}
-              onMouseLeave={() => setHoveredId(null)}
-            >
-              <div
-                style={{
-                  ...styles.card,
-                  transform: isHovered ? "translateY(-6px)" : "translateY(0)",
-                  borderColor: isHovered ? "#d4af37" : "#252533",
-                  boxShadow: isHovered
-                    ? "0 18px 40px rgba(0,0,0,0.35)"
-                    : "0 0 0 rgba(0,0,0,0)",
-                }}
-              >
-                <div style={styles.mediaWrap}>
-                  {mediaUrl ? (
-                    item.type === "video" ? (
-                      <video
-                        src={mediaUrl}
-                        style={{
-                          ...styles.media,
-                          transform: isHovered ? "scale(1.05)" : "scale(1)",
-                        }}
-                        muted
-                        playsInline
-                        preload="metadata"
-                      />
-                    ) : (
-                      <img
-                        src={mediaUrl}
-                        alt={item.title || "Featured media"}
-                        style={{
-                          ...styles.media,
-                          transform: isHovered ? "scale(1.05)" : "scale(1)",
-                        }}
-                      />
-                    )
-                  ) : (
-                    <div style={styles.placeholder}>Preview unavailable</div>
-                  )}
+                <div style={styles.overlay} />
 
-                  <div style={styles.topBadges}>
-                    <span style={styles.featuredBadge}>Featured</span>
-                  </div>
-                </div>
-
-                <div style={styles.content}>
-                  <div style={styles.metaRow}>
-                    {item.category ? (
-                      <span style={styles.metaChip}>{item.category}</span>
-                    ) : null}
-                    {item.access_level ? (
-                      <span style={styles.metaChip}>{item.access_level}</span>
-                    ) : null}
-                  </div>
-
-                  <h2 style={styles.cardTitle}>{item.title || "Untitled"}</h2>
-
-                  {item.tagline ? (
-                    <p style={styles.tagline}>{item.tagline}</p>
-                  ) : item.description ? (
-                    <p style={styles.tagline}>{item.description}</p>
-                  ) : (
-                    <p style={styles.taglineMuted}>Curated featured release</p>
-                  )}
-                </div>
+                <span style={styles.featuredBadgeSmall}>Featured</span>
               </div>
-            </Link>
-          );
-        })}
+
+              <div style={styles.content}>
+                <div style={styles.metaRow}>
+                  {item.category && (
+                    <span style={styles.metaChip}>{item.category}</span>
+                  )}
+                  {item.access_level && (
+                    <span style={styles.metaChip}>{item.access_level}</span>
+                  )}
+                </div>
+
+                <h3 style={styles.cardTitle}>
+                  {item.title || "Untitled"}
+                </h3>
+
+                <p style={styles.tagline}>
+                  {item.tagline ||
+                    item.description ||
+                    "Curated featured release"}
+                </p>
+              </div>
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   );
@@ -166,138 +134,146 @@ export default function FeaturedPage() {
 
 const styles = {
   page: {
-    minHeight: "100vh",
+    padding: "30px",
     background: "#08080d",
-    color: "#f5f5f5",
-    padding: "32px 20px 60px",
-    maxWidth: "1400px",
-    margin: "0 auto",
+    color: "#fff",
   },
-  headerWrap: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    gap: "16px",
-    flexWrap: "wrap",
-    marginBottom: "28px",
-  },
+
   title: {
-    margin: 0,
-    fontSize: "40px",
-    fontWeight: 700,
-    letterSpacing: "-0.02em",
+    fontSize: "38px",
+    marginBottom: "5px",
   },
+
   subtitle: {
-    margin: "10px 0 0 0",
-    color: "#b8b8c7",
-    fontSize: "15px",
-    lineHeight: 1.6,
-    maxWidth: "720px",
+    opacity: 0.7,
+    marginBottom: "30px",
   },
+
   message: {
-    color: "#b8b8c7",
-    fontSize: "15px",
-    marginTop: "10px",
+    opacity: 0.6,
   },
+
+  heroLink: {
+    textDecoration: "none",
+    color: "inherit",
+  },
+
+  hero: {
+    position: "relative",
+    height: "420px",
+    marginBottom: "30px",
+    borderRadius: "20px",
+    overflow: "hidden",
+  },
+
+  heroImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+
+  heroOverlay: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.2))",
+  },
+
+  heroContent: {
+    position: "absolute",
+    bottom: "20px",
+    left: "20px",
+  },
+
+  heroTitle: {
+    fontSize: "28px",
+    margin: "10px 0",
+  },
+
+  heroText: {
+    opacity: 0.8,
+    maxWidth: "500px",
+  },
+
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
     gap: "20px",
-    marginTop: "24px",
   },
+
   cardLink: {
     textDecoration: "none",
     color: "inherit",
   },
+
   card: {
-    borderRadius: "18px",
+    background: "#111119",
+    borderRadius: "16px",
     overflow: "hidden",
     border: "1px solid #252533",
-    background: "#111119",
-    transition: "all 0.25s ease",
-    height: "100%",
   },
+
   mediaWrap: {
     position: "relative",
-    width: "100%",
-    aspectRatio: "4 / 5",
-    background: "#0f0f15",
-    overflow: "hidden",
+    height: "300px",
   },
+
   media: {
     width: "100%",
     height: "100%",
     objectFit: "cover",
-    display: "block",
-    background: "#0f0f15",
-    transition: "transform 0.4s ease",
   },
-  placeholder: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#9b9bac",
-    fontSize: "14px",
-    padding: "16px",
-    textAlign: "center",
-  },
-  topBadges: {
+
+  overlay: {
     position: "absolute",
-    top: "12px",
-    left: "12px",
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
+    inset: 0,
+    background:
+      "linear-gradient(to top, rgba(0,0,0,0.6), rgba(0,0,0,0.1))",
   },
+
   featuredBadge: {
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "6px 10px",
-    borderRadius: "999px",
     background: "#d4af37",
-    color: "#111111",
+    padding: "5px 10px",
+    borderRadius: "999px",
     fontSize: "12px",
-    fontWeight: 700,
+    fontWeight: "bold",
   },
+
+  featuredBadgeSmall: {
+    position: "absolute",
+    top: "10px",
+    left: "10px",
+    background: "#d4af37",
+    padding: "5px 10px",
+    borderRadius: "999px",
+    fontSize: "11px",
+    fontWeight: "bold",
+  },
+
   content: {
-    padding: "16px",
+    padding: "15px",
   },
+
   metaRow: {
     display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-    marginBottom: "10px",
+    gap: "6px",
+    marginBottom: "8px",
   },
+
   metaChip: {
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "5px 9px",
-    borderRadius: "999px",
     background: "#232331",
-    color: "#f1f1f5",
+    padding: "4px 8px",
+    borderRadius: "999px",
     fontSize: "11px",
-    fontWeight: 700,
-    textTransform: "capitalize",
   },
+
   cardTitle: {
-    margin: 0,
-    fontSize: "18px",
-    fontWeight: 700,
-    lineHeight: 1.25,
-    color: "#f5f5f5",
+    fontSize: "16px",
+    marginBottom: "6px",
   },
+
   tagline: {
-    margin: "10px 0 0 0",
-    color: "#d5d5df",
-    fontSize: "14px",
-    lineHeight: 1.6,
-  },
-  taglineMuted: {
-    margin: "10px 0 0 0",
-    color: "#8f8fa3",
-    fontSize: "14px",
-    lineHeight: 1.6,
+    fontSize: "13px",
+    opacity: 0.8,
   },
 };

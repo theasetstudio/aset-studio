@@ -5,7 +5,10 @@ import { supabase } from "../supabaseClient";
 import { canAccessMediaItem } from "../utils/access";
 
 import lockedPreview from "../assets/locked-preview.jpg";
+import videoPoster from "../assets/video-poster.png";
 import AgeVerificationModal from "../components/AgeVerificationModal";
+
+console.log("ACTIVE GALLERY PAGE");
 
 const PAGE_SIZE = 18;
 const SIGNED_URL_TTL_SECONDS = 60 * 10;
@@ -675,9 +678,27 @@ export default function GalleryPage() {
             display: flex;
             align-items: center;
             justify-content: center;
-            background:
-              linear-gradient(to bottom, rgba(255,255,255,0.04), rgba(0,0,0,0.3)),
-              rgba(255,255,255,0.04);
+            overflow: hidden;
+            background: rgba(255,255,255,0.04);
+          }
+
+          .gallery-video-poster-image {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.88;
+          }
+
+          .gallery-video-poster-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+              to bottom,
+              rgba(0, 0, 0, 0.18),
+              rgba(0, 0, 0, 0.4)
+            );
           }
 
           .gallery-video-poster::after {
@@ -702,6 +723,8 @@ export default function GalleryPage() {
           }
 
           .gallery-video-play {
+            position: relative;
+            z-index: 2;
             width: 64px;
             height: 64px;
             border-radius: 999px;
@@ -885,6 +908,14 @@ export default function GalleryPage() {
                 >
                   {isVideo ? (
                     <div className="gallery-video-poster">
+                      <img
+                        src={videoPoster}
+                        alt="Video preview"
+                        className="gallery-video-poster-image"
+                        loading="lazy"
+                        draggable="false"
+                      />
+                      <div className="gallery-video-poster-overlay" />
                       <div className="gallery-video-pill">VIDEO</div>
                       <div className="gallery-video-play">▶</div>
                     </div>
