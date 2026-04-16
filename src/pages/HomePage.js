@@ -34,7 +34,7 @@ export default function HomePage() {
           .select("title, slug, description, file_path, category")
           .eq("type", "video")
           .eq("featured", true)
-          .eq("status", "approved")
+          .eq("status", "published")
           .limit(1)
           .maybeSingle();
 
@@ -229,6 +229,13 @@ export default function HomePage() {
             <Link to="/gallery" style={styles.card}>
               <h3 style={styles.cardTitle}>Gallery</h3>
               <p style={styles.cardText}>Browse the public image experience.</p>
+            </Link>
+
+            <Link to="/featured" style={styles.card}>
+              <h3 style={styles.cardTitle}>Featured</h3>
+              <p style={styles.cardText}>
+                Enter the curated portal of highlighted work across the platform.
+              </p>
             </Link>
 
             <Link to="/creators" style={styles.card}>
