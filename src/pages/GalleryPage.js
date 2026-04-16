@@ -7,7 +7,7 @@ import { canAccessMediaItem } from "../utils/access";
 import lockedPreview from "../assets/locked-preview.jpg";
 import AgeVerificationModal from "../components/AgeVerificationModal";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 18;
 const SIGNED_URL_TTL_SECONDS = 60 * 10;
 const HEART_FLASH_DURATION = 450;
 const DOUBLE_TAP_DELAY = 240;
@@ -41,6 +41,14 @@ export default function GalleryPage() {
   const favoritePendingRef = useRef(new Set());
   const openTimersRef = useRef({});
   const lastTapRef = useRef({});
+
+  const signedUrlsByIdRef = useRef({});
+  const signedUrlQueueRef = useRef([]);
+  const signedUrlWorkerRunningRef = useRef(false);
+
+  useEffect(() => {
+    signedUrlsByIdRef.current = signedUrlsById;
+  }, [signedUrlsById]);
 
   useEffect(() => {
     let mounted = true;
@@ -151,6 +159,10 @@ export default function GalleryPage() {
 
   useEffect(() => {
     pageRef.current = 0;
+    fetchingRef.current = false;
+    signedUrlQueueRef.current = [];
+    signedUrlWorkerRunningRef.current = false;
+
     setItems([]);
     setSignedUrlsById({});
     setFavoriteCountsById({});
@@ -163,9 +175,10 @@ export default function GalleryPage() {
   }, [selectedCategory, profile?.role, profile?.is_age_verified, session?.user?.id]);
 
   useEffect(() => {
-    if (!sentinelRef.current) return;
+    if (!sentinelRef.current || !hasMore) return;
 
     const el = sentinelRef.current;
+
     const io = new IntersectionObserver(
       (entries) => {
         const first = entries[0];
@@ -173,7 +186,7 @@ export default function GalleryPage() {
           void loadNextPage(false);
         }
       },
-      { root: null, rootMargin: "800px", threshold: 0 }
+      { root: null, rootMargin: "500px", threshold: 0 }
     );
 
     io.observe(el);
@@ -277,6 +290,17 @@ export default function GalleryPage() {
   async function createSignedUrlForPath(path) {
     if (!path) return null;
 
+    const lowerPath = String(path).toLowerCase();
+
+    if (
+      lowerPath.endsWith(".mp4") ||
+      lowerPath.endsWith(".mov") ||
+      lowerPath.endsWith(".webm") ||
+      lowerPath.endsWith(".m4v")
+    ) {
+      return null;
+    }
+
     const { data, error } = await supabase.storage
       .from("media")
       .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
@@ -289,31 +313,73 @@ export default function GalleryPage() {
     return data?.signedUrl ?? null;
   }
 
-  async function hydrateSignedUrlsForAllowed(newItems) {
-    const entries = await Promise.all(
-      newItems.map(async (raw) => {
-        const item = normalizeItem(raw);
+  async function processSignedUrlQueue() {
+    if (signedUrlWorkerRunningRef.current) return;
 
-        if (signedUrlsById[item.id]) return null;
+    signedUrlWorkerRunningRef.current = true;
+
+    try {
+      while (signedUrlQueueRef.current.length > 0) {
+        const nextItem = signedUrlQueueRef.current.shift();
+        if (!nextItem) continue;
+
+        const item = normalizeItem(nextItem);
+
+        if (item.type !== "image") continue;
+        if (signedUrlsByIdRef.current[item.id]) continue;
 
         const decision = getDecision(item);
-        if (!decision?.allowed) return null;
+        if (!decision?.allowed) continue;
 
         const path = getDisplayPathForItem(item);
-        if (!path) return null;
+        if (!path) continue;
 
-        const url = await createSignedUrlForPath(path);
-        if (!url) return null;
+        const signedUrl = await createSignedUrlForPath(path);
+        if (!signedUrl) continue;
 
-        return [item.id, url];
-      })
-    );
-
-    const updates = Object.fromEntries(entries.filter(Boolean));
-
-    if (Object.keys(updates).length > 0) {
-      setSignedUrlsById((prev) => ({ ...prev, ...updates }));
+        setSignedUrlsById((prev) => {
+          if (prev[item.id]) return prev;
+          const next = { ...prev, [item.id]: signedUrl };
+          signedUrlsByIdRef.current = next;
+          return next;
+        });
+      }
+    } finally {
+      signedUrlWorkerRunningRef.current = false;
     }
+  }
+
+  function queueSignedUrlsForImages(newItems) {
+    const imageItemsToQueue = newItems.filter((raw) => {
+      const item = normalizeItem(raw);
+
+      if (item.type !== "image") return false;
+      if (signedUrlsByIdRef.current[item.id]) return false;
+
+      const decision = getDecision(item);
+      if (!decision?.allowed) return false;
+
+      const path = getDisplayPathForItem(item);
+      if (!path) return false;
+
+      const lowerPath = String(path).toLowerCase();
+
+      if (
+        lowerPath.endsWith(".mp4") ||
+        lowerPath.endsWith(".mov") ||
+        lowerPath.endsWith(".webm") ||
+        lowerPath.endsWith(".m4v")
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (imageItemsToQueue.length === 0) return;
+
+    signedUrlQueueRef.current.push(...imageItemsToQueue);
+    void processSignedUrlQueue();
   }
 
   function initializeFavoriteCounts(batch, replace = false) {
@@ -329,11 +395,16 @@ export default function GalleryPage() {
   }
 
   async function loadNextPage(isFirstLoad) {
-    if (!hasMore) return;
+    if (!hasMore && !isFirstLoad) return;
     if (fetchingRef.current) return;
 
     fetchingRef.current = true;
-    if (!isFirstLoad) setLoadingMore(true);
+
+    if (isFirstLoad) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
 
     try {
       const page = pageRef.current;
@@ -392,7 +463,7 @@ export default function GalleryPage() {
         pageRef.current = page + 1;
       }
 
-      await hydrateSignedUrlsForAllowed(batch);
+      queueSignedUrlsForImages(batch);
     } finally {
       fetchingRef.current = false;
       setLoading(false);
@@ -538,6 +609,37 @@ export default function GalleryPage() {
     navigate(`/creator/${uploaderId}`);
   }
 
+  function handleImageError(item) {
+    setSignedUrlsById((prev) => {
+      if (!prev[item.id]) return prev;
+      const next = { ...prev };
+      delete next[item.id];
+      signedUrlsByIdRef.current = next;
+      return next;
+    });
+
+    const decision = getDecision(item);
+    if (!decision?.allowed) return;
+    if (item.type !== "image") return;
+
+    const path = getDisplayPathForItem(item);
+    if (!path) return;
+
+    const lowerPath = String(path).toLowerCase();
+
+    if (
+      lowerPath.endsWith(".mp4") ||
+      lowerPath.endsWith(".mov") ||
+      lowerPath.endsWith(".webm") ||
+      lowerPath.endsWith(".m4v")
+    ) {
+      return;
+    }
+
+    signedUrlQueueRef.current.push(item);
+    void processSignedUrlQueue();
+  }
+
   return (
     <div className="gallery-page">
       <style>
@@ -555,6 +657,15 @@ export default function GalleryPage() {
             display: block;
             width: 100%;
             height: auto;
+            min-height: 220px;
+            object-fit: cover;
+            background: rgba(255,255,255,0.04);
+          }
+
+          .gallery-thumb-skeleton {
+            width: 100%;
+            aspect-ratio: 4 / 5;
+            background: rgba(255,255,255,0.04);
           }
 
           .gallery-video-poster {
@@ -681,10 +792,10 @@ export default function GalleryPage() {
             const decision = getDecision(item);
 
             const isLocked = !decision?.allowed;
-            const signedUrl = signedUrlsById[item.id] || null;
             const isFav = favoritesSet.has(item.id);
             const isHeartFlashing = Boolean(heartFlashById[item.id]);
             const isVideo = item.type === "video";
+            const signedUrl = isVideo ? null : signedUrlsById[item.id] || null;
 
             const favCount =
               favoriteCountsById[item.id] ?? item?.favorites?.[0]?.count ?? 0;
@@ -772,18 +883,19 @@ export default function GalleryPage() {
                   role="button"
                   tabIndex={0}
                 >
-                  {signedUrl ? (
+                  {isVideo ? (
+                    <div className="gallery-video-poster">
+                      <div className="gallery-video-pill">VIDEO</div>
+                      <div className="gallery-video-play">▶</div>
+                    </div>
+                  ) : signedUrl ? (
                     <img
                       src={signedUrl}
                       alt={item.title ?? "Media"}
                       loading="lazy"
                       draggable="false"
+                      onError={() => handleImageError(item)}
                     />
-                  ) : isVideo ? (
-                    <div className="gallery-video-poster">
-                      <div className="gallery-video-pill">VIDEO</div>
-                      <div className="gallery-video-play">▶</div>
-                    </div>
                   ) : (
                     <div className="gallery-thumb-skeleton" />
                   )}

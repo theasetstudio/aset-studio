@@ -6,6 +6,7 @@ export default function FeaturedPage() {
   const [items, setItems] = useState([]);
   const [urlById, setUrlById] = useState({});
   const [loading, setLoading] = useState(true);
+  const [hoveredId, setHoveredId] = useState(null);
 
   useEffect(() => {
     loadFeatured();
@@ -18,7 +19,7 @@ export default function FeaturedPage() {
       const { data, error } = await supabase
         .from("media_items")
         .select(
-          "id, created_at, title, slug, tagline, description, file_path, access_level, hidden, status, category, type, featured"
+          "id, created_at, title, tagline, description, file_path, access_level, hidden, status, category, type, featured"
         )
         .eq("featured", true)
         .eq("hidden", false)
@@ -59,14 +60,6 @@ export default function FeaturedPage() {
   }
 
   function getItemLink(item) {
-    if (item.type === "video" && item.slug) {
-      return `/video/${item.slug}`;
-    }
-
-    if (item.slug) {
-      return `/gallery/${item.slug}`;
-    }
-
     return `/media/${item.id}`;
   }
 
@@ -90,20 +83,35 @@ export default function FeaturedPage() {
       <div style={styles.grid}>
         {items.map((item) => {
           const mediaUrl = urlById[item.id];
+          const isHovered = hoveredId === item.id;
 
           return (
             <Link
               key={item.id}
               to={getItemLink(item)}
               style={styles.cardLink}
+              onMouseEnter={() => setHoveredId(item.id)}
+              onMouseLeave={() => setHoveredId(null)}
             >
-              <div style={styles.card}>
+              <div
+                style={{
+                  ...styles.card,
+                  transform: isHovered ? "translateY(-6px)" : "translateY(0)",
+                  borderColor: isHovered ? "#d4af37" : "#252533",
+                  boxShadow: isHovered
+                    ? "0 18px 40px rgba(0,0,0,0.35)"
+                    : "0 0 0 rgba(0,0,0,0)",
+                }}
+              >
                 <div style={styles.mediaWrap}>
                   {mediaUrl ? (
                     item.type === "video" ? (
                       <video
                         src={mediaUrl}
-                        style={styles.media}
+                        style={{
+                          ...styles.media,
+                          transform: isHovered ? "scale(1.05)" : "scale(1)",
+                        }}
                         muted
                         playsInline
                         preload="metadata"
@@ -112,7 +120,10 @@ export default function FeaturedPage() {
                       <img
                         src={mediaUrl}
                         alt={item.title || "Featured media"}
-                        style={styles.media}
+                        style={{
+                          ...styles.media,
+                          transform: isHovered ? "scale(1.05)" : "scale(1)",
+                        }}
                       />
                     )
                   ) : (
@@ -121,11 +132,6 @@ export default function FeaturedPage() {
 
                   <div style={styles.topBadges}>
                     <span style={styles.featuredBadge}>Featured</span>
-                    {item.type ? (
-                      <span style={styles.typeBadge}>
-                        {item.type}
-                      </span>
-                    ) : null}
                   </div>
                 </div>
 
@@ -208,7 +214,7 @@ const styles = {
     overflow: "hidden",
     border: "1px solid #252533",
     background: "#111119",
-    transition: "transform 0.2s ease, border-color 0.2s ease",
+    transition: "all 0.25s ease",
     height: "100%",
   },
   mediaWrap: {
@@ -216,6 +222,7 @@ const styles = {
     width: "100%",
     aspectRatio: "4 / 5",
     background: "#0f0f15",
+    overflow: "hidden",
   },
   media: {
     width: "100%",
@@ -223,6 +230,7 @@ const styles = {
     objectFit: "cover",
     display: "block",
     background: "#0f0f15",
+    transition: "transform 0.4s ease",
   },
   placeholder: {
     width: "100%",
@@ -252,18 +260,6 @@ const styles = {
     color: "#111111",
     fontSize: "12px",
     fontWeight: 700,
-  },
-  typeBadge: {
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "6px 10px",
-    borderRadius: "999px",
-    background: "rgba(0,0,0,0.6)",
-    color: "#ffffff",
-    fontSize: "12px",
-    fontWeight: 700,
-    textTransform: "capitalize",
-    border: "1px solid rgba(255,255,255,0.12)",
   },
   content: {
     padding: "16px",
