@@ -43,6 +43,16 @@ export default function AdminPage() {
   const [mediaMessage, setMediaMessage] = useState('');
   const [mediaItems, setMediaItems] = useState([]);
 
+  const [loadingVault, setLoadingVault] = useState(true);
+  const [savingVault, setSavingVault] = useState(false);
+  const [vaultMessage, setVaultMessage] = useState('');
+  const [vaultItems, setVaultItems] = useState([]);
+  const [vaultTitle, setVaultTitle] = useState('');
+  const [vaultExcerpt, setVaultExcerpt] = useState('');
+  const [vaultContent, setVaultContent] = useState('');
+  const [vaultCategory, setVaultCategory] = useState('');
+  const [vaultStatus, setVaultStatus] = useState('draft');
+
   const [mediaType, setMediaType] = useState('image');
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaTitle, setMediaTitle] = useState('');
@@ -66,6 +76,7 @@ export default function AdminPage() {
     if (isAdmin) {
       fetchPrompts();
       fetchMediaItems();
+      fetchVaultItems();
     }
   }, [isAdmin]);
 
@@ -206,6 +217,25 @@ export default function AdminPage() {
     }
   }
 
+  async function fetchVaultItems() {
+    setLoadingVault(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('expression_vault')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setVaultItems(data || []);
+    } catch (error) {
+      console.error('Error fetching vault items:', error);
+    } finally {
+      setLoadingVault(false);
+    }
+  }
+
   async function handlePromptSubmit(event) {
     event.preventDefault();
     setPromptMessage('');
@@ -276,6 +306,52 @@ export default function AdminPage() {
     }
   }
 
+  async function handleVaultSubmit(event) {
+    event.preventDefault();
+    setVaultMessage('');
+
+    const cleanTitle = vaultTitle.trim();
+    const cleanExcerpt = vaultExcerpt.trim();
+    const cleanContent = vaultContent.trim();
+    const cleanCategory = vaultCategory.trim();
+    const cleanStatus = vaultStatus === 'published' ? 'published' : 'draft';
+
+    if (!cleanTitle || !cleanContent) {
+      setVaultMessage('Title and full content are required.');
+      return;
+    }
+
+    setSavingVault(true);
+
+    try {
+      const payload = {
+        title: cleanTitle,
+        excerpt: cleanExcerpt || null,
+        content: cleanContent,
+        category: cleanCategory || null,
+        status: cleanStatus,
+      };
+
+      const { error } = await supabase.from('expression_vault').insert([payload]);
+
+      if (error) throw error;
+
+      setVaultTitle('');
+      setVaultExcerpt('');
+      setVaultContent('');
+      setVaultCategory('');
+      setVaultStatus('draft');
+      setVaultMessage('Vault entry created successfully.');
+
+      await fetchVaultItems();
+    } catch (error) {
+      console.error('Vault entry upload failed:', error);
+      setVaultMessage(error.message || 'Vault entry upload failed.');
+    } finally {
+      setSavingVault(false);
+    }
+  }
+
   async function handlePromptStatusChange(promptId, nextStatus) {
     try {
       const updates = {
@@ -303,6 +379,36 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Prompt status update failed:', error);
       alert(error.message || 'Could not update prompt status.');
+    }
+  }
+
+  async function handleVaultStatusChange(vaultId, nextStatus) {
+    try {
+      const updates = {
+        status: nextStatus,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('expression_vault')
+        .update(updates)
+        .eq('id', vaultId);
+
+      if (error) throw error;
+
+      setVaultItems((current) =>
+        current.map((item) =>
+          item.id === vaultId
+            ? {
+                ...item,
+                ...updates,
+              }
+            : item
+        )
+      );
+    } catch (error) {
+      console.error('Vault status update failed:', error);
+      alert(error.message || 'Could not update vault status.');
     }
   }
 
@@ -334,6 +440,25 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Prompt delete failed:', error);
       alert(error.message || 'Could not delete prompt.');
+    }
+  }
+
+  async function handleDeleteVault(vaultId) {
+    const confirmed = window.confirm('Delete this vault entry?');
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from('expression_vault')
+        .delete()
+        .eq('id', vaultId);
+
+      if (error) throw error;
+
+      setVaultItems((current) => current.filter((item) => item.id !== vaultId));
+    } catch (error) {
+      console.error('Vault delete failed:', error);
+      alert(error.message || 'Could not delete vault entry.');
     }
   }
 
@@ -545,6 +670,17 @@ export default function AdminPage() {
     };
   }, [prompts]);
 
+  const vaultCounts = useMemo(() => {
+    const published = vaultItems.filter((item) => item.status === 'published').length;
+    const draft = vaultItems.filter((item) => item.status !== 'published').length;
+
+    return {
+      total: vaultItems.length,
+      published,
+      draft,
+    };
+  }, [vaultItems]);
+
   const mediaCounts = useMemo(() => {
     const published = mediaItems.filter((item) => item.status === 'published').length;
     const hidden = mediaItems.filter((item) => item.hidden).length;
@@ -590,7 +726,7 @@ export default function AdminPage() {
       <div style={styles.headerCard}>
         <h1 style={styles.pageTitle}>Admin Dashboard</h1>
         <p style={styles.mutedText}>
-          Upload gallery images, load videos, and manage Supreme Access prompts from one place.
+          Upload gallery images, load videos, manage Supreme Access prompts, and control Expression Vault content from one place.
         </p>
       </div>
 
@@ -633,6 +769,21 @@ export default function AdminPage() {
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Draft Prompts</div>
           <div style={styles.statValue}>{promptCounts.draft}</div>
+        </div>
+
+        <div style={styles.statCard}>
+          <div style={styles.statLabel}>Vault Entries</div>
+          <div style={styles.statValue}>{vaultCounts.total}</div>
+        </div>
+
+        <div style={styles.statCard}>
+          <div style={styles.statLabel}>Published Vault</div>
+          <div style={styles.statValue}>{vaultCounts.published}</div>
+        </div>
+
+        <div style={styles.statCard}>
+          <div style={styles.statLabel}>Draft Vault</div>
+          <div style={styles.statValue}>{vaultCounts.draft}</div>
         </div>
       </div>
 
@@ -939,6 +1090,173 @@ export default function AdminPage() {
       </section>
 
       <section style={styles.card}>
+        <h2 style={styles.sectionTitle}>Expression Vault</h2>
+
+        <form onSubmit={handleVaultSubmit} style={styles.form}>
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>Title</label>
+            <input
+              type="text"
+              value={vaultTitle}
+              onChange={(e) => setVaultTitle(e.target.value)}
+              placeholder="Enter vault entry title"
+              style={styles.input}
+              required
+            />
+          </div>
+
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>Excerpt</label>
+            <textarea
+              value={vaultExcerpt}
+              onChange={(e) => setVaultExcerpt(e.target.value)}
+              placeholder="Enter a short excerpt for the vault card"
+              rows={4}
+              style={styles.textarea}
+            />
+          </div>
+
+          <div style={styles.twoColumnGrid}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Category</label>
+              <input
+                type="text"
+                value={vaultCategory}
+                onChange={(e) => setVaultCategory(e.target.value)}
+                placeholder="Example: Power, Devotion, Silence"
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Status</label>
+              <select
+                value={vaultStatus}
+                onChange={(e) => setVaultStatus(e.target.value)}
+                style={styles.select}
+              >
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>Full Content</label>
+            <textarea
+              value={vaultContent}
+              onChange={(e) => setVaultContent(e.target.value)}
+              placeholder="Paste the full poem, monologue, or expression here"
+              rows={14}
+              style={styles.textarea}
+              required
+            />
+          </div>
+
+          <div style={styles.buttonRow}>
+            <button type="submit" style={styles.primaryButton} disabled={savingVault}>
+              {savingVault ? 'Saving...' : 'Add Vault Entry'}
+            </button>
+          </div>
+
+          {vaultMessage ? (
+            <p
+              style={
+                vaultMessage.toLowerCase().includes('failed') ||
+                vaultMessage.toLowerCase().includes('required')
+                  ? styles.errorText
+                  : styles.successText
+              }
+            >
+              {vaultMessage}
+            </p>
+          ) : null}
+        </form>
+      </section>
+
+      <section style={styles.card}>
+        <h2 style={styles.sectionTitle}>Existing Vault Entries</h2>
+
+        {loadingVault ? (
+          <p style={styles.mutedText}>Loading vault entries...</p>
+        ) : vaultItems.length === 0 ? (
+          <p style={styles.mutedText}>No vault entries found yet.</p>
+        ) : (
+          <div style={styles.promptList}>
+            {vaultItems.map((item) => {
+              const isPublished = item.status === 'published';
+
+              return (
+                <div key={item.id} style={styles.promptCard}>
+                  <div style={styles.promptTopRow}>
+                    <div>
+                      <h3 style={styles.promptTitle}>{item.title}</h3>
+                      <div style={styles.metaRow}>
+                        <span style={styles.metaBadge}>
+                          {item.category || 'Uncategorized'}
+                        </span>
+                        <span
+                          style={{
+                            ...styles.metaBadge,
+                            ...(isPublished ? styles.publishedBadge : styles.draftBadge),
+                          }}
+                        >
+                          {isPublished ? 'Published' : 'Draft'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {item.excerpt ? (
+                    <p style={styles.mediaDescription}>{item.excerpt}</p>
+                  ) : null}
+
+                  <p style={styles.promptText}>{item.content}</p>
+
+                  <div style={styles.metaTextBlock}>
+                    <div>
+                      <strong>Created:</strong>{' '}
+                      {item.created_at ? new Date(item.created_at).toLocaleString() : '—'}
+                    </div>
+                    <div>
+                      <strong>Updated:</strong>{' '}
+                      {item.updated_at ? new Date(item.updated_at).toLocaleString() : '—'}
+                    </div>
+                  </div>
+
+                  <div style={styles.actionRow}>
+                    <button
+                      type="button"
+                      style={styles.secondaryButton}
+                      onClick={() => handleVaultStatusChange(item.id, 'draft')}
+                    >
+                      Set Draft
+                    </button>
+
+                    <button
+                      type="button"
+                      style={styles.primaryButton}
+                      onClick={() => handleVaultStatusChange(item.id, 'published')}
+                    >
+                      Publish
+                    </button>
+
+                    <button
+                      type="button"
+                      style={styles.dangerButton}
+                      onClick={() => handleDeleteVault(item.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section style={styles.card}>
         <h2 style={styles.sectionTitle}>Upload Prompt</h2>
 
         <form onSubmit={handlePromptSubmit} style={styles.form}>
@@ -1202,6 +1520,7 @@ const styles = {
     fontSize: '14px',
     resize: 'vertical',
     boxSizing: 'border-box',
+    whiteSpace: 'pre-wrap',
   },
   select: {
     width: '100%',
@@ -1414,6 +1733,7 @@ const styles = {
     color: '#d8d8e3',
     fontSize: '14px',
     lineHeight: 1.5,
+    whiteSpace: 'pre-wrap',
   },
   mediaTagline: {
     margin: '0 0 8px 0',
