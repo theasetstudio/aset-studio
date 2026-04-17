@@ -5,6 +5,7 @@ import { supabase } from "../supabaseClient";
 export default function HomePage() {
   const [featuredVideo, setFeaturedVideo] = useState(null);
   const [featuredVideoUrl, setFeaturedVideoUrl] = useState("");
+  const [featuredVideoPoster, setFeaturedVideoPoster] = useState("");
   const [loadingVideo, setLoadingVideo] = useState(true);
 
   const [featuredItems, setFeaturedItems] = useState([]);
@@ -36,7 +37,7 @@ export default function HomePage() {
       try {
         const { data, error } = await supabase
           .from("media_items")
-          .select("id, title, slug, description, file_path, category")
+          .select("id, title, slug, description, file_path, watermarked_path, category")
           .eq("type", "video")
           .eq("featured", true)
           .eq("status", "published")
@@ -53,6 +54,7 @@ export default function HomePage() {
         if (!data?.file_path) {
           setFeaturedVideo(null);
           setFeaturedVideoUrl("");
+          setFeaturedVideoPoster("");
           setLoadingVideo(false);
           return;
         }
@@ -70,6 +72,23 @@ export default function HomePage() {
         }
 
         setFeaturedVideoUrl(signedData?.signedUrl || "");
+
+        if (data.watermarked_path) {
+          const { data: posterData, error: posterError } = await supabase.storage
+            .from("media")
+            .createSignedUrl(data.watermarked_path, 3600);
+
+          if (!mounted) return;
+
+          if (posterError) {
+            console.error("Error loading featured homepage video poster:", posterError);
+            setFeaturedVideoPoster("");
+          } else {
+            setFeaturedVideoPoster(posterData?.signedUrl || "");
+          }
+        } else {
+          setFeaturedVideoPoster("");
+        }
       } catch (err) {
         console.error("Error loading featured homepage video:", err);
 
@@ -77,6 +96,7 @@ export default function HomePage() {
 
         setFeaturedVideo(null);
         setFeaturedVideoUrl("");
+        setFeaturedVideoPoster("");
       } finally {
         if (mounted) {
           setLoadingVideo(false);
@@ -251,6 +271,7 @@ export default function HomePage() {
                 <div style={featuredVideoPlayerWrapStyle}>
                   <video
                     src={featuredVideoUrl}
+                    poster={featuredVideoPoster}
                     autoPlay
                     muted
                     loop
