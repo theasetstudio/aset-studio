@@ -87,6 +87,12 @@ const featuredCollections = [
     path: "/sirens-realm/friendship",
   },
   {
+    title: "Meditation",
+    description:
+      "A stillness-centered collection designed for clarity, inner awareness, emotional balance, and deep meditative focus.",
+    path: "/sirens-realm/meditation",
+  },
+  {
     title: "Creative Muse",
     description:
       "A collection designed to stir imagination, creative flow, expression, inspiration, and artistic confidence.",

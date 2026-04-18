@@ -54,6 +54,7 @@ import LovePage from "./pages/LovePage";
 import CreativeMusePage from "./pages/CreativeMusePage";
 import BluePage from "./pages/BluePage";
 import ReturnToSenderDeities from "./pages/ReturnToSenderDeities";
+import MeditationPage from "./pages/MeditationPage";
 
 import FriendshipPage from "./pages/stones/FriendshipPage";
 import PurplePage from "./pages/stones/PurplePage";
@@ -129,6 +130,7 @@ function App() {
         <Route path="/sirens-realm/veterans" element={<VeteransPage />} />
         <Route path="/sirens-realm/love" element={<LovePage />} />
         <Route path="/sirens-realm/friendship" element={<FriendshipPage />} />
+        <Route path="/sirens-realm/meditation" element={<MeditationPage />} />
         <Route path="/sirens-realm/creative-muse" element={<CreativeMusePage />} />
         <Route path="/sirens-realm/blue" element={<BluePage />} />
         <Route path="/sirens-realm/purple" element={<PurplePage />} />
