@@ -131,6 +131,12 @@ const zodiacCollections = [
       "A balanced, beauty-centered collection for harmony, grace, relationships, and refinement.",
     path: "/sirens-realm/libra",
   },
+  {
+    title: "Gemini",
+    description:
+      "A versatile, quick-minded collection centered on communication, curiosity, adaptability, expression, and mental agility.",
+    path: "/sirens-realm/gemini",
+  },
 ];
 
 export default function StoneCollectionPage() {

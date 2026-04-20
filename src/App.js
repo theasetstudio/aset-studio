@@ -1,8 +1,10 @@
+// File: src/App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import TopNav from "./components/TopNav";
 
+// Pages
 import HomePage from "./pages/HomePage";
 import GalleryPage from "./pages/GalleryPage";
 import MediaDetailPage from "./pages/MediaDetailPage";
@@ -37,6 +39,7 @@ import StoneCollectionPage from "./pages/StoneCollectionPage";
 import StoneDetailPage from "./pages/StoneDetailPage";
 import PiscesPage from "./pages/PiscesPage";
 import AquariusPage from "./pages/AquariusPage";
+import GeminiPage from "./pages/GeminiPage";
 import LibraPage from "./pages/LibraPage";
 import ProtectingTheHomePage from "./pages/ProtectingTheHomePage";
 import IntuitionPage from "./pages/IntuitionPage";
@@ -61,6 +64,9 @@ import PurplePage from "./pages/stones/PurplePage";
 
 import EliteGeneratorPage from "./pages/EliteGeneratorPage";
 import SupremeAccessPage from "./pages/SupremeAccessPage";
+
+// NEW: Talent Page
+import TalentPage from "./pages/TalentPage";
 
 function App() {
   return (
@@ -115,6 +121,7 @@ function App() {
         <Route path="/sirens-realm/stones/:slug" element={<StoneDetailPage />} />
         <Route path="/sirens-realm/pisces" element={<PiscesPage />} />
         <Route path="/sirens-realm/aquarius" element={<AquariusPage />} />
+        <Route path="/sirens-realm/gemini" element={<GeminiPage />} />
         <Route path="/sirens-realm/libra" element={<LibraPage />} />
         <Route path="/sirens-realm/protecting-the-home" element={<ProtectingTheHomePage />} />
         <Route path="/sirens-realm/intuition" element={<IntuitionPage />} />
@@ -139,6 +146,9 @@ function App() {
         {/* GENERATOR */}
         <Route path="/elite-generator" element={<EliteGeneratorPage />} />
         <Route path="/studio/writer" element={<Navigate to="/" replace />} />
+
+        {/* TALENT */}
+        <Route path="/talent" element={<TalentPage />} />
 
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
