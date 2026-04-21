@@ -31,6 +31,9 @@ export default function TopNav() {
   const isExpressionVault =
     location.pathname === "/studio/expression-vault";
 
+  const isServices =
+    location.pathname === "/services";
+
   return (
     <div style={styles.nav}>
       <div style={styles.logo} onClick={() => navigate("/")}>
@@ -46,6 +49,16 @@ export default function TopNav() {
           onClick={() => navigate("/studio/expression-vault")}
         >
           Expression Vault
+        </button>
+
+        <button
+          style={{
+            ...styles.button,
+            ...(isServices ? styles.activeButton : {}),
+          }}
+          onClick={() => navigate("/services")}
+        >
+          Services
         </button>
 
         {user ? (
