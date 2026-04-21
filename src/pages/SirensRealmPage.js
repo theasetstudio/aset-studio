@@ -37,13 +37,6 @@ export default function SirensRealmPage() {
               </Link>
 
               <Link
-                to="/sirens-realm/gemini"
-                style={styles.secondaryButton}
-              >
-                Gemini
-              </Link>
-
-              <Link
                 to="/sirens-realm-alchemy/conjurin-in-the-kitchen"
                 style={styles.fireButton}
               >
@@ -93,18 +86,6 @@ export default function SirensRealmPage() {
                 <div style={styles.cardText}>
                   Protective forces, reversal work, divine witnesses, and
                   spiritual justice.
-                </div>
-              </Link>
-
-              <Link
-                to="/sirens-realm/gemini"
-                style={styles.sectionCard}
-              >
-                <div style={styles.cardEyebrow}>Sirens Realm</div>
-                <div style={styles.cardTitle}>Gemini</div>
-                <div style={styles.cardText}>
-                  A versatile, quick-minded collection centered on communication,
-                  curiosity, adaptability, expression, and mental agility.
                 </div>
               </Link>
             </div>

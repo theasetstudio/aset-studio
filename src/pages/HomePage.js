@@ -243,7 +243,8 @@ export default function HomePage() {
   const heroRightStyle = {
     ...styles.heroRight,
     width: isMobile ? "100%" : "320px",
-    marginTop: isMobile ? 0 : -18,
+    marginTop: isMobile ? 0 : -34,
+    marginLeft: isMobile ? 0 : -28,
     display: "flex",
     justifyContent: "center",
   };
@@ -303,7 +304,7 @@ export default function HomePage() {
                   </div>
 
                   <Link to="/talent" style={styles.peopleButton}>
-                    Enter The People of Aset
+                    Explore The People of Aset
                   </Link>
                 </div>
               </div>
@@ -640,6 +641,7 @@ const styles = {
     height: "100%",
     minHeight: 430,
     objectFit: "cover",
+    objectPosition: "center top",
     display: "block",
     filter: "brightness(0.9)",
   },
