@@ -68,6 +68,9 @@ import SupremeAccessPage from "./pages/SupremeAccessPage";
 // NEW: Talent Page
 import TalentPage from "./pages/TalentPage";
 
+// NEW: Services Page
+import ServicesPage from "./pages/ServicesPage";
+
 function App() {
   return (
     <Router>
@@ -83,6 +86,7 @@ function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/services" element={<ServicesPage />} />
 
         {/* ACCESS */}
         <Route path="/supreme-access" element={<SupremeAccessPage />} />
