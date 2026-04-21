@@ -21,11 +21,11 @@ export default function HomePage() {
     function handleResize() {
       setIsMobile(window.innerWidth <= 768);
     }
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ================= VIDEO =================
   useEffect(() => {
     let mounted = true;
 
@@ -46,6 +46,8 @@ export default function HomePage() {
 
         if (!data?.file_path) {
           setFeaturedVideo(null);
+          setFeaturedVideoUrl("");
+          setFeaturedVideoPoster("");
           setLoadingVideo(false);
           return;
         }
@@ -65,20 +67,28 @@ export default function HomePage() {
             .from("media")
             .createSignedUrl(data.watermarked_path, 3600);
 
+          if (!mounted) return;
           setFeaturedVideoPoster(poster?.signedUrl || "");
+        } else {
+          setFeaturedVideoPoster("");
         }
       } catch (err) {
-        console.error(err);
+        console.error("Error loading featured video:", err);
+        if (!mounted) return;
+        setFeaturedVideo(null);
+        setFeaturedVideoUrl("");
+        setFeaturedVideoPoster("");
       } finally {
         if (mounted) setLoadingVideo(false);
       }
     }
 
     loadFeaturedVideo();
-    return () => (mounted = false);
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // ================= FEATURED STRIP =================
   useEffect(() => {
     let mounted = true;
 
@@ -91,36 +101,46 @@ export default function HomePage() {
           .eq("featured", true)
           .eq("status", "published")
           .eq("hidden", false)
+          .order("created_at", { ascending: false })
           .limit(8);
 
         if (!mounted) return;
 
-        setFeaturedItems(data || []);
+        const items = data || [];
+        setFeaturedItems(items);
 
         const map = {};
-        for (const item of data || []) {
-          if (!item.file_path) continue;
+        for (const item of items) {
+          if (!item.file_path) {
+            map[item.id] = null;
+            continue;
+          }
 
           const { data: signed } = await supabase.storage
             .from("media")
             .createSignedUrl(item.file_path, 3600);
 
+          if (!mounted) return;
           map[item.id] = signed?.signedUrl || null;
         }
 
         setFeaturedItemUrls(map);
       } catch (err) {
-        console.error(err);
+        console.error("Error loading featured items:", err);
+        if (!mounted) return;
+        setFeaturedItems([]);
+        setFeaturedItemUrls({});
       } finally {
         if (mounted) setLoadingFeaturedItems(false);
       }
     }
 
     loadItems();
-    return () => (mounted = false);
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // ================= HERO LAYOUT =================
   const heroInnerStyle = {
     ...styles.heroInner,
     maxWidth: isMobile ? 980 : 1220,
@@ -129,7 +149,7 @@ export default function HomePage() {
   const heroRowStyle = {
     ...styles.heroRow,
     flexDirection: isMobile ? "column" : "row",
-    alignItems: isMobile ? "center" : "center",
+    alignItems: "center",
     gap: isMobile ? 28 : 64,
   };
 
@@ -148,9 +168,18 @@ export default function HomePage() {
     justifyContent: "center",
   };
 
+  const introGridStyle = {
+    ...styles.introGrid,
+    gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.2fr) minmax(320px, 0.8fr)",
+  };
+
+  const portalGridStyle = {
+    ...styles.portalGrid,
+    gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
+  };
+
   return (
     <div style={styles.page}>
-      {/* HERO */}
       <section
         style={{
           ...styles.hero,
@@ -165,14 +194,19 @@ export default function HomePage() {
               <div style={styles.brand}>THE ASET STUDIO</div>
 
               <h1 style={styles.headline}>
-                A Creative Temple of Image, Sound & Sovereignty.
+                A Creative Temple of Image, Sound &amp; Sovereignty.
               </h1>
 
               <p style={styles.subtext}>
-                Egyptian royalty. Mythic cinema. A siren's whisper beneath the surface.
+                Egyptian royalty. Mythic cinema. A siren&apos;s whisper beneath the surface.
               </p>
 
-              <div style={styles.ctaRow}>
+              <div
+                style={{
+                  ...styles.ctaRow,
+                  justifyContent: isMobile ? "center" : "flex-start",
+                }}
+              >
                 <Link to="/gallery" style={styles.primaryBtn}>
                   Enter the Gallery
                 </Link>
@@ -186,10 +220,13 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* PEOPLE PANEL */}
             <div style={heroRightStyle}>
               <div style={styles.peoplePanel}>
-                <img src={peopleImageSrc} style={styles.peopleImage} />
+                <img
+                  src={peopleImageSrc}
+                  alt="The People of Aset"
+                  style={styles.peopleImage}
+                />
 
                 <div style={styles.peopleContent}>
                   <div style={styles.peopleTitle}>The People of Aset</div>
@@ -207,12 +244,159 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* KEEP REST OF YOUR PAGE SAME */}
+      <section style={styles.introSection}>
+        <div style={styles.sectionInner}>
+          <div style={styles.sectionEyebrow}>WHO IS THE ASET STUDIO</div>
+
+          <div style={introGridStyle}>
+            <div style={styles.introVideoWrap}>
+              {loadingVideo ? (
+                <div style={styles.introPlaceholder}>Loading featured experience...</div>
+              ) : featuredVideoUrl ? (
+                <video
+                  src={featuredVideoUrl}
+                  poster={featuredVideoPoster || undefined}
+                  muted
+                  autoPlay
+                  loop
+                  playsInline
+                  preload="metadata"
+                  style={styles.introVideo}
+                />
+              ) : (
+                <div style={styles.introPlaceholder}>Featured video coming soon.</div>
+              )}
+            </div>
+
+            <div style={styles.introCard}>
+              <h2 style={styles.sectionTitle}>A world built for image, story, sound, and power.</h2>
+
+              <p style={styles.sectionText}>
+                The Aset Studio is not just a platform. It is a cinematic ecosystem built
+                for galleries, creators, immersive storytelling, elevated visual culture,
+                and premium digital experiences.
+              </p>
+
+              <p style={styles.sectionText}>
+                Enter a world where beauty, mythology, sensuality, sovereignty, and media
+                all move together under one identity.
+              </p>
+
+              <div style={styles.introActions}>
+                <Link to="/videos" style={styles.primaryBtn}>
+                  Enter Video Archive
+                </Link>
+                <Link to="/creators" style={styles.secondaryBtn}>
+                  Explore Creators
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style={styles.featuredSection}>
+        <div style={styles.sectionInner}>
+          <div style={styles.sectionEyebrow}>FEATURED PREVIEW</div>
+          <h2 style={styles.sectionTitleCenter}>A glimpse into the world of Aset.</h2>
+
+          {loadingFeaturedItems ? (
+            <div style={styles.featuredLoading}>Loading featured work...</div>
+          ) : featuredItems.length === 0 ? (
+            <div style={styles.featuredLoading}>Featured work is being rebuilt.</div>
+          ) : (
+            <div style={styles.featuredStrip}>
+              {featuredItems.map((item) => {
+                const itemUrl = featuredItemUrls[item.id];
+                const isVideo = String(item.type || "").toLowerCase() === "video";
+
+                return (
+                  <Link
+                    key={item.id}
+                    to={isVideo ? `/media/${item.id}` : "/gallery"}
+                    style={styles.featuredCard}
+                  >
+                    <div style={styles.featuredMediaWrap}>
+                      {itemUrl ? (
+                        isVideo ? (
+                          <video
+                            src={itemUrl}
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                            style={styles.featuredMedia}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.play().catch(() => {});
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.pause();
+                              e.currentTarget.currentTime = 0;
+                            }}
+                          />
+                        ) : (
+                          <img
+                            src={itemUrl}
+                            alt={item.title || "Featured item"}
+                            style={styles.featuredMedia}
+                          />
+                        )
+                      ) : (
+                        <div style={styles.featuredFallback}>Preview unavailable</div>
+                      )}
+
+                      <div style={styles.featuredOverlay} />
+                    </div>
+
+                    <div style={styles.featuredMeta}>
+                      <div style={styles.featuredType}>
+                        {isVideo ? "VIDEO" : "FEATURED"}
+                      </div>
+                      <div style={styles.featuredTitle}>
+                        {item.title || "Untitled"}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section style={styles.portalSection}>
+        <div style={styles.sectionInner}>
+          <div style={styles.sectionEyebrow}>ENTER THE PLATFORM</div>
+          <h2 style={styles.sectionTitleCenter}>Choose your path.</h2>
+
+          <div style={portalGridStyle}>
+            <Link to="/gallery" style={styles.portalCard}>
+              <div style={styles.portalTitle}>Gallery</div>
+              <div style={styles.portalText}>
+                Explore the public visual archive and immersive image collections.
+              </div>
+            </Link>
+
+            <Link to="/videos" style={styles.portalCard}>
+              <div style={styles.portalTitle}>Video Archive</div>
+              <div style={styles.portalText}>
+                Enter cinematic interviews, visual storytelling, and featured screenings.
+              </div>
+            </Link>
+
+            <Link to="/sirens-realm" style={styles.portalCard}>
+              <div style={styles.portalTitle}>Sirens Realm</div>
+              <div style={styles.portalText}>
+                Step into the spiritual, mythic, and alchemical side of the world.
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
-// ================= STYLES =================
 const styles = {
   page: {
     background: "#050507",
@@ -233,7 +417,8 @@ const styles = {
   heroOverlay: {
     position: "absolute",
     inset: 0,
-    background: "rgba(0,0,0,0.6)",
+    background:
+      "linear-gradient(to bottom, rgba(0,0,0,0.42), rgba(0,0,0,0.72))",
   },
 
   heroInner: {
@@ -255,22 +440,29 @@ const styles = {
     fontSize: 12,
     letterSpacing: "0.2em",
     marginBottom: 10,
+    opacity: 0.88,
   },
 
   headline: {
     fontSize: "clamp(34px,6vw,56px)",
     fontFamily: "Georgia",
     marginBottom: 16,
+    lineHeight: 1.02,
   },
 
   subtext: {
     marginBottom: 24,
+    fontSize: 16,
+    lineHeight: 1.7,
+    opacity: 0.9,
+    maxWidth: 560,
   },
 
   ctaRow: {
     display: "flex",
     gap: 12,
     marginBottom: 12,
+    flexWrap: "wrap",
   },
 
   primaryBtn: {
@@ -279,6 +471,7 @@ const styles = {
     borderRadius: 12,
     color: "#000",
     textDecoration: "none",
+    fontWeight: 700,
   },
 
   ghostBtn: {
@@ -287,6 +480,17 @@ const styles = {
     borderRadius: 12,
     textDecoration: "none",
     color: "#fff",
+    fontWeight: 600,
+  },
+
+  secondaryBtn: {
+    border: "1px solid rgba(255,255,255,0.18)",
+    padding: "14px 18px",
+    borderRadius: 12,
+    textDecoration: "none",
+    color: "#fff",
+    fontWeight: 600,
+    background: "rgba(255,255,255,0.03)",
   },
 
   note: {
@@ -298,8 +502,9 @@ const styles = {
     width: 320,
     borderRadius: 18,
     overflow: "hidden",
-    border: "1px solid gold",
+    border: "1px solid rgba(212,175,55,0.8)",
     boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+    background: "rgba(0,0,0,0.5)",
   },
 
   peopleImage: {
@@ -307,6 +512,7 @@ const styles = {
     height: 400,
     objectFit: "cover",
     objectPosition: "center 15%",
+    display: "block",
   },
 
   peopleContent: {
@@ -317,11 +523,14 @@ const styles = {
   peopleTitle: {
     fontSize: 22,
     marginBottom: 8,
+    fontFamily: "Georgia",
   },
 
   peopleSubtext: {
     fontSize: 13,
     marginBottom: 12,
+    lineHeight: 1.6,
+    opacity: 0.9,
   },
 
   peopleButton: {
@@ -332,5 +541,222 @@ const styles = {
     textAlign: "center",
     textDecoration: "none",
     color: "#fff",
+    fontWeight: 600,
+  },
+
+  introSection: {
+    position: "relative",
+    padding: "72px 20px 48px",
+    background:
+      "linear-gradient(180deg, #050507 0%, #09090d 40%, #08080a 100%)",
+  },
+
+  featuredSection: {
+    position: "relative",
+    padding: "24px 20px 56px",
+    background:
+      "linear-gradient(180deg, #08080a 0%, #070709 50%, #050507 100%)",
+  },
+
+  portalSection: {
+    position: "relative",
+    padding: "24px 20px 90px",
+    background:
+      "linear-gradient(180deg, #050507 0%, #050507 100%)",
+  },
+
+  sectionInner: {
+    maxWidth: 1220,
+    margin: "0 auto",
+  },
+
+  sectionEyebrow: {
+    fontSize: 12,
+    letterSpacing: "0.22em",
+    marginBottom: 16,
+    opacity: 0.68,
+  },
+
+  sectionTitle: {
+    fontSize: "clamp(28px, 4vw, 42px)",
+    lineHeight: 1.08,
+    margin: "0 0 18px",
+    fontFamily: "Georgia",
+  },
+
+  sectionTitleCenter: {
+    fontSize: "clamp(28px, 4vw, 42px)",
+    lineHeight: 1.08,
+    margin: "0 0 26px",
+    fontFamily: "Georgia",
+    textAlign: "center",
+  },
+
+  sectionText: {
+    fontSize: 15,
+    lineHeight: 1.8,
+    opacity: 0.9,
+    marginBottom: 16,
+  },
+
+  introGrid: {
+    display: "grid",
+    gap: 24,
+    alignItems: "stretch",
+  },
+
+  introVideoWrap: {
+    position: "relative",
+    borderRadius: 22,
+    overflow: "hidden",
+    background: "#000",
+    minHeight: 320,
+    border: "1px solid rgba(255,255,255,0.08)",
+    boxShadow: "0 24px 80px rgba(0,0,0,0.48)",
+  },
+
+  introVideo: {
+    width: "100%",
+    height: "100%",
+    display: "block",
+    objectFit: "cover",
+    minHeight: 320,
+    background: "#000",
+  },
+
+  introPlaceholder: {
+    minHeight: 320,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    textAlign: "center",
+    color: "rgba(242,240,234,0.78)",
+    background: "rgba(255,255,255,0.02)",
+  },
+
+  introCard: {
+    borderRadius: 22,
+    border: "1px solid rgba(255,255,255,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
+    padding: 28,
+    boxShadow: "0 18px 50px rgba(0,0,0,0.22)",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+  },
+
+  introActions: {
+    display: "flex",
+    gap: 12,
+    flexWrap: "wrap",
+    marginTop: 8,
+  },
+
+  featuredLoading: {
+    borderRadius: 18,
+    padding: "28px 20px",
+    textAlign: "center",
+    color: "rgba(242,240,234,0.74)",
+    background: "rgba(255,255,255,0.025)",
+    border: "1px solid rgba(255,255,255,0.06)",
+  },
+
+  featuredStrip: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 18,
+  },
+
+  featuredCard: {
+    textDecoration: "none",
+    color: "#fff",
+    borderRadius: 20,
+    overflow: "hidden",
+    border: "1px solid rgba(255,255,255,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.25)",
+    transition: "transform 0.25s ease, box-shadow 0.25s ease",
+  },
+
+  featuredMediaWrap: {
+    position: "relative",
+    aspectRatio: "16 / 10",
+    overflow: "hidden",
+    background: "#0c0c0c",
+  },
+
+  featuredMedia: {
+    width: "100%",
+    height: "100%",
+    display: "block",
+    objectFit: "cover",
+    background: "#000",
+  },
+
+  featuredFallback: {
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 18,
+    textAlign: "center",
+    color: "rgba(242,240,234,0.65)",
+  },
+
+  featuredOverlay: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.45) 100%)",
+    pointerEvents: "none",
+  },
+
+  featuredMeta: {
+    padding: 16,
+  },
+
+  featuredType: {
+    fontSize: 11,
+    letterSpacing: "0.18em",
+    opacity: 0.65,
+    marginBottom: 8,
+  },
+
+  featuredTitle: {
+    fontSize: 18,
+    lineHeight: 1.3,
+    fontFamily: "Georgia",
+  },
+
+  portalGrid: {
+    display: "grid",
+    gap: 18,
+  },
+
+  portalCard: {
+    textDecoration: "none",
+    color: "#fff",
+    borderRadius: 20,
+    padding: 24,
+    border: "1px solid rgba(255,255,255,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.2)",
+  },
+
+  portalTitle: {
+    fontSize: 22,
+    marginBottom: 10,
+    fontFamily: "Georgia",
+  },
+
+  portalText: {
+    fontSize: 14,
+    lineHeight: 1.7,
+    opacity: 0.84,
   },
 };
