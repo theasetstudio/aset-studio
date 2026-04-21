@@ -209,25 +209,25 @@ export default function HomePage() {
 
   const heroInnerStyle = {
     ...styles.heroInner,
-    maxWidth: isMobile ? 980 : 1180,
+    maxWidth: isMobile ? 980 : 1240,
   };
 
   const heroRowStyle = {
     ...styles.heroRow,
     flexDirection: isMobile ? "column" : "row",
-    alignItems: isMobile ? "center" : "flex-start",
-    gap: isMobile ? 28 : 44,
+    alignItems: isMobile ? "center" : "center",
+    gap: isMobile ? 28 : 56,
   };
 
   const heroLeftStyle = {
     ...styles.heroLeft,
-    maxWidth: isMobile ? 760 : 620,
+    maxWidth: isMobile ? 760 : 640,
     textAlign: isMobile ? "center" : "left",
   };
 
   const subtextStyle = {
     ...styles.subtext,
-    margin: isMobile ? "0 auto 22px" : "0 0 22px",
+    margin: isMobile ? "0 auto 24px" : "0 0 24px",
   };
 
   const ctaRowStyle = {
@@ -242,9 +242,9 @@ export default function HomePage() {
 
   const heroRightStyle = {
     ...styles.heroRight,
-    width: isMobile ? "100%" : "320px",
-    marginTop: isMobile ? 0 : -34,
-    marginLeft: isMobile ? 0 : -28,
+    width: isMobile ? "100%" : "340px",
+    marginTop: isMobile ? 0 : -36,
+    marginLeft: isMobile ? 0 : -8,
     display: "flex",
     justifyContent: "center",
   };
@@ -528,11 +528,11 @@ const styles = {
   },
   hero: {
     position: "relative",
-    minHeight: "88vh",
+    minHeight: "92vh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "clamp(56px, 8vw, 96px) clamp(16px, 4vw, 28px)",
+    padding: "clamp(64px, 8vw, 104px) clamp(16px, 4vw, 32px)",
     backgroundSize: "cover",
     backgroundPosition: "center center",
     backgroundRepeat: "no-repeat",
@@ -541,15 +541,15 @@ const styles = {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(to bottom, rgba(0,0,0,0.44), rgba(0,0,0,0.66))",
+      "linear-gradient(to bottom, rgba(0,0,0,0.42), rgba(0,0,0,0.70))",
     pointerEvents: "none",
   },
   heroInner: {
     position: "relative",
     zIndex: 1,
     width: "100%",
-    paddingTop: "clamp(18px, 4vw, 40px)",
-    paddingBottom: "clamp(18px, 4vw, 40px)",
+    paddingTop: "clamp(20px, 4vw, 44px)",
+    paddingBottom: "clamp(20px, 4vw, 44px)",
   },
   heroRow: {
     display: "flex",
@@ -564,23 +564,24 @@ const styles = {
     letterSpacing: "0.22em",
     fontSize: "clamp(11px, 1.8vw, 12px)",
     opacity: 0.95,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   headline: {
     fontFamily: 'Georgia, "Times New Roman", serif',
     fontWeight: 600,
-    fontSize: "clamp(32px, 6vw, 52px)",
-    lineHeight: 1.08,
-    margin: "0 0 14px",
+    fontSize: "clamp(34px, 6vw, 56px)",
+    lineHeight: 1.05,
+    margin: "0 0 16px",
     textWrap: "balance",
+    maxWidth: 700,
   },
   subtext: {
-    maxWidth: 720,
+    maxWidth: 620,
     opacity: 0.9,
     fontSize: "clamp(15px, 2.6vw, 17px)",
-    lineHeight: 1.6,
-    paddingLeft: 4,
-    paddingRight: 4,
+    lineHeight: 1.7,
+    paddingLeft: 2,
+    paddingRight: 2,
   },
   ctaRow: {
     display: "flex",
@@ -602,12 +603,13 @@ const styles = {
     fontWeight: 700,
     minHeight: 50,
     minWidth: 190,
+    boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
   },
   ghostBtn: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "rgba(0,0,0,0.24)",
+    background: "rgba(0,0,0,0.26)",
     border: "1px solid rgba(212,175,55,0.72)",
     color: "#f2f0ea",
     padding: "14px 18px",
@@ -616,43 +618,44 @@ const styles = {
     fontWeight: 600,
     minHeight: 50,
     minWidth: 190,
+    backdropFilter: "blur(3px)",
   },
   note: {
     opacity: 0.78,
     fontSize: "clamp(12px, 2.2vw, 13px)",
     marginTop: 10,
     lineHeight: 1.5,
-    paddingLeft: 8,
-    paddingRight: 8,
+    paddingLeft: 2,
+    paddingRight: 2,
   },
   peoplePanel: {
     width: "100%",
-    maxWidth: 300,
-    minHeight: 430,
-    borderRadius: 18,
+    maxWidth: 320,
+    minHeight: 450,
+    borderRadius: 20,
     overflow: "hidden",
-    border: "1px solid rgba(212,175,55,0.46)",
-    boxShadow: "0 18px 40px rgba(0,0,0,0.34)",
+    border: "1px solid rgba(212,175,55,0.42)",
+    boxShadow: "0 24px 50px rgba(0,0,0,0.38)",
     position: "relative",
-    background: "rgba(0,0,0,0.18)",
+    background: "rgba(0,0,0,0.20)",
   },
   peopleImage: {
     width: "100%",
     height: "100%",
-    minHeight: 430,
+    minHeight: 450,
     objectFit: "cover",
-    objectPosition: "center top",
+    objectPosition: "center 14%",
     display: "block",
-    filter: "brightness(0.9)",
+    filter: "brightness(0.92)",
   },
   peopleContent: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    padding: 18,
+    padding: 20,
     background:
-      "linear-gradient(to top, rgba(0,0,0,0.88), rgba(0,0,0,0.08))",
+      "linear-gradient(to top, rgba(0,0,0,0.92), rgba(0,0,0,0.10))",
     color: "#f2f0ea",
   },
   peopleTitle: {
@@ -677,10 +680,11 @@ const styles = {
     padding: "12px 14px",
     borderRadius: 12,
     border: "1px solid rgba(212,175,55,0.8)",
-    background: "rgba(20,14,8,0.6)",
+    background: "rgba(20,14,8,0.62)",
     color: "#f2f0ea",
     textDecoration: "none",
     fontWeight: 700,
+    backdropFilter: "blur(3px)",
   },
   featuredVideoSection: {
     width: "100%",
@@ -894,6 +898,7 @@ const styles = {
     width: "100%",
     height: "100%",
     objectFit: "cover",
+    objectPosition: "center 22%",
     display: "block",
     background: "#000",
   },
