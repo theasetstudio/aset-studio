@@ -11,17 +11,17 @@ function norm(v) {
 
 function isValidVideo(item) {
   if (!item) return false;
-
   if (norm(item.type) !== "video") return false;
   if (norm(item.status) !== "published") return false;
   if (item.hidden === true) return false;
-
   if (!item.file_path || String(item.file_path).trim() === "") return false;
-
   return true;
 }
 
 export default function VideosPage() {
+  const [featuredVideo, setFeaturedVideo] = useState(null);
+  const [featuredVideoUrl, setFeaturedVideoUrl] = useState("");
+
   const [videos, setVideos] = useState([]);
   const [signedUrls, setSignedUrls] = useState({});
   const [activeCategory, setActiveCategory] = useState("all");
@@ -31,15 +31,59 @@ export default function VideosPage() {
   useEffect(() => {
     let isMounted = true;
 
-    async function fetchVideos() {
-      setLoading(true);
-      setError("");
-
+    async function loadFeaturedVideo() {
       try {
         const { data, error: fetchError } = await supabase
           .from("media_items")
           .select(
-            "id, title, description, category, file_path, type, status, hidden, tags, created_at"
+            "id, title, description, file_path, type, status, hidden, category"
+          )
+          .eq("type", "video")
+          .eq("featured", true)
+          .eq("status", "published")
+          .eq("hidden", false)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+        if (!isMounted) return;
+
+        if (!data || !isValidVideo(data)) {
+          setFeaturedVideo(null);
+          setFeaturedVideoUrl("");
+          return;
+        }
+
+        setFeaturedVideo(data);
+
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from("media")
+          .createSignedUrl(data.file_path, 3600);
+
+        if (!isMounted) return;
+
+        if (signedError || !signedData?.signedUrl) {
+          console.error("Featured video signed URL failed:", signedError);
+          setFeaturedVideoUrl("");
+          return;
+        }
+
+        setFeaturedVideoUrl(signedData.signedUrl);
+      } catch (err) {
+        console.error("Failed to load featured video:", err);
+        if (!isMounted) return;
+        setFeaturedVideo(null);
+        setFeaturedVideoUrl("");
+      }
+    }
+
+    async function loadVideos() {
+      try {
+        const { data, error: fetchError } = await supabase
+          .from("media_items")
+          .select(
+            "id, title, description, file_path, type, category, status, hidden, created_at"
           )
           .eq("type", "video")
           .eq("status", "published")
@@ -47,12 +91,9 @@ export default function VideosPage() {
           .order("created_at", { ascending: false });
 
         if (fetchError) throw fetchError;
-
         if (!isMounted) return;
 
-        const rawVideos = Array.isArray(data) ? data : [];
-        const safeVideos = rawVideos.filter(isValidVideo);
-
+        const safeVideos = Array.isArray(data) ? data.filter(isValidVideo) : [];
         setVideos(safeVideos);
 
         const urlMap = {};
@@ -63,28 +104,29 @@ export default function VideosPage() {
               const { data: signedData, error: signedError } =
                 await supabase.storage
                   .from("media")
-                  .createSignedUrl(item.file_path, 60 * 60);
+                  .createSignedUrl(item.file_path, 3600);
 
               if (!signedError && signedData?.signedUrl) {
                 urlMap[item.id] = signedData.signedUrl;
               } else {
                 console.error("Signed URL failed for:", item.id);
+                urlMap[item.id] = "";
               }
             } catch (e) {
               console.error("URL generation crash:", item.id, e);
+              urlMap[item.id] = "";
             }
           })
         );
 
-        if (isMounted) {
-          setSignedUrls(urlMap);
-        }
+        if (!isMounted) return;
+        setSignedUrls(urlMap);
       } catch (err) {
-        console.error("Error loading videos:", err);
-
-        if (isMounted) {
-          setError(err.message || "Failed to load videos.");
-        }
+        console.error("Failed to load videos:", err);
+        if (!isMounted) return;
+        setError(err.message || "Failed to load videos.");
+        setVideos([]);
+        setSignedUrls({});
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -92,7 +134,8 @@ export default function VideosPage() {
       }
     }
 
-    fetchVideos();
+    loadFeaturedVideo();
+    loadVideos();
 
     return () => {
       isMounted = false;
@@ -100,16 +143,48 @@ export default function VideosPage() {
   }, []);
 
   const filteredVideos = useMemo(() => {
-    if (activeCategory === "all") return videos;
+    const baseVideos = featuredVideo
+      ? videos.filter((video) => video.id !== featuredVideo.id)
+      : videos;
 
-    return videos.filter((item) => {
-      const category = norm(item.category);
-      return category === activeCategory;
-    });
-  }, [videos, activeCategory]);
+    if (activeCategory === "all") return baseVideos;
+
+    return baseVideos.filter((item) => norm(item.category) === activeCategory);
+  }, [videos, activeCategory, featuredVideo]);
 
   return (
     <div className="videos-page">
+      {featuredVideo && featuredVideoUrl ? (
+        <section className="featured-video">
+          <video
+            className="featured-video-bg"
+            src={featuredVideoUrl}
+            muted
+            autoPlay
+            loop
+            playsInline
+            preload="metadata"
+          />
+
+          <div className="featured-video-overlay" />
+
+          <div className="featured-video-content">
+            <h1>{featuredVideo.title || "Featured Video"}</h1>
+
+            {featuredVideo.description ? (
+              <p>{featuredVideo.description}</p>
+            ) : null}
+
+            <Link
+              to={`/media/${featuredVideo.id}`}
+              className="featured-video-button"
+            >
+              Watch Now
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       <section className="videos-hero">
         <div className="videos-hero-overlay" />
         <div className="videos-hero-content">
@@ -160,9 +235,6 @@ export default function VideosPage() {
           <div className="videos-grid">
             {filteredVideos.map((video) => {
               const videoUrl = signedUrls[video.id] || "";
-              const categoryLabel = (
-                video.category || "Uncategorized"
-              ).replaceAll("_", " ");
 
               return (
                 <article key={video.id} className="video-card">
@@ -196,17 +268,9 @@ export default function VideosPage() {
                   </div>
 
                   <div className="video-card-body">
-                    <div className="video-card-meta">
-                      <span className="video-card-category">{categoryLabel}</span>
-                    </div>
-
                     <h2 className="video-card-title">
                       {video.title || "Untitled Video"}
                     </h2>
-
-                    <p className="video-card-description">
-                      {video.description || "No description available yet."}
-                    </p>
 
                     <Link to={`/media/${video.id}`} className="video-card-link">
                       Enter Screening

@@ -17,15 +17,16 @@ export default function HomePage() {
 
   return (
     <div style={styles.page}>
+      {/* HERO SECTION */}
       <section style={{ ...styles.hero, backgroundImage: `url('${heroImageSrc}')` }}>
         <div style={styles.heroOverlay} />
         <div style={styles.heroInner}>
           <div style={styles.heroRow}>
-            {/* Left side: hero content */}
+            {/* Left side: headline and buttons */}
             <div style={styles.heroLeft}>
               <div style={styles.brand}>THE ASET STUDIO</div>
               <h1 style={styles.headline}>
-                A Creative Temple of Image, Sound &amp; Sovereignty.
+                A Creative Temple of Image, Sound & Sovereignty.
               </h1>
               <p style={styles.subtext}>
                 Egyptian royalty. Mythic cinema. A siren&apos;s whisper beneath the surface.
@@ -43,7 +44,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right side: People panel */}
+            {/* Right side: People of Aset panel */}
             <div style={styles.heroRight}>
               <div style={styles.peoplePanel}>
                 <img
@@ -64,14 +65,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured previews section */}
+      {/* WHO IS THE ASET STUDIO VIDEO SECTION */}
       <section style={styles.featuredVideoSection}>
-        {/* Existing featured previews content goes here */}
+        {/* Existing video component goes here */}
       </section>
 
-      {/* Portal section */}
+      {/* FEATURED PREVIEW STRIP */}
+      <section style={styles.previewSection}>
+        {/* Existing featured preview content goes here */}
+      </section>
+
+      {/* PORTAL GRID */}
       <section style={styles.portalSection}>
-        {/* Existing portal content goes here */}
+        {/* Existing portal grid content goes here */}
       </section>
     </div>
   );
@@ -115,19 +121,9 @@ const styles = {
     gap: 40,
     width: "100%",
   },
-  heroLeft: {
-    maxWidth: 600,
-    textAlign: "left",
-  },
-  heroRight: {
-    marginTop: -40,
-  },
-  brand: {
-    fontSize: 12,
-    letterSpacing: "0.18em",
-    opacity: 0.8,
-    marginBottom: 14,
-  },
+  heroLeft: { maxWidth: 600, textAlign: "left" },
+  heroRight: { marginTop: -40 },
+  brand: { fontSize: 12, letterSpacing: "0.18em", opacity: 0.8, marginBottom: 14 },
   headline: {
     fontFamily: 'Georgia, "Times New Roman", serif',
     fontSize: "clamp(32px, 6vw, 54px)",
@@ -135,17 +131,8 @@ const styles = {
     fontWeight: 600,
     marginBottom: 18,
   },
-  subtext: {
-    fontSize: 16,
-    lineHeight: 1.7,
-    opacity: 0.88,
-    marginBottom: 24,
-  },
-  ctaRow: {
-    display: "flex",
-    gap: 16,
-    marginBottom: 14,
-  },
+  subtext: { fontSize: 16, lineHeight: 1.7, opacity: 0.88, marginBottom: 24 },
+  ctaRow: { display: "flex", gap: 16, marginBottom: 14 },
   primaryBtn: {
     padding: "12px 20px",
     borderRadius: 8,
@@ -163,10 +150,7 @@ const styles = {
     textDecoration: "none",
     fontWeight: 600,
   },
-  note: {
-    fontSize: 12,
-    opacity: 0.7,
-  },
+  note: { fontSize: 12, opacity: 0.7 },
   peoplePanel: {
     width: 300,
     borderRadius: 16,
@@ -175,12 +159,7 @@ const styles = {
     boxShadow: "0 0 30px rgba(212,175,55,0.15)",
     position: "relative",
   },
-  peopleImage: {
-    width: "100%",
-    height: 420,
-    objectFit: "cover",
-    filter: "brightness(0.85)",
-  },
+  peopleImage: { width: "100%", height: 420, objectFit: "cover", filter: "brightness(0.85)" },
   peopleContent: {
     position: "absolute",
     bottom: 0,
@@ -203,10 +182,7 @@ const styles = {
     textDecoration: "none",
     marginTop: 10,
   },
-  featuredVideoSection: {
-    marginTop: 60,
-  },
-  portalSection: {
-    marginTop: 60,
-  },
+  featuredVideoSection: { marginTop: 60 },
+  previewSection: { marginTop: 60 },
+  portalSection: { marginTop: 60 },
 };
