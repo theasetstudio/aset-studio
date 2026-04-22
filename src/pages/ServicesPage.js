@@ -9,23 +9,27 @@ export default function ServicesPage() {
         <h2 style={styles.subtitle}>Private Support for Creatives & Talent</h2>
 
         <p style={styles.paragraph}>
-          The Aset Studio offers high-touch, luxury support services for individuals within the world of entertainment and the arts.
+          The Aset Studio offers high-touch, luxury support services for
+          individuals within the world of entertainment and the arts.
         </p>
 
         <p style={styles.paragraph}>
-          From production to platform, each service is designed to ensure that talent, creators, and professionals are supported with precision, discretion, and intention.
+          From production to platform, each service is designed to ensure that
+          talent, creators, and professionals are supported with precision,
+          discretion, and intention.
         </p>
 
-        {/* Traveling Personal Assistant */}
         <section style={styles.section}>
           <h3 style={styles.sectionTitle}>Traveling Personal Assistant</h3>
           <p style={styles.paragraph}>
             On-site support for production, talent, and creative execution.
           </p>
           <p style={styles.paragraph}>
-            This service provides hybrid support, combining personal assistance with production coordination for elite clients.
+            This service provides hybrid support, combining personal assistance
+            with production coordination for elite clients.
           </p>
 
+          <p style={styles.label}>Scope includes:</p>
           <ul style={styles.list}>
             <li>On-set coordination</li>
             <li>Talent liaison and communication</li>
@@ -34,19 +38,29 @@ export default function ServicesPage() {
             <li>Asset and media handling</li>
           </ul>
 
-          <p style={styles.paragraph}><strong>Availability:</strong> Flexible depending on project needs</p>
-          <p style={styles.paragraph}><strong>Travel:</strong> Local, national, and international depending on project. Travel expenses covered by client when required</p>
-          <p style={styles.paragraph}><strong>Communication:</strong> Real-time updates</p>
-          <p style={styles.paragraph}><strong>Billing:</strong> Project-based custom quotes</p>
+          <p style={styles.paragraph}>
+            <strong>Availability:</strong> Flexible depending on project needs
+          </p>
+          <p style={styles.paragraph}>
+            <strong>Travel:</strong> Local, national, and international
+            depending on project. Travel expenses covered by client when
+            required
+          </p>
+          <p style={styles.paragraph}>
+            <strong>Communication:</strong> Real-time updates
+          </p>
+          <p style={styles.paragraph}>
+            <strong>Billing:</strong> Project-based custom quotes
+          </p>
         </section>
 
-        {/* Virtual Assistant */}
         <section style={styles.section}>
           <h3 style={styles.sectionTitle}>Virtual Assistant</h3>
           <p style={styles.paragraph}>
             Digital support for creators, talent, and platform coordination.
           </p>
 
+          <p style={styles.label}>Scope includes:</p>
           <ul style={styles.list}>
             <li>Talent profile setup and verification</li>
             <li>Creator communication and onboarding</li>
@@ -56,33 +70,28 @@ export default function ServicesPage() {
             <li>Regular virtual assistant duties</li>
           </ul>
 
-          <p style={styles.paragraph}><strong>Access:</strong></p>
-          <ul style={styles.list}>
-            <li>Elite clients receive fuller access and real-time support</li>
-            <li>Standard clients receive structured 9–5 support</li>
-          </ul>
-
-          <p style={styles.paragraph}><strong>Communication:</strong></p>
-          <ul style={styles.list}>
-            <li>Elite → live updates</li>
-            <li>Standard → end-of-day summaries</li>
-          </ul>
-
-          <p style={styles.paragraph}><strong>Billing:</strong></p>
-          <ul style={styles.list}>
-            <li>Elite → project-based</li>
-            <li>Standard → hourly</li>
-          </ul>
+          <p style={styles.paragraph}>
+            <strong>Access:</strong> Elite clients receive fuller access and
+            real-time support. Standard clients receive structured 9–5 support.
+          </p>
+          <p style={styles.paragraph}>
+            <strong>Communication:</strong> Elite → live updates. Standard →
+            end-of-day summaries.
+          </p>
+          <p style={styles.paragraph}>
+            <strong>Billing:</strong> Elite → project-based. Standard → hourly.
+          </p>
         </section>
 
-        {/* Web Designer */}
         <section style={styles.section}>
           <h3 style={styles.sectionTitle}>Web Designer</h3>
           <p style={styles.paragraph}>
             Custom digital presentation aligned with cinematic identity.
           </p>
 
+          <p style={styles.label}>Scope includes:</p>
           <ul style={styles.list}>
+            <li>Website design and full website builds</li>
             <li>Page design and layout development</li>
             <li>Branding and visual refinement</li>
             <li>User experience alignment with luxury presentation</li>
@@ -90,13 +99,13 @@ export default function ServicesPage() {
           </ul>
         </section>
 
-        {/* Virtual Photographer */}
         <section style={styles.section}>
           <h3 style={styles.sectionTitle}>Virtual Photographer</h3>
           <p style={styles.paragraph}>
             Remote and on-site visual capture for talent and creatives.
           </p>
 
+          <p style={styles.label}>Scope includes:</p>
           <ul style={styles.list}>
             <li>Profile imagery</li>
             <li>Campaign and promotional visuals</li>
@@ -105,13 +114,13 @@ export default function ServicesPage() {
           </ul>
         </section>
 
-        {/* Red Carpet Interviewer */}
         <section style={styles.section}>
           <h3 style={styles.sectionTitle}>Red Carpet Interviewer</h3>
           <p style={styles.paragraph}>
             On-location, cinematic interview experience.
           </p>
 
+          <p style={styles.label}>Scope includes:</p>
           <ul style={styles.list}>
             <li>Live on-site interviews</li>
             <li>Talent engagement and coordination</li>
@@ -120,7 +129,6 @@ export default function ServicesPage() {
           </ul>
         </section>
 
-        {/* Interview Services */}
         <section style={styles.section}>
           <h3 style={styles.sectionTitle}>Interview Services</h3>
 
@@ -143,7 +151,6 @@ export default function ServicesPage() {
           </ul>
         </section>
 
-        {/* Access & Positioning */}
         <section style={styles.section}>
           <h3 style={styles.sectionTitle}>Access & Positioning</h3>
           <p style={styles.paragraph}>
@@ -153,11 +160,11 @@ export default function ServicesPage() {
             Entertainment, arts, and creative industries only.
           </p>
           <p style={styles.paragraph}>
-            Services are visible publicly, but execution remains curated and selective to protect quality and brand integrity.
+            Services are visible publicly, but execution remains curated and
+            selective to protect quality and brand integrity.
           </p>
         </section>
 
-        {/* Request Access */}
         <section style={styles.section}>
           <h3 style={styles.sectionTitle}>Request Access</h3>
           <p style={styles.paragraph}>
@@ -168,11 +175,11 @@ export default function ServicesPage() {
             <li>or request access through the platform</li>
           </ul>
           <p style={styles.paragraph}>
-            All engagements are reviewed and confirmed based on scope and alignment.
+            All engagements are reviewed and confirmed based on scope and
+            alignment.
           </p>
         </section>
 
-        {/* Brand Close */}
         <div style={styles.footer}>
           <p>The Aset Studio</p>
           <p>A creative world.</p>
@@ -217,6 +224,11 @@ const styles = {
     marginTop: "20px",
     marginBottom: "10px",
   },
+  label: {
+    marginBottom: "10px",
+    color: "#e0d2b8",
+    fontWeight: "600",
+  },
   paragraph: {
     marginBottom: "12px",
     lineHeight: "1.6",
@@ -226,6 +238,7 @@ const styles = {
     paddingLeft: "20px",
     marginBottom: "15px",
     color: "#ccc",
+    lineHeight: "1.7",
   },
   footer: {
     marginTop: "60px",
