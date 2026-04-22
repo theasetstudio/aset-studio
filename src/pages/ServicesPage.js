@@ -3,22 +3,36 @@ import React from "react";
 export default function ServicesPage() {
   return (
     <div style={styles.page}>
+      <section style={styles.hero}>
+        <div style={styles.heroImageWrap}>
+          <img
+            src="/services-hero.png"
+            alt="The Aset Studio Services"
+            style={styles.heroImage}
+          />
+          <div style={styles.heroOverlay} />
+        </div>
+
+        <div style={styles.heroContent}>
+          <p style={styles.eyebrow}>SERVICES</p>
+          <h1 style={styles.heroTitle}>THE ASET STUDIO</h1>
+          <div style={styles.heroLine} />
+          <h2 style={styles.heroSubtitle}>Private Support for Creatives & Talent</h2>
+
+          <p style={styles.heroText}>
+            High-touch, luxury support services for individuals within the world
+            of entertainment and the arts.
+          </p>
+
+          <p style={styles.heroText}>
+            From production to platform, each service is designed to ensure that
+            talent, creators, and professionals are supported with precision,
+            discretion, and intention.
+          </p>
+        </div>
+      </section>
+
       <div style={styles.container}>
-        <h1 style={styles.title}>SERVICES — THE ASET STUDIO</h1>
-
-        <h2 style={styles.subtitle}>Private Support for Creatives & Talent</h2>
-
-        <p style={styles.paragraph}>
-          The Aset Studio offers high-touch, luxury support services for
-          individuals within the world of entertainment and the arts.
-        </p>
-
-        <p style={styles.paragraph}>
-          From production to platform, each service is designed to ensure that
-          talent, creators, and professionals are supported with precision,
-          discretion, and intention.
-        </p>
-
         <section style={styles.section}>
           <h3 style={styles.sectionTitle}>Traveling Personal Assistant</h3>
           <p style={styles.paragraph}>
@@ -43,8 +57,7 @@ export default function ServicesPage() {
           </p>
           <p style={styles.paragraph}>
             <strong>Travel:</strong> Local, national, and international
-            depending on project. Travel expenses covered by client when
-            required
+            depending on project. Travel expenses covered by client when required
           </p>
           <p style={styles.paragraph}>
             <strong>Communication:</strong> Real-time updates
@@ -171,8 +184,10 @@ export default function ServicesPage() {
             To inquire about services or begin a project:
           </p>
           <ul style={styles.list}>
-            <li>direct contact</li>
-            <li>or request access through the platform</li>
+            <li>Phone: 216-474-5705</li>
+            <li>DM us here</li>
+            <li>Email: theasetstudio@gmail.com</li>
+            <li>Instagram: @theasetstudioofficial</li>
           </ul>
           <p style={styles.paragraph}>
             All engagements are reviewed and confirmed based on scope and
@@ -180,10 +195,20 @@ export default function ServicesPage() {
           </p>
         </section>
 
+        <div style={styles.contactBar}>
+          <div style={styles.contactItem}>216-474-5705</div>
+          <div style={styles.contactItem}>DM us here</div>
+          <div style={styles.contactItem}>theasetstudio@gmail.com</div>
+          <div style={styles.contactItem}>@theasetstudioofficial</div>
+        </div>
+
         <div style={styles.footer}>
-          <p>The Aset Studio</p>
-          <p>A creative world.</p>
-          <p>Not just a platform.</p>
+          <p style={styles.footerBrand}>THE ASET STUDIO</p>
+          <p style={styles.footerTagline}>A creative world. Not just a platform.</p>
+          <div style={styles.footerFounderBlock}>
+            <p style={styles.footerFounderTitle}>Founder &amp; Creative Director</p>
+            <p style={styles.footerFounderName}>Franchesca Analisa “Sapphire”</p>
+          </div>
         </div>
       </div>
     </div>
@@ -195,55 +220,192 @@ const styles = {
     backgroundColor: "#000",
     color: "#fff",
     minHeight: "100vh",
-    padding: "60px 20px",
-    fontFamily: "serif",
+    fontFamily: "Georgia, Times New Roman, serif",
   },
-  container: {
-    maxWidth: "900px",
-    margin: "0 auto",
+
+  hero: {
+    position: "relative",
+    minHeight: "720px",
+    display: "flex",
+    alignItems: "center",
+    overflow: "hidden",
+    borderBottom: "1px solid rgba(201, 159, 74, 0.22)",
   },
-  title: {
-    fontSize: "32px",
-    letterSpacing: "2px",
-    marginBottom: "20px",
+
+  heroImageWrap: {
+    position: "absolute",
+    inset: 0,
+    overflow: "hidden",
   },
-  subtitle: {
+
+  heroImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    objectPosition: "center 18%",
+    transform: "scale(1.03)",
+    filter: "brightness(0.62)",
+  },
+
+  heroOverlay: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "linear-gradient(90deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.68) 34%, rgba(0,0,0,0.32) 62%, rgba(0,0,0,0.18) 100%)",
+  },
+
+  heroContent: {
+    position: "relative",
+    zIndex: 2,
+    maxWidth: "620px",
+    padding: "110px 24px 110px 24px",
+    marginLeft: "max(24px, calc((100vw - 1200px) / 2))",
+  },
+
+  eyebrow: {
+    margin: "0 0 14px 0",
+    color: "#c99f4a",
+    letterSpacing: "4px",
+    fontSize: "15px",
+  },
+
+  heroTitle: {
+    margin: 0,
+    fontSize: "clamp(52px, 8vw, 96px)",
+    lineHeight: "0.95",
+    letterSpacing: "1px",
+    maxWidth: "500px",
+  },
+
+  heroLine: {
+    width: "74px",
+    height: "2px",
+    background: "#c99f4a",
+    margin: "28px 0 28px 0",
+  },
+
+  heroSubtitle: {
+    margin: "0 0 22px 0",
+    color: "#d8b06a",
+    fontSize: "clamp(26px, 3.2vw, 42px)",
+    lineHeight: "1.08",
+    maxWidth: "500px",
+    fontWeight: "normal",
+  },
+
+  heroText: {
+    margin: "0 0 18px 0",
+    maxWidth: "520px",
+    color: "#f0ebe3",
     fontSize: "20px",
-    marginBottom: "20px",
-    color: "#ccc",
-  },
-  section: {
-    marginTop: "40px",
-  },
-  sectionTitle: {
-    fontSize: "22px",
-    marginBottom: "10px",
-  },
-  subSectionTitle: {
-    fontSize: "18px",
-    marginTop: "20px",
-    marginBottom: "10px",
-  },
-  label: {
-    marginBottom: "10px",
-    color: "#e0d2b8",
-    fontWeight: "600",
-  },
-  paragraph: {
-    marginBottom: "12px",
-    lineHeight: "1.6",
-    color: "#ddd",
-  },
-  list: {
-    paddingLeft: "20px",
-    marginBottom: "15px",
-    color: "#ccc",
     lineHeight: "1.7",
   },
+
+  container: {
+    maxWidth: "980px",
+    margin: "0 auto",
+    padding: "60px 24px 90px",
+  },
+
+  section: {
+    marginTop: "46px",
+    paddingBottom: "34px",
+    borderBottom: "1px solid rgba(201, 159, 74, 0.12)",
+  },
+
+  sectionTitle: {
+    fontSize: "38px",
+    margin: "0 0 18px 0",
+    color: "#fff",
+    fontWeight: "600",
+  },
+
+  subSectionTitle: {
+    fontSize: "26px",
+    marginTop: "28px",
+    marginBottom: "12px",
+    color: "#d8b06a",
+    fontWeight: "600",
+  },
+
+  label: {
+    marginBottom: "10px",
+    color: "#e0c188",
+    fontWeight: "600",
+    fontSize: "18px",
+  },
+
+  paragraph: {
+    marginBottom: "16px",
+    lineHeight: "1.9",
+    color: "#ddd6cd",
+    fontSize: "18px",
+  },
+
+  list: {
+    paddingLeft: "24px",
+    marginBottom: "18px",
+    color: "#d3cbc1",
+    lineHeight: "1.95",
+    fontSize: "18px",
+  },
+
+  contactBar: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "14px",
+    marginTop: "52px",
+    paddingTop: "28px",
+    borderTop: "1px solid rgba(201, 159, 74, 0.18)",
+  },
+
+  contactItem: {
+    border: "1px solid rgba(201, 159, 74, 0.28)",
+    borderRadius: "14px",
+    padding: "16px 18px",
+    color: "#f0ebe3",
+    background: "rgba(255,255,255,0.02)",
+    fontSize: "16px",
+    textAlign: "center",
+  },
+
   footer: {
-    marginTop: "60px",
+    marginTop: "70px",
     textAlign: "center",
     color: "#aaa",
     fontSize: "14px",
+    paddingTop: "34px",
+    borderTop: "1px solid rgba(201, 159, 74, 0.14)",
+  },
+
+  footerBrand: {
+    margin: "0 0 8px 0",
+    color: "#d8b06a",
+    letterSpacing: "5px",
+    fontSize: "22px",
+  },
+
+  footerTagline: {
+    margin: "0 0 26px 0",
+    color: "#d7c9b7",
+    fontStyle: "italic",
+    fontSize: "22px",
+  },
+
+  footerFounderBlock: {
+    marginTop: "18px",
+  },
+
+  footerFounderTitle: {
+    margin: "0 0 8px 0",
+    color: "#c99f4a",
+    fontSize: "16px",
+    letterSpacing: "1px",
+  },
+
+  footerFounderName: {
+    margin: 0,
+    color: "#ffffff",
+    fontSize: "26px",
   },
 };
