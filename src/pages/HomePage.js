@@ -70,18 +70,12 @@ export default function HomePage() {
         setFeaturedVideoUrl(signedVideo?.signedUrl || "");
 
         if (data.watermarked_path) {
-          const { data: signedPoster, error: signedPosterError } =
-            await supabase.storage
-              .from("media")
-              .createSignedUrl(data.watermarked_path, 3600);
+          const { data: signedPoster } = await supabase.storage
+            .from("media")
+            .createSignedUrl(data.watermarked_path, 3600);
 
           if (!mounted) return;
-
-          if (signedPosterError) {
-            setFeaturedVideoPoster("");
-          } else {
-            setFeaturedVideoPoster(signedPoster?.signedUrl || "");
-          }
+          setFeaturedVideoPoster(signedPoster?.signedUrl || "");
         } else {
           setFeaturedVideoPoster("");
         }
@@ -176,21 +170,21 @@ export default function HomePage() {
   const heroRowStyle = {
     ...styles.heroRow,
     flexDirection: isMobile ? "column" : "row",
-    alignItems: isMobile ? "center" : "center",
-    gap: isMobile ? 28 : 54,
+    alignItems: "center",
+    gap: isMobile ? 28 : 64,
   };
 
   const heroLeftStyle = {
     ...styles.heroLeft,
-    maxWidth: isMobile ? 760 : 620,
+    maxWidth: isMobile ? 760 : 600,
     textAlign: isMobile ? "center" : "left",
   };
 
   const heroRightStyle = {
     ...styles.heroRight,
     width: isMobile ? "100%" : "320px",
-    marginTop: isMobile ? 0 : -36,
-    marginLeft: isMobile ? 0 : -24,
+    marginTop: isMobile ? 0 : -70,
+    marginLeft: isMobile ? 0 : -60,
     display: "flex",
     justifyContent: "center",
   };
@@ -228,13 +222,7 @@ export default function HomePage() {
                 A Creative Temple of Image, Sound &amp; Sovereignty.
               </h1>
 
-              <p
-                style={{
-                  ...styles.subtext,
-                  marginLeft: isMobile ? "auto" : 0,
-                  marginRight: isMobile ? "auto" : 0,
-                }}
-              >
+              <p style={styles.subtext}>
                 Egyptian royalty. Mythic cinema. A siren&apos;s whisper beneath
                 the surface.
               </p>
@@ -254,12 +242,7 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              <div
-                style={{
-                  ...styles.note,
-                  textAlign: isMobile ? "center" : "left",
-                }}
-              >
+              <div style={styles.note}>
                 Public access is open. Boudoir requires age verification.
               </div>
             </div>
@@ -468,7 +451,6 @@ const styles = {
   page: {
     background: "#050507",
     color: "#f2f0ea",
-    fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
   },
 
   hero: {
@@ -479,15 +461,14 @@ const styles = {
     justifyContent: "center",
     padding: "clamp(72px, 9vw, 120px) clamp(16px, 4vw, 32px)",
     backgroundSize: "cover",
-    backgroundPosition: "center center",
-    backgroundRepeat: "no-repeat",
+    backgroundPosition: "center",
   },
 
   heroOverlay: {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(to bottom, rgba(0,0,0,0.42), rgba(0,0,0,0.74))",
+      "linear-gradient(to bottom, rgba(0,0,0,0.42), rgba(0,0,0,0.72))",
   },
 
   heroInner: {
@@ -507,17 +488,16 @@ const styles = {
 
   brand: {
     fontSize: 12,
-    letterSpacing: "0.22em",
-    marginBottom: 12,
-    opacity: 0.9,
+    letterSpacing: "0.2em",
+    marginBottom: 10,
+    opacity: 0.88,
   },
 
   headline: {
-    fontSize: "clamp(34px, 6vw, 56px)",
-    fontFamily: 'Georgia, "Times New Roman", serif',
-    margin: "0 0 16px",
+    fontSize: "clamp(34px,6vw,56px)",
+    fontFamily: "Georgia",
+    marginBottom: 16,
     lineHeight: 1.02,
-    maxWidth: 720,
   },
 
   subtext: {
@@ -536,95 +516,69 @@ const styles = {
   },
 
   primaryBtn: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
     background: "#d4af37",
     padding: "14px 18px",
     borderRadius: 12,
-    color: "#111111",
+    color: "#000",
     textDecoration: "none",
     fontWeight: 700,
-    minHeight: 50,
-    boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
   },
 
   ghostBtn: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    border: "1px solid rgba(212,175,55,0.72)",
+    border: "1px solid gold",
     padding: "14px 18px",
     borderRadius: 12,
     textDecoration: "none",
-    color: "#ffffff",
+    color: "#fff",
     fontWeight: 600,
-    minHeight: 50,
-    background: "rgba(0,0,0,0.24)",
-    backdropFilter: "blur(3px)",
   },
 
   secondaryBtn: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
     border: "1px solid rgba(255,255,255,0.18)",
     padding: "14px 18px",
     borderRadius: 12,
     textDecoration: "none",
-    color: "#ffffff",
+    color: "#fff",
     fontWeight: 600,
     background: "rgba(255,255,255,0.03)",
-    minHeight: 50,
   },
 
   note: {
     fontSize: 12,
     opacity: 0.8,
-    lineHeight: 1.5,
   },
 
   peoplePanel: {
-    width: "100%",
-    maxWidth: 320,
-    minHeight: 460,
-    borderRadius: 20,
+    width: 320,
+    borderRadius: 18,
     overflow: "hidden",
-    border: "1px solid rgba(212,175,55,0.52)",
-    boxShadow: "0 24px 54px rgba(0,0,0,0.45)",
-    background: "rgba(0,0,0,0.35)",
-    position: "relative",
+    border: "1px solid rgba(212,175,55,0.8)",
+    boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+    background: "rgba(0,0,0,0.5)",
   },
 
   peopleImage: {
     width: "100%",
-    height: 460,
+    height: 400,
     objectFit: "cover",
-    objectPosition: "center 8%",
+    objectPosition: "center 15%",
     display: "block",
-    filter: "brightness(0.94)",
   },
 
   peopleContent: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: 18,
-    background:
-      "linear-gradient(to top, rgba(0,0,0,0.92), rgba(0,0,0,0.10))",
+    padding: 16,
+    background: "rgba(0,0,0,0.85)",
   },
 
   peopleTitle: {
-    fontSize: 24,
+    fontSize: 22,
     marginBottom: 8,
-    fontFamily: 'Georgia, "Times New Roman", serif',
-    lineHeight: 1.1,
+    fontFamily: "Georgia",
   },
 
   peopleSubtext: {
     fontSize: 13,
-    marginBottom: 14,
+    marginBottom: 12,
     lineHeight: 1.6,
     opacity: 0.9,
   },
@@ -632,13 +586,12 @@ const styles = {
   peopleButton: {
     display: "block",
     padding: 12,
-    border: "1px solid rgba(212,175,55,0.82)",
+    border: "1px solid gold",
     borderRadius: 10,
     textAlign: "center",
     textDecoration: "none",
-    color: "#ffffff",
-    fontWeight: 700,
-    background: "rgba(20,14,8,0.46)",
+    color: "#fff",
+    fontWeight: 600,
   },
 
   introSection: {
@@ -677,14 +630,14 @@ const styles = {
     fontSize: "clamp(28px, 4vw, 42px)",
     lineHeight: 1.08,
     margin: "0 0 18px",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily: "Georgia",
   },
 
   sectionTitleCenter: {
     fontSize: "clamp(28px, 4vw, 42px)",
     lineHeight: 1.08,
     margin: "0 0 26px",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily: "Georgia",
     textAlign: "center",
   },
 
@@ -705,7 +658,7 @@ const styles = {
     position: "relative",
     borderRadius: 22,
     overflow: "hidden",
-    background: "#000000",
+    background: "#000",
     minHeight: 320,
     border: "1px solid rgba(255,255,255,0.08)",
     boxShadow: "0 24px 80px rgba(0,0,0,0.48)",
@@ -717,7 +670,7 @@ const styles = {
     display: "block",
     objectFit: "cover",
     minHeight: 320,
-    background: "#000000",
+    background: "#000",
   },
 
   introPlaceholder: {
@@ -767,7 +720,7 @@ const styles = {
 
   featuredCard: {
     textDecoration: "none",
-    color: "#ffffff",
+    color: "#fff",
     borderRadius: 20,
     overflow: "hidden",
     border: "1px solid rgba(255,255,255,0.08)",
@@ -789,7 +742,7 @@ const styles = {
     height: "100%",
     display: "block",
     objectFit: "cover",
-    background: "#000000",
+    background: "#000",
   },
 
   featuredFallback: {
@@ -825,7 +778,7 @@ const styles = {
   featuredTitle: {
     fontSize: 18,
     lineHeight: 1.3,
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily: "Georgia",
   },
 
   portalGrid: {
@@ -835,7 +788,7 @@ const styles = {
 
   portalCard: {
     textDecoration: "none",
-    color: "#ffffff",
+    color: "#fff",
     borderRadius: 20,
     padding: 24,
     border: "1px solid rgba(255,255,255,0.08)",
@@ -847,7 +800,7 @@ const styles = {
   portalTitle: {
     fontSize: 22,
     marginBottom: 10,
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily: "Georgia",
   },
 
   portalText: {
