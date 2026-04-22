@@ -17,7 +17,9 @@ export default function ServicesPage() {
           <p style={styles.eyebrow}>SERVICES</p>
           <h1 style={styles.heroTitle}>THE ASET STUDIO</h1>
           <div style={styles.heroLine} />
-          <h2 style={styles.heroSubtitle}>Private Support for Creatives &amp; Talent</h2>
+          <h2 style={styles.heroSubtitle}>
+            Private Support for Creatives &amp; Talent
+          </h2>
 
           <p style={styles.heroText}>
             High-touch, luxury support services for individuals within the world
@@ -57,13 +59,14 @@ export default function ServicesPage() {
           </p>
           <p style={styles.paragraph}>
             <strong>Travel:</strong> Local, national, and international
-            depending on project. Travel expenses covered by client when required
+            depending on project. Travel expenses covered by client when
+            required.
           </p>
           <p style={styles.paragraph}>
-            <strong>Communication:</strong> Real-time updates
+            <strong>Communication:</strong> Real-time updates.
           </p>
           <p style={styles.paragraph}>
-            <strong>Billing:</strong> Project-based custom quotes
+            <strong>Billing:</strong> Project-based custom quotes.
           </p>
         </section>
 
@@ -185,7 +188,7 @@ export default function ServicesPage() {
           </p>
           <ul style={styles.list}>
             <li>216-474-5705</li>
-            <li>DM us here</li>
+            <li>DM via Instagram</li>
             <li>theasetstudio@gmail.com</li>
             <li>@theasetstudioofficial</li>
           </ul>
@@ -197,18 +200,24 @@ export default function ServicesPage() {
 
         <div style={styles.contactBar}>
           <div style={styles.contactItem}>216-474-5705</div>
-          <div style={styles.contactItem}>DM us here</div>
+          <div style={styles.contactItem}>DM via Instagram</div>
           <div style={styles.contactItem}>theasetstudio@gmail.com</div>
           <div style={styles.contactItem}>@theasetstudioofficial</div>
         </div>
 
         <div style={styles.footer}>
           <p style={styles.footerBrand}>THE ASET STUDIO</p>
-          <p style={styles.footerTagline}>A creative world. Not just a platform.</p>
+          <p style={styles.footerTagline}>
+            A creative world. Not just a platform.
+          </p>
 
           <div style={styles.footerFounderBlock}>
-            <p style={styles.footerFounderTitle}>Founder &amp; Creative Director</p>
-            <p style={styles.footerFounderName}>Franchesca Analisa “Sapphire”</p>
+            <p style={styles.footerFounderTitle}>
+              Founder &amp; Creative Director
+            </p>
+            <p style={styles.footerFounderName}>
+              Franchesca Analisa “Sapphire”
+            </p>
           </div>
         </div>
       </div>
@@ -243,9 +252,9 @@ const styles = {
     width: "100%",
     height: "100%",
     objectFit: "cover",
-    objectPosition: "center 18%",
-    transform: "scale(1.03)",
-    filter: "brightness(0.62)",
+    objectPosition: "center 35%",
+    transform: "scale(1)",
+    filter: "brightness(0.65)",
   },
 
   heroOverlay: {
@@ -259,7 +268,7 @@ const styles = {
     position: "relative",
     zIndex: 2,
     maxWidth: "620px",
-    padding: "110px 24px 110px 24px",
+    padding: "110px 24px",
     marginLeft: "max(24px, calc((100vw - 1200px) / 2))",
   },
 
@@ -282,7 +291,7 @@ const styles = {
     width: "74px",
     height: "2px",
     background: "#c99f4a",
-    margin: "28px 0 28px 0",
+    margin: "28px 0",
   },
 
   heroSubtitle: {
@@ -309,7 +318,7 @@ const styles = {
   },
 
   section: {
-    marginTop: "46px",
+    marginTop: "70px",
     paddingBottom: "34px",
     borderBottom: "1px solid rgba(201, 159, 74, 0.12)",
   },
