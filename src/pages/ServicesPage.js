@@ -17,7 +17,7 @@ export default function ServicesPage() {
           <p style={styles.eyebrow}>SERVICES</p>
           <h1 style={styles.heroTitle}>THE ASET STUDIO</h1>
           <div style={styles.heroLine} />
-          <h2 style={styles.heroSubtitle}>Private Support for Creatives & Talent</h2>
+          <h2 style={styles.heroSubtitle}>Private Support for Creatives &amp; Talent</h2>
 
           <p style={styles.heroText}>
             High-touch, luxury support services for individuals within the world
@@ -165,7 +165,7 @@ export default function ServicesPage() {
         </section>
 
         <section style={styles.section}>
-          <h3 style={styles.sectionTitle}>Access & Positioning</h3>
+          <h3 style={styles.sectionTitle}>Access &amp; Positioning</h3>
           <p style={styles.paragraph}>
             All services are aligned with The Aset Studio’s core focus:
           </p>
@@ -184,10 +184,10 @@ export default function ServicesPage() {
             To inquire about services or begin a project:
           </p>
           <ul style={styles.list}>
-            <li>Phone: 216-474-5705</li>
+            <li>216-474-5705</li>
             <li>DM us here</li>
-            <li>Email: theasetstudio@gmail.com</li>
-            <li>Instagram: @theasetstudioofficial</li>
+            <li>theasetstudio@gmail.com</li>
+            <li>@theasetstudioofficial</li>
           </ul>
           <p style={styles.paragraph}>
             All engagements are reviewed and confirmed based on scope and
@@ -205,6 +205,7 @@ export default function ServicesPage() {
         <div style={styles.footer}>
           <p style={styles.footerBrand}>THE ASET STUDIO</p>
           <p style={styles.footerTagline}>A creative world. Not just a platform.</p>
+
           <div style={styles.footerFounderBlock}>
             <p style={styles.footerFounderTitle}>Founder &amp; Creative Director</p>
             <p style={styles.footerFounderName}>Franchesca Analisa “Sapphire”</p>
@@ -304,7 +305,7 @@ const styles = {
   container: {
     maxWidth: "980px",
     margin: "0 auto",
-    padding: "60px 24px 90px",
+    padding: "90px 24px 90px",
   },
 
   section: {
