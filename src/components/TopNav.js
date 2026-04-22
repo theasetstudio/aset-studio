@@ -31,12 +31,23 @@ export default function TopNav() {
   const isExpressionVault =
     location.pathname === "/studio/expression-vault";
 
-  const isServices =
-    location.pathname === "/services";
+  const isServices = location.pathname === "/services";
+
+  const isHomePage = location.pathname === "/";
+
+  const navStyle = {
+    ...styles.nav,
+    ...(isHomePage ? styles.navHome : styles.navInner),
+  };
+
+  const logoStyle = {
+    ...styles.logo,
+    ...(isHomePage ? styles.logoHome : {}),
+  };
 
   return (
-    <div style={styles.nav}>
-      <div style={styles.logo} onClick={() => navigate("/")}>
+    <div style={navStyle}>
+      <div style={logoStyle} onClick={() => navigate("/")}>
         THE ASET STUDIO
       </div>
 
@@ -90,8 +101,7 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "12px 16px",
-    background: "black",
+    padding: "14px 18px",
     color: "white",
     position: "sticky",
     top: 0,
@@ -99,12 +109,31 @@ const styles = {
     flexWrap: "wrap",
     boxSizing: "border-box",
     gap: "10px",
+    backdropFilter: "blur(18px)",
+    WebkitBackdropFilter: "blur(18px)",
+    borderBottom: "1px solid rgba(212, 175, 55, 0.14)",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.28)",
+  },
+
+  navHome: {
+    background: "rgba(5, 5, 7, 0.72)",
+  },
+
+  navInner: {
+    background: "rgba(5, 5, 7, 0.88)",
   },
 
   logo: {
     fontSize: "12px",
     letterSpacing: "2px",
     cursor: "pointer",
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+  },
+
+  logoHome: {
+    color: "#f2f0ea",
+    textShadow: "0 1px 10px rgba(0,0,0,0.35)",
   },
 
   actions: {
@@ -116,19 +145,24 @@ const styles = {
   },
 
   button: {
-    background: "#1a1a1a",
+    background: "rgba(18, 18, 20, 0.72)",
     color: "white",
-    border: "1px solid #333",
+    border: "1px solid rgba(255,255,255,0.12)",
     padding: "8px 14px",
-    borderRadius: "8px",
+    borderRadius: "10px",
     cursor: "pointer",
     fontSize: "12px",
     whiteSpace: "nowrap",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    boxShadow: "0 4px 14px rgba(0,0,0,0.18)",
+    transition: "all 0.2s ease",
   },
 
   activeButton: {
-    border: "1px solid #8f7a5a",
-    color: "#d6c3a5",
-    boxShadow: "0 0 0 1px rgba(214,195,165,0.15) inset",
+    border: "1px solid rgba(212, 175, 55, 0.62)",
+    color: "#e7d2a2",
+    boxShadow:
+      "0 0 0 1px rgba(214,195,165,0.15) inset, 0 6px 18px rgba(0,0,0,0.18)",
   },
 };
