@@ -55,7 +55,7 @@ export default function ServicesPage() {
           </ul>
 
           <p style={styles.paragraph}>
-            <strong>Availability:</strong> Flexible depending on project needs
+            <strong>Availability:</strong> Flexible depending on project needs.
           </p>
           <p style={styles.paragraph}>
             <strong>Travel:</strong> Local, national, and international
@@ -252,7 +252,7 @@ const styles = {
     width: "100%",
     height: "100%",
     objectFit: "cover",
-    objectPosition: "center 35%",
+    objectPosition: "center 48%",
     transform: "scale(1)",
     filter: "brightness(0.65)",
   },
