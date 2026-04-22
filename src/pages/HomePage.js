@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
 export default function HomePage() {
-  const [featuredVideo, setFeaturedVideo] = useState(null);
   const [featuredVideoUrl, setFeaturedVideoUrl] = useState("");
   const [featuredVideoPoster, setFeaturedVideoPoster] = useState("");
   const [loadingVideo, setLoadingVideo] = useState(true);
@@ -31,51 +30,58 @@ export default function HomePage() {
 
     async function loadFeaturedVideo() {
       setLoadingVideo(true);
+
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("media_items")
           .select("*")
           .eq("type", "video")
           .eq("featured", true)
           .eq("status", "published")
           .eq("hidden", false)
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+
+        if (error) {
+          throw error;
+        }
 
         if (!mounted) return;
 
         if (!data?.file_path) {
-          setFeaturedVideo(null);
           setFeaturedVideoUrl("");
           setFeaturedVideoPoster("");
           setLoadingVideo(false);
           return;
         }
 
-        setFeaturedVideo(data);
-
-        const { data: signed } = await supabase.storage
-          .from("media")
-          .createSignedUrl(data.file_path, 3600);
+        const { data: signedVideo, error: signedVideoError } =
+          await supabase.storage
+            .from("media")
+            .createSignedUrl(data.file_path, 3600);
 
         if (!mounted) return;
 
-        setFeaturedVideoUrl(signed?.signedUrl || "");
+        if (signedVideoError) {
+          throw signedVideoError;
+        }
+
+        setFeaturedVideoUrl(signedVideo?.signedUrl || "");
 
         if (data.watermarked_path) {
-          const { data: poster } = await supabase.storage
+          const { data: signedPoster } = await supabase.storage
             .from("media")
             .createSignedUrl(data.watermarked_path, 3600);
 
           if (!mounted) return;
-          setFeaturedVideoPoster(poster?.signedUrl || "");
+          setFeaturedVideoPoster(signedPoster?.signedUrl || "");
         } else {
           setFeaturedVideoPoster("");
         }
       } catch (err) {
         console.error("Error loading featured video:", err);
         if (!mounted) return;
-        setFeaturedVideo(null);
         setFeaturedVideoUrl("");
         setFeaturedVideoPoster("");
       } finally {
@@ -84,6 +90,7 @@ export default function HomePage() {
     }
 
     loadFeaturedVideo();
+
     return () => {
       mounted = false;
     };
@@ -92,10 +99,11 @@ export default function HomePage() {
   useEffect(() => {
     let mounted = true;
 
-    async function loadItems() {
+    async function loadFeaturedItems() {
       setLoadingFeaturedItems(true);
+
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("media_items")
           .select("*")
           .eq("featured", true)
@@ -104,27 +112,39 @@ export default function HomePage() {
           .order("created_at", { ascending: false })
           .limit(8);
 
+        if (error) {
+          throw error;
+        }
+
         if (!mounted) return;
 
         const items = data || [];
         setFeaturedItems(items);
 
-        const map = {};
+        const signedMap = {};
+
         for (const item of items) {
           if (!item.file_path) {
-            map[item.id] = null;
+            signedMap[item.id] = null;
             continue;
           }
 
-          const { data: signed } = await supabase.storage
-            .from("media")
-            .createSignedUrl(item.file_path, 3600);
+          const { data: signedData, error: signedError } =
+            await supabase.storage
+              .from("media")
+              .createSignedUrl(item.file_path, 3600);
 
           if (!mounted) return;
-          map[item.id] = signed?.signedUrl || null;
+
+          if (signedError) {
+            signedMap[item.id] = null;
+            continue;
+          }
+
+          signedMap[item.id] = signedData?.signedUrl || null;
         }
 
-        setFeaturedItemUrls(map);
+        setFeaturedItemUrls(signedMap);
       } catch (err) {
         console.error("Error loading featured items:", err);
         if (!mounted) return;
@@ -135,7 +155,8 @@ export default function HomePage() {
       }
     }
 
-    loadItems();
+    loadFeaturedItems();
+
     return () => {
       mounted = false;
     };
@@ -170,12 +191,16 @@ export default function HomePage() {
 
   const introGridStyle = {
     ...styles.introGrid,
-    gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.2fr) minmax(320px, 0.8fr)",
+    gridTemplateColumns: isMobile
+      ? "1fr"
+      : "minmax(0, 1.2fr) minmax(320px, 0.8fr)",
   };
 
   const portalGridStyle = {
     ...styles.portalGrid,
-    gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
+    gridTemplateColumns: isMobile
+      ? "1fr"
+      : "repeat(3, minmax(0, 1fr))",
   };
 
   return (
@@ -198,7 +223,8 @@ export default function HomePage() {
               </h1>
 
               <p style={styles.subtext}>
-                Egyptian royalty. Mythic cinema. A siren&apos;s whisper beneath the surface.
+                Egyptian royalty. Mythic cinema. A siren&apos;s whisper beneath
+                the surface.
               </p>
 
               <div
@@ -210,6 +236,7 @@ export default function HomePage() {
                 <Link to="/gallery" style={styles.primaryBtn}>
                   Enter the Gallery
                 </Link>
+
                 <Link to="/sirens-realm" style={styles.ghostBtn}>
                   Enter Sirens Realm
                 </Link>
@@ -230,6 +257,7 @@ export default function HomePage() {
 
                 <div style={styles.peopleContent}>
                   <div style={styles.peopleTitle}>The People of Aset</div>
+
                   <div style={styles.peopleSubtext}>
                     Recognized individuals within the world of Aset.
                   </div>
@@ -251,7 +279,9 @@ export default function HomePage() {
           <div style={introGridStyle}>
             <div style={styles.introVideoWrap}>
               {loadingVideo ? (
-                <div style={styles.introPlaceholder}>Loading featured experience...</div>
+                <div style={styles.introPlaceholder}>
+                  Loading featured experience...
+                </div>
               ) : featuredVideoUrl ? (
                 <video
                   src={featuredVideoUrl}
@@ -264,28 +294,33 @@ export default function HomePage() {
                   style={styles.introVideo}
                 />
               ) : (
-                <div style={styles.introPlaceholder}>Featured video coming soon.</div>
+                <div style={styles.introPlaceholder}>
+                  Featured video coming soon.
+                </div>
               )}
             </div>
 
             <div style={styles.introCard}>
-              <h2 style={styles.sectionTitle}>A world built for image, story, sound, and power.</h2>
+              <h2 style={styles.sectionTitle}>
+                A world built for image, story, sound, and power.
+              </h2>
 
               <p style={styles.sectionText}>
-                The Aset Studio is not just a platform. It is a cinematic ecosystem built
-                for galleries, creators, immersive storytelling, elevated visual culture,
-                and premium digital experiences.
+                The Aset Studio is not just a platform. It is a cinematic
+                ecosystem built for galleries, creators, immersive storytelling,
+                elevated visual culture, and premium digital experiences.
               </p>
 
               <p style={styles.sectionText}>
-                Enter a world where beauty, mythology, sensuality, sovereignty, and media
-                all move together under one identity.
+                Enter a world where beauty, mythology, sensuality, sovereignty,
+                and media all move together under one identity.
               </p>
 
               <div style={styles.introActions}>
                 <Link to="/videos" style={styles.primaryBtn}>
                   Enter Video Archive
                 </Link>
+
                 <Link to="/creators" style={styles.secondaryBtn}>
                   Explore Creators
                 </Link>
@@ -298,17 +333,25 @@ export default function HomePage() {
       <section style={styles.featuredSection}>
         <div style={styles.sectionInner}>
           <div style={styles.sectionEyebrow}>FEATURED PREVIEW</div>
-          <h2 style={styles.sectionTitleCenter}>A glimpse into the world of Aset.</h2>
+
+          <h2 style={styles.sectionTitleCenter}>
+            A glimpse into the world of Aset.
+          </h2>
 
           {loadingFeaturedItems ? (
-            <div style={styles.featuredLoading}>Loading featured work...</div>
+            <div style={styles.featuredLoading}>
+              Loading featured work...
+            </div>
           ) : featuredItems.length === 0 ? (
-            <div style={styles.featuredLoading}>Featured work is being rebuilt.</div>
+            <div style={styles.featuredLoading}>
+              Featured work is being rebuilt.
+            </div>
           ) : (
             <div style={styles.featuredStrip}>
               {featuredItems.map((item) => {
                 const itemUrl = featuredItemUrls[item.id];
-                const isVideo = String(item.type || "").toLowerCase() === "video";
+                const isVideo =
+                  String(item.type || "").trim().toLowerCase() === "video";
 
                 return (
                   <Link
@@ -342,7 +385,9 @@ export default function HomePage() {
                           />
                         )
                       ) : (
-                        <div style={styles.featuredFallback}>Preview unavailable</div>
+                        <div style={styles.featuredFallback}>
+                          Preview unavailable
+                        </div>
                       )}
 
                       <div style={styles.featuredOverlay} />
@@ -352,6 +397,7 @@ export default function HomePage() {
                       <div style={styles.featuredType}>
                         {isVideo ? "VIDEO" : "FEATURED"}
                       </div>
+
                       <div style={styles.featuredTitle}>
                         {item.title || "Untitled"}
                       </div>
@@ -367,27 +413,31 @@ export default function HomePage() {
       <section style={styles.portalSection}>
         <div style={styles.sectionInner}>
           <div style={styles.sectionEyebrow}>ENTER THE PLATFORM</div>
+
           <h2 style={styles.sectionTitleCenter}>Choose your path.</h2>
 
           <div style={portalGridStyle}>
             <Link to="/gallery" style={styles.portalCard}>
               <div style={styles.portalTitle}>Gallery</div>
               <div style={styles.portalText}>
-                Explore the public visual archive and immersive image collections.
+                Explore the public visual archive and immersive image
+                collections.
               </div>
             </Link>
 
             <Link to="/videos" style={styles.portalCard}>
               <div style={styles.portalTitle}>Video Archive</div>
               <div style={styles.portalText}>
-                Enter cinematic interviews, visual storytelling, and featured screenings.
+                Enter cinematic interviews, visual storytelling, and featured
+                screenings.
               </div>
             </Link>
 
             <Link to="/sirens-realm" style={styles.portalCard}>
               <div style={styles.portalTitle}>Sirens Realm</div>
               <div style={styles.portalText}>
-                Step into the spiritual, mythic, and alchemical side of the world.
+                Step into the spiritual, mythic, and alchemical side of the
+                world.
               </div>
             </Link>
           </div>
@@ -561,8 +611,7 @@ const styles = {
   portalSection: {
     position: "relative",
     padding: "24px 20px 90px",
-    background:
-      "linear-gradient(180deg, #050507 0%, #050507 100%)",
+    background: "linear-gradient(180deg, #050507 0%, #050507 100%)",
   },
 
   sectionInner: {
