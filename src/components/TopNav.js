@@ -28,11 +28,8 @@ export default function TopNav() {
     window.location.reload();
   };
 
-  const isExpressionVault =
-    location.pathname === "/studio/expression-vault";
-
+  const isExpressionVault = location.pathname === "/studio/expression-vault";
   const isServices = location.pathname === "/services";
-
   const isHomePage = location.pathname === "/";
 
   const navStyle = {
@@ -109,14 +106,15 @@ const styles = {
     flexWrap: "wrap",
     boxSizing: "border-box",
     gap: "10px",
-    backdropFilter: "blur(18px)",
-    WebkitBackdropFilter: "blur(18px)",
-    borderBottom: "1px solid rgba(212, 175, 55, 0.14)",
-    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.28)",
+    backdropFilter: "blur(22px)",
+    WebkitBackdropFilter: "blur(22px)",
+    borderBottom: "1px solid rgba(212, 175, 55, 0.12)",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.22)",
   },
 
   navHome: {
-    background: "rgba(5, 5, 7, 0.72)",
+    background:
+      "linear-gradient(to bottom, rgba(5, 5, 7, 0.88), rgba(5, 5, 7, 0.42))",
   },
 
   navInner: {
@@ -145,7 +143,7 @@ const styles = {
   },
 
   button: {
-    background: "rgba(18, 18, 20, 0.72)",
+    background: "rgba(18, 18, 20, 0.68)",
     color: "white",
     border: "1px solid rgba(255,255,255,0.12)",
     padding: "8px 14px",

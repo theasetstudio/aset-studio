@@ -15,10 +15,13 @@ export default function ServicesPage() {
 
         <div style={styles.heroContent}>
           <p style={styles.eyebrow}>SERVICES</p>
+
           <h1 style={styles.heroTitle}>THE ASET STUDIO</h1>
+
           <div style={styles.heroLine} />
+
           <h2 style={styles.heroSubtitle}>
-            Private Support for Creatives &amp; Talent
+            Private Support for Creatives & Talent
           </h2>
 
           <p style={styles.heroText}>
@@ -58,9 +61,8 @@ export default function ServicesPage() {
             <strong>Availability:</strong> Flexible depending on project needs.
           </p>
           <p style={styles.paragraph}>
-            <strong>Travel:</strong> Local, national, and international
-            depending on project. Travel expenses covered by client when
-            required.
+            <strong>Travel:</strong> Local, national, and international depending
+            on project. Travel expenses covered by client when required.
           </p>
           <p style={styles.paragraph}>
             <strong>Communication:</strong> Real-time updates.
@@ -168,7 +170,7 @@ export default function ServicesPage() {
         </section>
 
         <section style={styles.section}>
-          <h3 style={styles.sectionTitle}>Access &amp; Positioning</h3>
+          <h3 style={styles.sectionTitle}>Access & Positioning</h3>
           <p style={styles.paragraph}>
             All services are aligned with The Aset Studio’s core focus:
           </p>
@@ -183,19 +185,12 @@ export default function ServicesPage() {
 
         <section style={styles.section}>
           <h3 style={styles.sectionTitle}>Request Access</h3>
-          <p style={styles.paragraph}>
-            To inquire about services or begin a project:
-          </p>
           <ul style={styles.list}>
             <li>216-474-5705</li>
             <li>DM via Instagram</li>
             <li>theasetstudio@gmail.com</li>
             <li>@theasetstudioofficial</li>
           </ul>
-          <p style={styles.paragraph}>
-            All engagements are reviewed and confirmed based on scope and
-            alignment.
-          </p>
         </section>
 
         <div style={styles.contactBar}>
@@ -211,14 +206,12 @@ export default function ServicesPage() {
             A creative world. Not just a platform.
           </p>
 
-          <div style={styles.footerFounderBlock}>
-            <p style={styles.footerFounderTitle}>
-              Founder &amp; Creative Director
-            </p>
-            <p style={styles.footerFounderName}>
-              Franchesca Analisa “Sapphire”
-            </p>
-          </div>
+          <p style={styles.footerFounderTitle}>
+            Founder & Creative Director
+          </p>
+          <p style={styles.footerFounderName}>
+            Franchesca Analisa “Sapphire”
+          </p>
         </div>
       </div>
     </div>
@@ -230,7 +223,7 @@ const styles = {
     backgroundColor: "#000",
     color: "#fff",
     minHeight: "100vh",
-    fontFamily: "Georgia, Times New Roman, serif",
+    fontFamily: "Georgia, serif",
   },
 
   hero: {
@@ -239,21 +232,18 @@ const styles = {
     display: "flex",
     alignItems: "center",
     overflow: "hidden",
-    borderBottom: "1px solid rgba(201, 159, 74, 0.22)",
   },
 
   heroImageWrap: {
     position: "absolute",
     inset: 0,
-    overflow: "hidden",
   },
 
   heroImage: {
     width: "100%",
     height: "100%",
     objectFit: "cover",
-    objectPosition: "center 58%",
-    transform: "scale(1)",
+    objectPosition: "center 44%", // 🔥 FINAL LOCKED VALUE
     filter: "brightness(0.65)",
   },
 
@@ -261,161 +251,111 @@ const styles = {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(90deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.68) 34%, rgba(0,0,0,0.32) 62%, rgba(0,0,0,0.18) 100%)",
+      "linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.65) 40%, rgba(0,0,0,0.2) 100%)",
   },
 
   heroContent: {
     position: "relative",
     zIndex: 2,
-    maxWidth: "620px",
-    padding: "110px 24px",
-    marginLeft: "max(24px, calc((100vw - 1200px) / 2))",
+    maxWidth: "600px",
+    padding: "100px 24px",
   },
 
   eyebrow: {
-    margin: "0 0 14px 0",
     color: "#c99f4a",
-    letterSpacing: "4px",
-    fontSize: "15px",
+    letterSpacing: "3px",
+    fontSize: "14px",
   },
 
   heroTitle: {
-    margin: 0,
-    fontSize: "clamp(52px, 8vw, 96px)",
-    lineHeight: "0.95",
-    letterSpacing: "1px",
-    maxWidth: "500px",
+    fontSize: "72px",
+    lineHeight: "1",
   },
 
   heroLine: {
-    width: "74px",
+    width: "60px",
     height: "2px",
     background: "#c99f4a",
-    margin: "28px 0",
+    margin: "20px 0",
   },
 
   heroSubtitle: {
-    margin: "0 0 22px 0",
     color: "#d8b06a",
-    fontSize: "clamp(26px, 3.2vw, 42px)",
-    lineHeight: "1.08",
-    maxWidth: "500px",
-    fontWeight: "normal",
+    fontSize: "28px",
   },
 
   heroText: {
-    margin: "0 0 18px 0",
-    maxWidth: "520px",
-    color: "#f0ebe3",
-    fontSize: "20px",
+    color: "#e5ded4",
     lineHeight: "1.7",
+    fontSize: "18px",
   },
 
   container: {
-    maxWidth: "980px",
+    maxWidth: "900px",
     margin: "0 auto",
-    padding: "90px 24px 90px",
+    padding: "80px 24px",
   },
 
   section: {
     marginTop: "70px",
-    paddingBottom: "34px",
-    borderBottom: "1px solid rgba(201, 159, 74, 0.12)",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    paddingBottom: "30px",
   },
 
   sectionTitle: {
-    fontSize: "38px",
-    margin: "0 0 18px 0",
-    color: "#fff",
-    fontWeight: "600",
+    fontSize: "30px",
   },
 
   subSectionTitle: {
-    fontSize: "26px",
-    marginTop: "28px",
-    marginBottom: "12px",
+    fontSize: "22px",
     color: "#d8b06a",
-    fontWeight: "600",
-  },
-
-  label: {
-    marginBottom: "10px",
-    color: "#e0c188",
-    fontWeight: "600",
-    fontSize: "18px",
   },
 
   paragraph: {
-    marginBottom: "16px",
-    lineHeight: "1.9",
-    color: "#ddd6cd",
-    fontSize: "18px",
+    fontSize: "16px",
+    color: "#ccc",
+  },
+
+  label: {
+    color: "#d8b06a",
   },
 
   list: {
-    paddingLeft: "24px",
-    marginBottom: "18px",
-    color: "#d3cbc1",
-    lineHeight: "1.95",
-    fontSize: "18px",
+    paddingLeft: "20px",
   },
 
   contactBar: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "14px",
-    marginTop: "52px",
-    paddingTop: "28px",
-    borderTop: "1px solid rgba(201, 159, 74, 0.18)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gap: "10px",
+    marginTop: "40px",
   },
 
   contactItem: {
-    border: "1px solid rgba(201, 159, 74, 0.28)",
-    borderRadius: "14px",
-    padding: "16px 18px",
-    color: "#f0ebe3",
-    background: "rgba(255,255,255,0.02)",
-    fontSize: "16px",
+    border: "1px solid #333",
+    padding: "12px",
     textAlign: "center",
   },
 
   footer: {
-    marginTop: "70px",
+    marginTop: "60px",
     textAlign: "center",
-    color: "#aaa",
-    fontSize: "14px",
-    paddingTop: "34px",
-    borderTop: "1px solid rgba(201, 159, 74, 0.14)",
   },
 
   footerBrand: {
-    margin: "0 0 8px 0",
-    color: "#d8b06a",
-    letterSpacing: "5px",
-    fontSize: "22px",
+    color: "#c99f4a",
+    letterSpacing: "4px",
   },
 
   footerTagline: {
-    margin: "0 0 26px 0",
-    color: "#d7c9b7",
     fontStyle: "italic",
-    fontSize: "22px",
-  },
-
-  footerFounderBlock: {
-    marginTop: "18px",
   },
 
   footerFounderTitle: {
-    margin: "0 0 8px 0",
     color: "#c99f4a",
-    fontSize: "16px",
-    letterSpacing: "1px",
   },
 
   footerFounderName: {
-    margin: 0,
-    color: "#ffffff",
-    fontSize: "26px",
+    fontSize: "20px",
   },
 };
