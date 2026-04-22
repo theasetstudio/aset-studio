@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { stoneCollections } from "../data/stoneCollections";
 
 const featuredCollections = [
   {
@@ -114,26 +115,30 @@ const featuredCollections = [
 
 const zodiacCollections = [
   {
+    key: "pisces",
     title: "Pisces",
-    description:
+    fallbackDescription:
       "Soft, intuitive, dreamy energy supported by stones that amplify feeling, sensitivity, and spiritual depth.",
     path: "/sirens-realm/pisces",
   },
   {
+    key: "aquarius",
     title: "Aquarius",
-    description:
+    fallbackDescription:
       "Visionary, independent, and mentally expansive stones aligned with Aquarius energy.",
     path: "/sirens-realm/aquarius",
   },
   {
+    key: "libra",
     title: "Libra",
-    description:
+    fallbackDescription:
       "A balanced, beauty-centered collection for harmony, grace, relationships, and refinement.",
     path: "/sirens-realm/libra",
   },
   {
+    key: "gemini",
     title: "Gemini",
-    description:
+    fallbackDescription:
       "A versatile, quick-minded collection centered on communication, curiosity, adaptability, expression, and mental agility.",
     path: "/sirens-realm/gemini",
   },
@@ -195,16 +200,22 @@ export default function StoneCollectionPage() {
           </div>
 
           <div style={styles.gridSmall}>
-            {zodiacCollections.map((item) => (
-              <Link key={item.title} to={item.path} style={styles.card}>
-                <div style={styles.cardInner}>
-                  <p style={styles.cardLabel}>ZODIAC</p>
-                  <h3 style={styles.cardTitle}>{item.title}</h3>
-                  <p style={styles.cardDescription}>{item.description}</p>
-                  <span style={styles.cardLink}>Open Collection</span>
-                </div>
-              </Link>
-            ))}
+            {zodiacCollections.map((item) => {
+              const collectionData = stoneCollections[item.key];
+              const description =
+                collectionData?.subtitle || item.fallbackDescription;
+
+              return (
+                <Link key={item.title} to={item.path} style={styles.card}>
+                  <div style={styles.cardInner}>
+                    <p style={styles.cardLabel}>ZODIAC</p>
+                    <h3 style={styles.cardTitle}>{item.title}</h3>
+                    <p style={styles.cardDescription}>{description}</p>
+                    <span style={styles.cardLink}>Open Collection</span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       </div>
