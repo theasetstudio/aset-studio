@@ -55,7 +55,10 @@ export default function MediaDetailPage() {
   useEffect(() => {
     async function boot() {
       try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
+
         setSession(currentSession || null);
 
         if (currentSession?.user?.id) {
@@ -71,7 +74,9 @@ export default function MediaDetailPage() {
           const verified = profileData?.is_age_verified || getAgeVerified();
           setAgeVerified(verified);
 
-          if (profileData?.is_age_verified) setAgeVerifiedLocal(true);
+          if (profileData?.is_age_verified) {
+            setAgeVerifiedLocal(true);
+          }
         }
       } catch (e) {
         console.error("Boot error:", e);
@@ -137,7 +142,9 @@ export default function MediaDetailPage() {
 
         setItem(normalized);
 
-        const isSupremeUser = (profile?.role || "").toLowerCase() === "supreme" || isAdmin;
+        const isSupremeUser =
+          (profile?.role || "").toLowerCase() === "supreme" || isAdmin;
+
         const rawPath = isSupremeUser
           ? normalized.file_path || normalized.watermarked_path || ""
           : normalized.watermarked_path || normalized.file_path || "";
@@ -145,7 +152,11 @@ export default function MediaDetailPage() {
         const cleanPath = normalizeStoragePath(rawPath);
 
         if (!cleanPath) {
-          setMediaError(normalized.type === "video" ? "Video file is missing." : "Image file is missing.");
+          setMediaError(
+            normalized.type === "video"
+              ? "Video file is missing."
+              : "Image file is missing."
+          );
           setLoading(false);
           return;
         }
@@ -155,7 +166,11 @@ export default function MediaDetailPage() {
           .createSignedUrl(cleanPath, SIGNED_URL_TTL_SECONDS);
 
         if (signedError || !signedData?.signedUrl) {
-          setMediaError(normalized.type === "video" ? "Could not load video." : "Could not load image.");
+          setMediaError(
+            normalized.type === "video"
+              ? "Could not load video."
+              : "Could not load image."
+          );
           setLoading(false);
           return;
         }
@@ -265,12 +280,14 @@ export default function MediaDetailPage() {
             </div>
 
             <div style={{ textAlign: "center" }}>
-              <h1 style={{ marginBottom: 6, fontSize: 28 }}>{displayTitle(item)}</h1>
-              <p style={{ opacity: 0.8, marginBottom: 12 }}>
-                Uploaded by <strong>{item.owner_id || "The Aset Studio"}</strong>
-              </p>
+              <h1 style={{ marginBottom: 6, fontSize: 28 }}>
+                {displayTitle(item)}
+              </h1>
+
               {item.description && (
-                <p style={{ opacity: 0.9, lineHeight: 1.6 }}>{item.description}</p>
+                <p style={{ opacity: 0.9, lineHeight: 1.6 }}>
+                  {item.description}
+                </p>
               )}
             </div>
 
