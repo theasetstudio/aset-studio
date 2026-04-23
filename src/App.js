@@ -10,6 +10,7 @@ import GalleryPage from "./pages/GalleryPage";
 import MediaDetailPage from "./pages/MediaDetailPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import AdminPage from "./pages/AdminPage";
+import AdminInquiries from "./pages/AdminInquiries";
 import AuthPage from "./pages/AuthPage";
 import AuthCallback from "./pages/AuthCallback";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -65,10 +66,7 @@ import PurplePage from "./pages/stones/PurplePage";
 import EliteGeneratorPage from "./pages/EliteGeneratorPage";
 import SupremeAccessPage from "./pages/SupremeAccessPage";
 
-// NEW: Talent Page
 import TalentPage from "./pages/TalentPage";
-
-// NEW: Services Page
 import ServicesPage from "./pages/ServicesPage";
 
 function App() {
@@ -83,6 +81,7 @@ function App() {
         <Route path="/media/:id" element={<MediaDetailPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/inquiries" element={<AdminInquiries />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />

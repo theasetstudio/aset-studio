@@ -15,7 +15,7 @@ export default function ServicesPage() {
 
     setLoading(true);
 
-    const { error } = await supabase.from("service_inquiries").insert([
+    const { error } = await supabase.from("inquiries").insert([
       {
         name: name.trim(),
         email: email.trim(),
