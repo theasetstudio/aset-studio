@@ -1,6 +1,41 @@
-import React from "react";
+import React, { useState } from "react";
+import { supabase } from "../supabaseClient";
 
 export default function ServicesPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!message.trim()) {
+      alert("Message required");
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await supabase.from("service_inquiries").insert([
+      {
+        name: name.trim(),
+        email: email.trim(),
+        message: message.trim(),
+      },
+    ]);
+
+    setLoading(false);
+
+    if (error) {
+      alert("Error sending inquiry");
+      return;
+    }
+
+    alert("Inquiry sent");
+    setName("");
+    setEmail("");
+    setMessage("");
+  };
+
   return (
     <div style={styles.page}>
       <section style={styles.hero}>
@@ -192,6 +227,41 @@ export default function ServicesPage() {
             <li>theasetstudio@gmail.com</li>
             <li>@theasetstudioofficial</li>
           </ul>
+
+          <div style={styles.formWrap}>
+            <h4 style={styles.formTitle}>Send a Direct Inquiry</h4>
+
+            <input
+              type="text"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={styles.input}
+            />
+
+            <input
+              type="email"
+              placeholder="Email (optional)"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={styles.input}
+            />
+
+            <textarea
+              placeholder="Your message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              style={styles.textarea}
+            />
+
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              style={styles.submitButton}
+            >
+              {loading ? "Sending..." : "Send Inquiry"}
+            </button>
+          </div>
         </section>
 
         <div style={styles.contactBar}>
@@ -337,6 +407,56 @@ const styles = {
     lineHeight: "1.9",
     color: "#ccc",
     marginBottom: "14px",
+  },
+
+  formWrap: {
+    marginTop: "30px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    maxWidth: "640px",
+  },
+
+  formTitle: {
+    margin: "0 0 6px 0",
+    fontSize: "22px",
+    color: "#d8b06a",
+  },
+
+  input: {
+    width: "100%",
+    padding: "14px 16px",
+    background: "#111",
+    border: "1px solid #333",
+    color: "#fff",
+    borderRadius: "10px",
+    fontSize: "16px",
+    boxSizing: "border-box",
+  },
+
+  textarea: {
+    width: "100%",
+    minHeight: "140px",
+    padding: "14px 16px",
+    background: "#111",
+    border: "1px solid #333",
+    color: "#fff",
+    borderRadius: "10px",
+    fontSize: "16px",
+    resize: "vertical",
+    boxSizing: "border-box",
+  },
+
+  submitButton: {
+    padding: "14px 20px",
+    background: "#c99f4a",
+    color: "#000",
+    border: "none",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontSize: "16px",
+    fontWeight: "600",
+    width: "fit-content",
   },
 
   contactBar: {
