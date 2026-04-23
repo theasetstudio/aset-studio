@@ -858,28 +858,6 @@ export default function GalleryPage() {
                         <div className="locked-title">Locked</div>
                         <div className="locked-subtitle">{subtitle}</div>
 
-                        <button
-                          type="button"
-                          className="gallery-item-uploader locked-uploader"
-                          onClick={() => handleOpenCreatorProfile(item)}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            padding: 0,
-                            marginTop: "8px",
-                            cursor:
-                              item?.uploader?.id || item?.uploader_id
-                                ? "pointer"
-                                : "default",
-                            textDecoration: "underline",
-                            color: "inherit",
-                            font: "inherit",
-                          }}
-                        >
-                          Uploaded by{" "}
-                          {item.uploader?.display_name || "The Aset Studio"}
-                        </button>
-
                         <button className="locked-btn" onClick={buttonAction}>
                           {buttonText}
                         </button>
@@ -944,29 +922,6 @@ export default function GalleryPage() {
                     <div className="gallery-item-tagline">
                       {item.tagline ?? ""}
                     </div>
-
-                    <button
-                      type="button"
-                      className="gallery-item-uploader"
-                      onClick={() => handleOpenCreatorProfile(item)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        marginTop: "6px",
-                        cursor:
-                          item?.uploader?.id || item?.uploader_id
-                            ? "pointer"
-                            : "default",
-                        textDecoration: "underline",
-                        textAlign: "left",
-                        color: "inherit",
-                        font: "inherit",
-                      }}
-                    >
-                      Uploaded by{" "}
-                      {item.uploader?.display_name || "The Aset Studio"}
-                    </button>
 
                     <div
                       style={{
