@@ -21,7 +21,7 @@ export default function ServicesPage() {
           <div style={styles.heroLine} />
 
           <h2 style={styles.heroSubtitle}>
-            Private Support for Creatives & Talent
+            Private Support for Creatives &amp; Talent
           </h2>
 
           <p style={styles.heroText}>
@@ -61,8 +61,9 @@ export default function ServicesPage() {
             <strong>Availability:</strong> Flexible depending on project needs.
           </p>
           <p style={styles.paragraph}>
-            <strong>Travel:</strong> Local, national, and international depending
-            on project. Travel expenses covered by client when required.
+            <strong>Travel:</strong> Local, national, and international
+            depending on project. Travel expenses covered by client when
+            required.
           </p>
           <p style={styles.paragraph}>
             <strong>Communication:</strong> Real-time updates.
@@ -170,7 +171,7 @@ export default function ServicesPage() {
         </section>
 
         <section style={styles.section}>
-          <h3 style={styles.sectionTitle}>Access & Positioning</h3>
+          <h3 style={styles.sectionTitle}>Access &amp; Positioning</h3>
           <p style={styles.paragraph}>
             All services are aligned with The Aset Studio’s core focus:
           </p>
@@ -206,9 +207,7 @@ export default function ServicesPage() {
             A creative world. Not just a platform.
           </p>
 
-          <p style={styles.footerFounderTitle}>
-            Founder & Creative Director
-          </p>
+          <p style={styles.footerFounderTitle}>Founder &amp; Creative Director</p>
           <p style={styles.footerFounderName}>
             Franchesca Analisa “Sapphire”
           </p>
@@ -228,7 +227,7 @@ const styles = {
 
   hero: {
     position: "relative",
-    minHeight: "720px",
+    minHeight: "680px",
     display: "flex",
     alignItems: "center",
     overflow: "hidden",
@@ -237,13 +236,15 @@ const styles = {
   heroImageWrap: {
     position: "absolute",
     inset: 0,
+    overflow: "hidden",
   },
 
   heroImage: {
     width: "100%",
     height: "100%",
     objectFit: "cover",
-    objectPosition: "center 44%", // 🔥 FINAL LOCKED VALUE
+    objectPosition: "center 38%",
+    transform: "scale(0.92)",
     filter: "brightness(0.65)",
   },
 
@@ -265,11 +266,13 @@ const styles = {
     color: "#c99f4a",
     letterSpacing: "3px",
     fontSize: "14px",
+    margin: "0 0 14px 0",
   },
 
   heroTitle: {
     fontSize: "72px",
     lineHeight: "1",
+    margin: 0,
   },
 
   heroLine: {
@@ -282,12 +285,14 @@ const styles = {
   heroSubtitle: {
     color: "#d8b06a",
     fontSize: "28px",
+    margin: "0 0 18px 0",
   },
 
   heroText: {
     color: "#e5ded4",
     lineHeight: "1.7",
     fontSize: "18px",
+    marginBottom: "16px",
   },
 
   container: {
@@ -304,24 +309,34 @@ const styles = {
 
   sectionTitle: {
     fontSize: "30px",
+    margin: "0 0 16px 0",
   },
 
   subSectionTitle: {
     fontSize: "22px",
     color: "#d8b06a",
+    marginTop: "22px",
+    marginBottom: "10px",
   },
 
   paragraph: {
     fontSize: "16px",
     color: "#ccc",
+    lineHeight: "1.8",
+    marginBottom: "14px",
   },
 
   label: {
     color: "#d8b06a",
+    marginBottom: "10px",
+    fontWeight: "600",
   },
 
   list: {
     paddingLeft: "20px",
+    lineHeight: "1.9",
+    color: "#ccc",
+    marginBottom: "14px",
   },
 
   contactBar: {
@@ -335,6 +350,8 @@ const styles = {
     border: "1px solid #333",
     padding: "12px",
     textAlign: "center",
+    borderRadius: "10px",
+    color: "#e5ded4",
   },
 
   footer: {
@@ -345,17 +362,22 @@ const styles = {
   footerBrand: {
     color: "#c99f4a",
     letterSpacing: "4px",
+    marginBottom: "8px",
   },
 
   footerTagline: {
     fontStyle: "italic",
+    color: "#ddd",
+    marginBottom: "20px",
   },
 
   footerFounderTitle: {
     color: "#c99f4a",
+    marginBottom: "6px",
   },
 
   footerFounderName: {
     fontSize: "20px",
+    margin: 0,
   },
 };
