@@ -5,42 +5,54 @@ export default function AdminInquiries() {
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchInquiries();
-  }, []);
-
   const fetchInquiries = async () => {
+    setLoading(true);
+
     const { data, error } = await supabase
       .from("inquiries")
       .select("*")
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching inquiries");
+      console.error("Error loading inquiries:", error);
+      setInquiries([]);
+      setLoading(false);
       return;
     }
 
-    setInquiries(data);
+    setInquiries(data || []);
     setLoading(false);
   };
 
+  useEffect(() => {
+    fetchInquiries();
+  }, []);
+
   return (
     <div style={styles.page}>
-      <h1 style={styles.title}>Admin — Inquiries</h1>
+      <h1 style={styles.title}>Admin — Service Inquiries</h1>
 
       {loading ? (
-        <p>Loading...</p>
+        <p style={styles.text}>Loading inquiries...</p>
       ) : inquiries.length === 0 ? (
-        <p>No inquiries yet</p>
+        <p style={styles.text}>No inquiries yet.</p>
       ) : (
-        <div style={styles.list}>
+        <div style={styles.grid}>
           {inquiries.map((item) => (
             <div key={item.id} style={styles.card}>
-              <p><strong>Name:</strong> {item.name || "—"}</p>
-              <p><strong>Email:</strong> {item.email || "—"}</p>
-              <p><strong>Message:</strong> {item.message}</p>
+              <p style={styles.label}>Name</p>
+              <p style={styles.value}>{item.name || "Not provided"}</p>
+
+              <p style={styles.label}>Email</p>
+              <p style={styles.value}>{item.email || "Not provided"}</p>
+
+              <p style={styles.label}>Message</p>
+              <p style={styles.message}>{item.message}</p>
+
               <p style={styles.date}>
-                {new Date(item.created_at).toLocaleString()}
+                {item.created_at
+                  ? new Date(item.created_at).toLocaleString()
+                  : ""}
               </p>
             </div>
           ))}
@@ -52,34 +64,56 @@ export default function AdminInquiries() {
 
 const styles = {
   page: {
+    minHeight: "100vh",
     background: "#000",
     color: "#fff",
-    minHeight: "100vh",
-    padding: "40px",
+    padding: "60px 24px",
     fontFamily: "Georgia, serif",
   },
 
   title: {
-    fontSize: "32px",
+    fontSize: "34px",
+    color: "#d8b06a",
     marginBottom: "30px",
   },
 
-  list: {
-    display: "flex",
-    flexDirection: "column",
+  text: {
+    color: "#ccc",
+    fontSize: "18px",
+  },
+
+  grid: {
+    display: "grid",
     gap: "20px",
   },
 
   card: {
-    border: "1px solid #333",
-    padding: "20px",
-    borderRadius: "12px",
     background: "#111",
+    border: "1px solid #333",
+    borderRadius: "14px",
+    padding: "22px",
+  },
+
+  label: {
+    color: "#d8b06a",
+    fontSize: "14px",
+    marginBottom: "4px",
+  },
+
+  value: {
+    color: "#fff",
+    marginBottom: "16px",
+  },
+
+  message: {
+    color: "#ddd",
+    lineHeight: "1.7",
+    marginBottom: "16px",
   },
 
   date: {
-    marginTop: "10px",
-    fontSize: "12px",
     color: "#888",
+    fontSize: "12px",
+    marginTop: "16px",
   },
 };
