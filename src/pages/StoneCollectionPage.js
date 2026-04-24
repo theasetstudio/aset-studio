@@ -82,6 +82,12 @@ const featuredCollections = [
     path: "/sirens-realm/love",
   },
   {
+    title: "Emotional Healing",
+    description:
+      "A deeply restorative collection focused on emotional balance, release, healing, softness, and inner peace.",
+    path: "/sirens-realm/emotional-healing",
+  },
+  {
     title: "Friendship",
     description:
       "A connection-centered collection built around loyalty, trust, emotional support, honest communication, and soul-aligned bonds.",

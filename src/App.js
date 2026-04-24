@@ -1,4 +1,3 @@
-// File: src/App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
@@ -55,6 +54,7 @@ import RisingSignPage from "./pages/RisingSignPage";
 import MotivationPage from "./pages/MotivationPage";
 import VeteransPage from "./pages/VeteransPage";
 import LovePage from "./pages/LovePage";
+import EmotionalHealingPage from "./pages/EmotionalHealingPage";
 import CreativeMusePage from "./pages/CreativeMusePage";
 import BluePage from "./pages/BluePage";
 import ReturnToSenderDeities from "./pages/ReturnToSenderDeities";
@@ -139,6 +139,7 @@ function App() {
         <Route path="/sirens-realm/motivation" element={<MotivationPage />} />
         <Route path="/sirens-realm/veterans" element={<VeteransPage />} />
         <Route path="/sirens-realm/love" element={<LovePage />} />
+        <Route path="/sirens-realm/emotional-healing" element={<EmotionalHealingPage />} />
         <Route path="/sirens-realm/friendship" element={<FriendshipPage />} />
         <Route path="/sirens-realm/meditation" element={<MeditationPage />} />
         <Route path="/sirens-realm/creative-muse" element={<CreativeMusePage />} />
