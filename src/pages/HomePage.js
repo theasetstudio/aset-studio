@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
 export default function HomePage() {
+  const [featuredVideoId, setFeaturedVideoId] = useState(null);
   const [featuredVideoUrl, setFeaturedVideoUrl] = useState("");
   const [featuredVideoPoster, setFeaturedVideoPoster] = useState("");
   const [loadingVideo, setLoadingVideo] = useState(true);
+  const [videoReady, setVideoReady] = useState(false);
 
   const [featuredItems, setFeaturedItems] = useState([]);
   const [featuredItemUrls, setFeaturedItemUrls] = useState({});
@@ -15,6 +17,54 @@ export default function HomePage() {
 
   const heroImageSrc = `${process.env.PUBLIC_URL}/images/aset-hero.png`;
   const peopleImageSrc = `${process.env.PUBLIC_URL}/images/aset-person.png`;
+
+  const portalCards = [
+    {
+      title: "Gallery",
+      text: "Explore the public visual archive and immersive image collections.",
+      path: "/gallery",
+    },
+    {
+      title: "Featured",
+      text: "Enter the curated front-facing showcase of highlighted Aset work.",
+      path: "/featured",
+    },
+    {
+      title: "Video Archive",
+      text: "Enter cinematic interviews, visual storytelling, and featured screenings.",
+      path: "/videos",
+    },
+    {
+      title: "Creators Hub",
+      text: "Step into the creator side of The Aset Studio.",
+      path: "/creators",
+    },
+    {
+      title: "The People of Aset",
+      text: "Explore recognized individuals, elite profiles, and featured talent.",
+      path: "/talent",
+    },
+    {
+      title: "Sirens Realm",
+      text: "Step into the spiritual, mythic, and alchemical side of the world.",
+      path: "/sirens-realm",
+    },
+    {
+      title: "Aset Lounge",
+      text: "Enter the social and community side of the platform.",
+      path: "/lounge",
+    },
+    {
+      title: "Supreme Access",
+      text: "Unlock the premium side of The Aset Studio experience.",
+      path: "/supreme-access",
+    },
+    {
+      title: "Services",
+      text: "Explore creative services, bookings, and premium offerings.",
+      path: "/services",
+    },
+  ];
 
   useEffect(() => {
     function handleResize() {
@@ -30,6 +80,7 @@ export default function HomePage() {
 
     async function loadFeaturedVideo() {
       setLoadingVideo(true);
+      setVideoReady(false);
 
       try {
         const { data, error } = await supabase
@@ -43,29 +94,24 @@ export default function HomePage() {
           .limit(1)
           .maybeSingle();
 
-        if (error) {
-          throw error;
-        }
-
+        if (error) throw error;
         if (!mounted) return;
 
         if (!data?.file_path) {
+          setFeaturedVideoId(null);
           setFeaturedVideoUrl("");
           setFeaturedVideoPoster("");
           setLoadingVideo(false);
           return;
         }
 
+        setFeaturedVideoId(data.id);
+
         const { data: signedVideo, error: signedVideoError } =
-          await supabase.storage
-            .from("media")
-            .createSignedUrl(data.file_path, 3600);
+          await supabase.storage.from("media").createSignedUrl(data.file_path, 3600);
 
         if (!mounted) return;
-
-        if (signedVideoError) {
-          throw signedVideoError;
-        }
+        if (signedVideoError) throw signedVideoError;
 
         setFeaturedVideoUrl(signedVideo?.signedUrl || "");
 
@@ -82,6 +128,7 @@ export default function HomePage() {
       } catch (err) {
         console.error("Error loading featured video:", err);
         if (!mounted) return;
+        setFeaturedVideoId(null);
         setFeaturedVideoUrl("");
         setFeaturedVideoPoster("");
       } finally {
@@ -112,13 +159,15 @@ export default function HomePage() {
           .order("created_at", { ascending: false })
           .limit(8);
 
-        if (error) {
-          throw error;
-        }
-
+        if (error) throw error;
         if (!mounted) return;
 
-        const items = data || [];
+        const allItems = data || [];
+        const items =
+          featuredVideoId != null
+            ? allItems.filter((item) => item.id !== featuredVideoId)
+            : allItems;
+
         setFeaturedItems(items);
 
         const signedMap = {};
@@ -129,19 +178,13 @@ export default function HomePage() {
             continue;
           }
 
-          const { data: signedData, error: signedError } =
-            await supabase.storage
-              .from("media")
-              .createSignedUrl(item.file_path, 3600);
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from("media")
+            .createSignedUrl(item.file_path, 3600);
 
           if (!mounted) return;
 
-          if (signedError) {
-            signedMap[item.id] = null;
-            continue;
-          }
-
-          signedMap[item.id] = signedData?.signedUrl || null;
+          signedMap[item.id] = signedError ? null : signedData?.signedUrl || null;
         }
 
         setFeaturedItemUrls(signedMap);
@@ -160,7 +203,7 @@ export default function HomePage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [featuredVideoId]);
 
   const heroInnerStyle = {
     ...styles.heroInner,
@@ -198,9 +241,7 @@ export default function HomePage() {
 
   const portalGridStyle = {
     ...styles.portalGrid,
-    gridTemplateColumns: isMobile
-      ? "1fr"
-      : "repeat(3, minmax(0, 1fr))",
+    gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
   };
 
   return (
@@ -291,7 +332,14 @@ export default function HomePage() {
                   loop
                   playsInline
                   preload="metadata"
-                  style={styles.introVideo}
+                  onLoadedData={() => setVideoReady(true)}
+                  style={{
+                    ...styles.introVideo,
+                    opacity: videoReady ? 1 : 0,
+                    transform: videoReady ? "scale(1)" : "scale(1.02)",
+                    transition: "opacity 1.6s ease, transform 1.6s ease",
+                    filter: "brightness(0.92) contrast(1.05)",
+                  }}
                 />
               ) : (
                 <div style={styles.introPlaceholder}>
@@ -339,9 +387,7 @@ export default function HomePage() {
           </h2>
 
           {loadingFeaturedItems ? (
-            <div style={styles.featuredLoading}>
-              Loading featured work...
-            </div>
+            <div style={styles.featuredLoading}>Loading featured work...</div>
           ) : featuredItems.length === 0 ? (
             <div style={styles.featuredLoading}>
               Featured work is being rebuilt.
@@ -417,29 +463,12 @@ export default function HomePage() {
           <h2 style={styles.sectionTitleCenter}>Choose your path.</h2>
 
           <div style={portalGridStyle}>
-            <Link to="/gallery" style={styles.portalCard}>
-              <div style={styles.portalTitle}>Gallery</div>
-              <div style={styles.portalText}>
-                Explore the public visual archive and immersive image
-                collections.
-              </div>
-            </Link>
-
-            <Link to="/videos" style={styles.portalCard}>
-              <div style={styles.portalTitle}>Video Archive</div>
-              <div style={styles.portalText}>
-                Enter cinematic interviews, visual storytelling, and featured
-                screenings.
-              </div>
-            </Link>
-
-            <Link to="/sirens-realm" style={styles.portalCard}>
-              <div style={styles.portalTitle}>Sirens Realm</div>
-              <div style={styles.portalText}>
-                Step into the spiritual, mythic, and alchemical side of the
-                world.
-              </div>
-            </Link>
+            {portalCards.map((portal) => (
+              <Link key={portal.path} to={portal.path} style={styles.portalCard}>
+                <div style={styles.portalTitle}>{portal.title}</div>
+                <div style={styles.portalText}>{portal.text}</div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
