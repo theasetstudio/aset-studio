@@ -36,7 +36,7 @@ export default function VideosPage() {
         const { data, error: fetchError } = await supabase
           .from("media_items")
           .select(
-            "id, title, description, file_path, type, status, hidden, category"
+            "id, title, description, file_path, type, status, hidden, category, created_at"
           )
           .eq("type", "video")
           .eq("featured", true)
@@ -79,6 +79,9 @@ export default function VideosPage() {
     }
 
     async function loadVideos() {
+      setLoading(true);
+      setError("");
+
       try {
         const { data, error: fetchError } = await supabase
           .from("media_items")
@@ -164,6 +167,13 @@ export default function VideosPage() {
             loop
             playsInline
             preload="metadata"
+            style={{
+              width: "100%",
+              maxHeight: "80vh",
+              objectFit: "contain",
+              background: "#000",
+              display: "block",
+            }}
           />
 
           <div className="featured-video-overlay" />
@@ -235,6 +245,9 @@ export default function VideosPage() {
           <div className="videos-grid">
             {filteredVideos.map((video) => {
               const videoUrl = signedUrls[video.id] || "";
+              const categoryLabel = (
+                video.category || "Uncategorized"
+              ).replaceAll("_", " ");
 
               return (
                 <article key={video.id} className="video-card">
@@ -268,9 +281,19 @@ export default function VideosPage() {
                   </div>
 
                   <div className="video-card-body">
+                    <div className="video-card-meta">
+                      <span className="video-card-category">
+                        {categoryLabel}
+                      </span>
+                    </div>
+
                     <h2 className="video-card-title">
                       {video.title || "Untitled Video"}
                     </h2>
+
+                    <p className="video-card-description">
+                      {video.description || "No description available yet."}
+                    </p>
 
                     <Link to={`/media/${video.id}`} className="video-card-link">
                       Enter Screening
