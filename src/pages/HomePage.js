@@ -13,6 +13,9 @@ export default function HomePage() {
   const [featuredItemUrls, setFeaturedItemUrls] = useState({});
   const [loadingFeaturedItems, setLoadingFeaturedItems] = useState(true);
 
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const heroImageSrc = `${process.env.PUBLIC_URL}/images/aset-hero.png`;
@@ -108,7 +111,9 @@ export default function HomePage() {
         setFeaturedVideoId(data.id);
 
         const { data: signedVideo, error: signedVideoError } =
-          await supabase.storage.from("media").createSignedUrl(data.file_path, 3600);
+          await supabase.storage
+            .from("media")
+            .createSignedUrl(data.file_path, 3600);
 
         if (!mounted) return;
         if (signedVideoError) throw signedVideoError;
@@ -178,13 +183,16 @@ export default function HomePage() {
             continue;
           }
 
-          const { data: signedData, error: signedError } = await supabase.storage
-            .from("media")
-            .createSignedUrl(item.file_path, 3600);
+          const { data: signedData, error: signedError } =
+            await supabase.storage
+              .from("media")
+              .createSignedUrl(item.file_path, 3600);
 
           if (!mounted) return;
 
-          signedMap[item.id] = signedError ? null : signedData?.signedUrl || null;
+          signedMap[item.id] = signedError
+            ? null
+            : signedData?.signedUrl || null;
         }
 
         setFeaturedItemUrls(signedMap);
@@ -204,6 +212,40 @@ export default function HomePage() {
       mounted = false;
     };
   }, [featuredVideoId]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadReviews() {
+      setLoadingReviews(true);
+
+      try {
+        const { data, error } = await supabase
+          .from("service_reviews")
+          .select("*")
+          .eq("status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(3);
+
+        if (error) throw error;
+        if (!mounted) return;
+
+        setReviews(data || []);
+      } catch (err) {
+        console.error("Error loading reviews:", err);
+        if (!mounted) return;
+        setReviews([]);
+      } finally {
+        if (mounted) setLoadingReviews(false);
+      }
+    }
+
+    loadReviews();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const heroInnerStyle = {
     ...styles.heroInner,
@@ -472,6 +514,73 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <section style={styles.reviewSection}>
+        <div style={styles.sectionInner}>
+          <div style={styles.sectionEyebrow}>TESTIMONIALS</div>
+
+          <h2 style={styles.sectionTitleCenter}>
+            What people are saying about Aset.
+          </h2>
+
+          {loadingReviews ? (
+            <div style={styles.featuredLoading}>Loading testimonials...</div>
+          ) : reviews.length === 0 ? (
+            <div style={styles.featuredLoading}>
+              Testimonials and reviews are coming soon.
+            </div>
+          ) : (
+            <div
+              style={{
+                ...styles.reviewGrid,
+                gridTemplateColumns: isMobile
+                  ? "1fr"
+                  : "repeat(3, minmax(0, 1fr))",
+              }}
+            >
+              {reviews.map((review) => {
+                const name =
+                  review.name ||
+                  review.client_name ||
+                  review.reviewer_name ||
+                  "Client";
+
+                const text =
+                  review.review_text ||
+                  review.testimonial ||
+                  review.message ||
+                  review.body ||
+                  "";
+
+                const service =
+                  review.service_name || review.service || "The Aset Studio";
+
+                return (
+                  <div key={review.id} style={styles.reviewCard}>
+                    <div style={styles.quoteMark}>“</div>
+
+                    <p style={styles.reviewText}>
+                      {text || "A beautiful experience with The Aset Studio."}
+                    </p>
+
+                    <div style={styles.reviewDivider} />
+
+                    <div style={styles.reviewName}>{name}</div>
+                    <div style={styles.reviewService}>{service}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <footer style={styles.footer}>
+        <div style={styles.footerLine}>
+          The Aset Studio — building a world of image, sound, story, and
+          sovereignty since 2025.
+        </div>
+      </footer>
     </div>
   );
 }
@@ -639,8 +748,15 @@ const styles = {
 
   portalSection: {
     position: "relative",
-    padding: "24px 20px 90px",
+    padding: "24px 20px 72px",
     background: "linear-gradient(180deg, #050507 0%, #050507 100%)",
+  },
+
+  reviewSection: {
+    position: "relative",
+    padding: "24px 20px 72px",
+    background:
+      "linear-gradient(180deg, #050507 0%, #08080a 50%, #050507 100%)",
   },
 
   sectionInner: {
@@ -836,5 +952,77 @@ const styles = {
     fontSize: 14,
     lineHeight: 1.7,
     opacity: 0.84,
+  },
+
+  reviewGrid: {
+    display: "grid",
+    gap: 18,
+  },
+
+  reviewCard: {
+    position: "relative",
+    borderRadius: 22,
+    padding: 24,
+    border: "1px solid rgba(212,175,55,0.22)",
+    background:
+      "linear-gradient(180deg, rgba(212,175,55,0.08), rgba(255,255,255,0.018))",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.25)",
+    overflow: "hidden",
+  },
+
+  quoteMark: {
+    position: "absolute",
+    top: 8,
+    right: 18,
+    fontFamily: "Georgia",
+    fontSize: 72,
+    lineHeight: 1,
+    color: "rgba(212,175,55,0.22)",
+  },
+
+  reviewText: {
+    position: "relative",
+    zIndex: 1,
+    fontSize: 15,
+    lineHeight: 1.8,
+    opacity: 0.92,
+    margin: "0 0 18px",
+  },
+
+  reviewDivider: {
+    height: 1,
+    width: "100%",
+    background: "rgba(255,255,255,0.08)",
+    marginBottom: 14,
+  },
+
+  reviewName: {
+    fontFamily: "Georgia",
+    fontSize: 18,
+    marginBottom: 4,
+  },
+
+  reviewService: {
+    fontSize: 12,
+    letterSpacing: "0.14em",
+    textTransform: "uppercase",
+    color: "rgba(212,175,55,0.82)",
+  },
+
+  footer: {
+    padding: "34px 20px 48px",
+    borderTop: "1px solid rgba(255,255,255,0.06)",
+    background: "#050507",
+    textAlign: "center",
+  },
+
+  footerLine: {
+    maxWidth: 900,
+    margin: "0 auto",
+    fontSize: 12,
+    letterSpacing: "0.16em",
+    textTransform: "uppercase",
+    color: "rgba(242,240,234,0.58)",
+    lineHeight: 1.8,
   },
 };
