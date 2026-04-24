@@ -147,6 +147,7 @@ const styles = {
   icon: {
     fontSize: "28px",
     marginBottom: "10px",
+    textShadow: "0 0 12px rgba(255, 80, 120, 0.6)",
   },
 
   title: {
