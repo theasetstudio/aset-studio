@@ -21,6 +21,7 @@ function isValidVideo(item) {
 export default function VideosPage() {
   const [featuredVideo, setFeaturedVideo] = useState(null);
   const [featuredVideoUrl, setFeaturedVideoUrl] = useState("");
+  const [videoReady, setVideoReady] = useState(false);
 
   const [videos, setVideos] = useState([]);
   const [signedUrls, setSignedUrls] = useState({});
@@ -35,9 +36,7 @@ export default function VideosPage() {
       try {
         const { data, error: fetchError } = await supabase
           .from("media_items")
-          .select(
-            "id, title, description, file_path, type, status, hidden, category, created_at"
-          )
+          .select("*")
           .eq("type", "video")
           .eq("featured", true)
           .eq("status", "published")
@@ -85,9 +84,7 @@ export default function VideosPage() {
       try {
         const { data, error: fetchError } = await supabase
           .from("media_items")
-          .select(
-            "id, title, description, file_path, type, category, status, hidden, created_at"
-          )
+          .select("*")
           .eq("type", "video")
           .eq("status", "published")
           .eq("hidden", false)
@@ -109,14 +106,10 @@ export default function VideosPage() {
                   .from("media")
                   .createSignedUrl(item.file_path, 3600);
 
-              if (!signedError && signedData?.signedUrl) {
-                urlMap[item.id] = signedData.signedUrl;
-              } else {
-                console.error("Signed URL failed for:", item.id);
-                urlMap[item.id] = "";
-              }
-            } catch (e) {
-              console.error("URL generation crash:", item.id, e);
+              urlMap[item.id] = signedError || !signedData?.signedUrl
+                ? ""
+                : signedData.signedUrl;
+            } catch {
               urlMap[item.id] = "";
             }
           })
@@ -131,9 +124,7 @@ export default function VideosPage() {
         setVideos([]);
         setSignedUrls({});
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     }
 
@@ -157,43 +148,41 @@ export default function VideosPage() {
 
   return (
     <div className="videos-page">
-      {featuredVideo && featuredVideoUrl ? (
+      {featuredVideo && featuredVideoUrl && (
         <section className="featured-video">
-          <video
-            className="featured-video-bg"
-            src={featuredVideoUrl}
-            muted
-            autoPlay
-            loop
-            playsInline
-            preload="metadata"
-            style={{
-              width: "100%",
-              maxHeight: "80vh",
-              objectFit: "contain",
-              background: "#000",
-              display: "block",
-            }}
-          />
+          <div className="featured-video-wrapper">
+            <video
+              className="featured-video-bg"
+              src={featuredVideoUrl}
+              muted
+              autoPlay
+              loop
+              playsInline
+              preload="metadata"
+              onLoadedData={() => setVideoReady(true)}
+              style={{
+                width: "100%",
+                maxHeight: "80vh",
+                objectFit: "contain",
+                background: "#000",
+                opacity: videoReady ? 1 : 0,
+                transform: videoReady ? "scale(1)" : "scale(1.02)",
+                transition: "opacity 1.6s ease, transform 1.6s ease",
+              }}
+            />
 
-          <div className="featured-video-overlay" />
+            <div className="featured-video-overlay" />
 
-          <div className="featured-video-content">
-            <h1>{featuredVideo.title || "Featured Video"}</h1>
-
-            {featuredVideo.description ? (
-              <p>{featuredVideo.description}</p>
-            ) : null}
-
-            <Link
-              to={`/media/${featuredVideo.id}`}
-              className="featured-video-button"
-            >
-              Watch Now
-            </Link>
+            <div className="featured-video-content">
+              <h1>{featuredVideo.title || "Featured Video"}</h1>
+              {featuredVideo.description && <p>{featuredVideo.description}</p>}
+              <Link to={`/media/${featuredVideo.id}`} className="featured-video-button">
+                Watch Now
+              </Link>
+            </div>
           </div>
         </section>
-      ) : null}
+      )}
 
       <section className="videos-hero">
         <div className="videos-hero-overlay" />
@@ -201,8 +190,7 @@ export default function VideosPage() {
           <p className="videos-eyebrow">The Aset Studio</p>
           <h1 className="videos-title">Video Archive</h1>
           <p className="videos-subtitle">
-            Cinematic interviews, sharp takes, and visual storytelling — all in
-            one place.
+            Cinematic interviews, sharp takes, and visual storytelling — all in one place.
           </p>
         </div>
       </section>
@@ -213,16 +201,14 @@ export default function VideosPage() {
             <button
               key={category}
               type="button"
-              className={`videos-filter-button ${
-                activeCategory === category ? "active" : ""
-              }`}
+              className={`videos-filter-button ${activeCategory === category ? "active" : ""}`}
               onClick={() => setActiveCategory(category)}
             >
               {category === "all"
                 ? "All"
                 : category === "hot_take"
-                  ? "Hot Take"
-                  : category.charAt(0).toUpperCase() + category.slice(1)}
+                ? "Hot Take"
+                : category.charAt(0).toUpperCase() + category.slice(1)}
             </button>
           ))}
         </div>
@@ -245,9 +231,7 @@ export default function VideosPage() {
           <div className="videos-grid">
             {filteredVideos.map((video) => {
               const videoUrl = signedUrls[video.id] || "";
-              const categoryLabel = (
-                video.category || "Uncategorized"
-              ).replaceAll("_", " ");
+              const categoryLabel = (video.category || "Uncategorized").replaceAll("_", " ");
 
               return (
                 <article key={video.id} className="video-card">
@@ -260,17 +244,10 @@ export default function VideosPage() {
                         loop
                         playsInline
                         preload="metadata"
-                        onMouseEnter={(e) => {
-                          const vid = e.currentTarget;
-                          vid.play().catch(() => {});
-                        }}
+                        onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
                         onMouseLeave={(e) => {
-                          const vid = e.currentTarget;
-                          vid.pause();
-                          vid.currentTime = 0;
-                        }}
-                        onError={() => {
-                          console.error("Preview failed:", video.id);
+                          e.currentTarget.pause();
+                          e.currentTarget.currentTime = 0;
                         }}
                       />
                     ) : (
@@ -282,15 +259,10 @@ export default function VideosPage() {
 
                   <div className="video-card-body">
                     <div className="video-card-meta">
-                      <span className="video-card-category">
-                        {categoryLabel}
-                      </span>
+                      <span className="video-card-category">{categoryLabel}</span>
                     </div>
 
-                    <h2 className="video-card-title">
-                      {video.title || "Untitled Video"}
-                    </h2>
-
+                    <h2 className="video-card-title">{video.title || "Untitled Video"}</h2>
                     <p className="video-card-description">
                       {video.description || "No description available yet."}
                     </p>
