@@ -124,7 +124,9 @@ export default function VideosPage() {
         setVideos([]);
         setSignedUrls({});
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
@@ -162,21 +164,44 @@ export default function VideosPage() {
               onLoadedData={() => setVideoReady(true)}
               style={{
                 width: "100%",
-                maxHeight: "80vh",
+                maxHeight: "90vh",
                 objectFit: "contain",
                 background: "#000",
                 opacity: videoReady ? 1 : 0,
                 transform: videoReady ? "scale(1)" : "scale(1.02)",
-                transition: "opacity 1.6s ease, transform 1.6s ease",
+                transition: "opacity 1.8s ease, transform 1.8s ease",
               }}
             />
 
-            <div className="featured-video-overlay" />
+            <div
+              className="featured-video-overlay"
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.2) 70%, transparent 100%)",
+              }}
+            />
 
-            <div className="featured-video-content">
-              <h1>{featuredVideo.title || "Featured Video"}</h1>
+            <div
+              className="featured-video-content"
+              style={{
+                position: "absolute",
+                left: "5%",
+                top: "60%",
+                transform: "translateY(-50%)",
+                color: "#fff",
+                maxWidth: "45%",
+              }}
+            >
+              <h1 style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
+                {featuredVideo.title || "Featured Video"}
+              </h1>
               {featuredVideo.description && <p>{featuredVideo.description}</p>}
-              <Link to={`/media/${featuredVideo.id}`} className="featured-video-button">
+              <Link
+                to={`/media/${featuredVideo.id}`}
+                className="featured-video-button"
+              >
                 Watch Now
               </Link>
             </div>
@@ -190,7 +215,8 @@ export default function VideosPage() {
           <p className="videos-eyebrow">The Aset Studio</p>
           <h1 className="videos-title">Video Archive</h1>
           <p className="videos-subtitle">
-            Cinematic interviews, sharp takes, and visual storytelling — all in one place.
+            Cinematic interviews, sharp takes, and visual storytelling — all in
+            one place.
           </p>
         </div>
       </section>
@@ -201,7 +227,9 @@ export default function VideosPage() {
             <button
               key={category}
               type="button"
-              className={`videos-filter-button ${activeCategory === category ? "active" : ""}`}
+              className={`videos-filter-button ${
+                activeCategory === category ? "active" : ""
+              }`}
               onClick={() => setActiveCategory(category)}
             >
               {category === "all"
@@ -231,7 +259,10 @@ export default function VideosPage() {
           <div className="videos-grid">
             {filteredVideos.map((video) => {
               const videoUrl = signedUrls[video.id] || "";
-              const categoryLabel = (video.category || "Uncategorized").replaceAll("_", " ");
+              const categoryLabel = (video.category || "Uncategorized").replaceAll(
+                "_",
+                " "
+              );
 
               return (
                 <article key={video.id} className="video-card">
