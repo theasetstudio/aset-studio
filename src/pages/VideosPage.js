@@ -124,9 +124,7 @@ export default function VideosPage() {
         setVideos([]);
         setSignedUrls({});
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     }
 
@@ -150,6 +148,7 @@ export default function VideosPage() {
 
   return (
     <div className="videos-page">
+      {/* Featured Hero Section */}
       {featuredVideo && featuredVideoUrl && (
         <section className="featured-video">
           <div className="featured-video-wrapper">
@@ -192,6 +191,7 @@ export default function VideosPage() {
                 transform: "translateY(-50%)",
                 color: "#fff",
                 maxWidth: "45%",
+                textShadow: "0 4px 12px rgba(0,0,0,0.45)",
               }}
             >
               <h1 style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
@@ -201,6 +201,22 @@ export default function VideosPage() {
               <Link
                 to={`/media/${featuredVideo.id}`}
                 className="featured-video-button"
+                style={{
+                  marginTop: "1rem",
+                  padding: "0.6rem 1.2rem",
+                  borderRadius: "10px",
+                  background: "rgba(214,195,165,0.9)",
+                  color: "#000",
+                  textDecoration: "none",
+                  fontWeight: "600",
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#d6c3a5cc";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(214,195,165,0.9)";
+                }}
               >
                 Watch Now
               </Link>
@@ -209,6 +225,7 @@ export default function VideosPage() {
         </section>
       )}
 
+      {/* Hero Header */}
       <section className="videos-hero">
         <div className="videos-hero-overlay" />
         <div className="videos-hero-content">
@@ -221,6 +238,7 @@ export default function VideosPage() {
         </div>
       </section>
 
+      {/* Category Toolbar */}
       <section className="videos-toolbar">
         <div className="videos-toolbar-inner">
           {VIDEO_CATEGORIES.map((category) => (
@@ -242,6 +260,7 @@ export default function VideosPage() {
         </div>
       </section>
 
+      {/* Video Grid */}
       <section className="videos-content">
         {loading ? (
           <div className="videos-state-card">
