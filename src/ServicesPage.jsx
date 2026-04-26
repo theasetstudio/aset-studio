@@ -1,4 +1,4 @@
-// src/pages/ServicesPage.js
+// src/pages/ServicesPage.jsx
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
 import "./ServicesPage.css";
@@ -17,47 +17,47 @@ export default function ServicesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setSuccess("");
     setError("");
+    setSuccess("");
 
-    const { error: supaError } = await supabase
+    const { data, error: supaError } = await supabase
       .from("inquiries")
       .insert([{ name: form.name, email: form.email, message: form.message }]);
 
     setLoading(false);
-
     if (supaError) {
-      setError("Error sending inquiry. Please try again.");
-    } else {
-      setSuccess("Inquiry sent successfully!");
-      setForm({ name: "", email: "", message: "" });
+      setError("Error sending inquiry. Try again later.");
+      return;
     }
+
+    setSuccess("Inquiry sent successfully!");
+    setForm({ name: "", email: "", message: "" });
   };
 
   return (
     <div className="services-page">
-      {/* Hero Section */}
-      <section className="services-hero">
-        <img src="/services-hero.png" alt="Hero" className="hero-image" />
+      {/* Hero */}
+      <section className="hero">
+        <img src="/services-hero.png" alt="Services Hero" className="hero-image" />
         <div className="hero-overlay" />
         <div className="hero-text">
           <span className="small">SERVICES</span>
           <h1>The Aset Studio</h1>
           <h3>Private Support for Creatives & Talent</h3>
           <p>
-            High-touch, luxury support services for individuals within the world
-            of entertainment and the arts. Each service is designed to ensure
-            that talent, creators, and professionals are supported with
+            High-touch, luxury support services for individuals within the
+            world of entertainment and the arts. Each service is designed to
+            ensure talent, creators, and professionals are supported with
             precision, discretion, and intention.
           </p>
         </div>
       </section>
 
-      {/* Services List */}
+      {/* Services */}
       <main className="services-list">
         <ServiceItem
           title="Traveling Personal Assistant"
-          description="On-site support for production, talent, and creative execution. Hybrid personal + production coordination for elite clients."
+          description="On-site support for production, talent, and creative execution."
           items={[
             "On-set coordination",
             "Talent liaison and communication",
@@ -85,9 +85,9 @@ export default function ServicesPage() {
             "Regular virtual assistant duties",
           ]}
           notes={{
-            Access: "Elite → live support; Standard → 9–5",
-            Communication: "Elite → live updates; Standard → daily summary",
-            Billing: "Elite → project-based; Standard → hourly",
+            Access: "Elite → live support, Standard → 9–5",
+            Communication: "Elite → live updates, Standard → daily summary",
+            Billing: "Elite → project-based, Standard → hourly",
           }}
         />
 
@@ -126,7 +126,7 @@ export default function ServicesPage() {
         />
       </main>
 
-      {/* Inquiry Form */}
+      {/* Inquiry */}
       <section className="inquiry-section">
         <h2>Request Access</h2>
         <p>Contact directly or submit your inquiry below:</p>
@@ -176,10 +176,9 @@ export default function ServicesPage() {
   );
 }
 
-// Reusable Service Item Component
 function ServiceItem({ title, description, items, notes }) {
   return (
-    <section className="service-item">
+    <section className="service">
       <h2>{title}</h2>
       <p>{description}</p>
       {items && (

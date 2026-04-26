@@ -124,7 +124,9 @@ export default function VideosPage() {
         setVideos([]);
         setSignedUrls({});
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
@@ -171,7 +173,6 @@ export default function VideosPage() {
                 transition: "opacity 1.8s ease, transform 1.8s ease",
               }}
             />
-
             <div
               className="featured-video-overlay"
               style={{
@@ -181,7 +182,6 @@ export default function VideosPage() {
                   "linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.2) 70%, transparent 100%)",
               }}
             />
-
             <div
               className="featured-video-content"
               style={{
