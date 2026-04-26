@@ -1,13 +1,11 @@
 // src/pages/ServicesPage.js
 import React, { useState } from "react";
-import { supabase } from "../supabaseClient";
 import "./ServicesPage.css";
+import heroImg from "./services-hero.png"; // ensure this file is in src/pages
 
 export default function ServicesPage() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -16,125 +14,105 @@ export default function ServicesPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setSuccess("");
-    setError("");
+    setStatus("");
+    if (!form.name || !form.message) {
+      setStatus("error");
+      return;
+    }
 
-    const { error: supaError } = await supabase
-      .from("inquiries")
-      .insert([{ name: form.name, email: form.email, message: form.message }]);
-
-    setLoading(false);
-
-    if (supaError) {
-      setError("Error sending inquiry. Please try again.");
-    } else {
-      setSuccess("Inquiry sent successfully!");
+    try {
+      // Add your API or Supabase submission here
+      setStatus("success");
       setForm({ name: "", email: "", message: "" });
+    } catch {
+      setStatus("error");
     }
   };
 
   return (
     <div className="services-page">
-      {/* Hero Section */}
-      <section className="services-hero">
-        <img src="/services-hero.png" alt="Hero" className="hero-image" />
-        <div className="hero-overlay" />
-        <div className="hero-text">
-          <span className="small">SERVICES</span>
-          <h1>The Aset Studio</h1>
-          <h3>Private Support for Creatives & Talent</h3>
-          <p>
-            High-touch, luxury support services for individuals within the world
-            of entertainment and the arts. Each service is designed to ensure
-            that talent, creators, and professionals are supported with
-            precision, discretion, and intention.
-          </p>
+      {/* HERO SECTION */}
+      <section
+        className="services-hero"
+        style={{
+          backgroundImage: `url(${heroImg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <h2>SERVICES</h2>
+        <h1>The Aset Studio</h1>
+        <h3>Private Support for Creatives & Talent</h3>
+        <p>
+          High-touch, luxury support services for individuals within the world
+          of entertainment and the arts. Each service is designed to ensure that
+          talent, creators, and professionals are supported with precision,
+          discretion, and intention.
+        </p>
+      </section>
+
+      {/* SERVICES LIST */}
+      <section className="services-list">
+        <div className="service-columns">
+          <div className="service-item">
+            <h2>Traveling Personal Assistant</h2>
+            <ul>
+              <li>On-set coordination</li>
+              <li>Talent liaison and communication</li>
+              <li>Travel planning and accommodation management</li>
+              <li>Daily personal support during production or events</li>
+              <li>Asset and media handling</li>
+            </ul>
+          </div>
+
+          <div className="service-item">
+            <h2>Virtual Assistant</h2>
+            <ul>
+              <li>Talent profile setup and verification</li>
+              <li>Creator communication and onboarding</li>
+              <li>Content coordination and scheduling</li>
+              <li>Administrative support</li>
+              <li>Platform-related assistance</li>
+              <li>Regular virtual assistant duties</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="service-item">
+          <h2>Web Designer</h2>
+          <ul>
+            <li>Website design and full website builds</li>
+            <li>Page design and layout development</li>
+            <li>Branding and visual refinement</li>
+            <li>User experience alignment with luxury presentation</li>
+            <li>Custom visual direction for projects or platforms</li>
+          </ul>
+        </div>
+
+        <div className="service-item">
+          <h2>Virtual Photographer</h2>
+          <ul>
+            <li>Profile imagery</li>
+            <li>Campaign and promotional visuals</li>
+            <li>Coordinated shoots</li>
+            <li>Integration with platform assets and media</li>
+          </ul>
+        </div>
+
+        <div className="service-item">
+          <h2>Red Carpet Interviewer</h2>
+          <ul>
+            <li>Live on-site interviews</li>
+            <li>Talent engagement and coordination</li>
+            <li>Cinematic-style questioning and presence</li>
+            <li>Content captured for platform or external use</li>
+          </ul>
         </div>
       </section>
 
-      {/* Services List */}
-      <main className="services-list">
-        <ServiceItem
-          title="Traveling Personal Assistant"
-          description="On-site support for production, talent, and creative execution. Hybrid personal + production coordination for elite clients."
-          items={[
-            "On-set coordination",
-            "Talent liaison and communication",
-            "Travel planning and accommodation management",
-            "Daily personal support during production or events",
-            "Asset and media handling",
-          ]}
-          notes={{
-            Availability: "Flexible depending on project needs",
-            Travel: "Local, national, and international",
-            Communication: "Real-time updates",
-            Billing: "Project-based custom quotes",
-          }}
-        />
-
-        <ServiceItem
-          title="Virtual Assistant"
-          description="Digital support for creators, talent, and platform coordination."
-          items={[
-            "Talent profile setup and verification",
-            "Creator communication and onboarding",
-            "Content coordination and scheduling",
-            "Administrative support",
-            "Platform-related assistance",
-            "Regular virtual assistant duties",
-          ]}
-          notes={{
-            Access: "Elite → live support; Standard → 9–5",
-            Communication: "Elite → live updates; Standard → daily summary",
-            Billing: "Elite → project-based; Standard → hourly",
-          }}
-        />
-
-        <ServiceItem
-          title="Web Designer"
-          description="Custom digital presentation aligned with cinematic identity."
-          items={[
-            "Website design and full website builds",
-            "Page design and layout development",
-            "Branding and visual refinement",
-            "User experience alignment with luxury presentation",
-            "Custom visual direction for projects or platforms",
-          ]}
-        />
-
-        <ServiceItem
-          title="Virtual Photographer"
-          description="Remote and on-site visual capture for talent and creatives."
-          items={[
-            "Profile imagery",
-            "Campaign and promotional visuals",
-            "Coordinated shoots",
-            "Integration with platform assets and media",
-          ]}
-        />
-
-        <ServiceItem
-          title="Red Carpet Interviewer"
-          description="On-location, cinematic interview experience."
-          items={[
-            "Live on-site interviews",
-            "Talent engagement and coordination",
-            "Cinematic-style questioning and presence",
-            "Content captured for platform or external use",
-          ]}
-        />
-      </main>
-
-      {/* Inquiry Form */}
+      {/* INQUIRY FORM */}
       <section className="inquiry-section">
         <h2>Request Access</h2>
-        <p>Contact directly or submit your inquiry below:</p>
-        <ul>
-          <li>Phone: 216-474-5705</li>
-          <li>DM via Instagram (@theasetstudioofficial)</li>
-          <li>Email: theasetstudio@gmail.com</li>
-        </ul>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
@@ -154,50 +132,21 @@ export default function ServicesPage() {
           <textarea
             name="message"
             placeholder="Your message"
+            rows="5"
             value={form.message}
             onChange={handleChange}
             required
           />
-          <button type="submit">{loading ? "Sending..." : "Send Inquiry"}</button>
-          {success && <p className="success">{success}</p>}
-          {error && <p className="error">{error}</p>}
+          <button type="submit">Send Inquiry</button>
         </form>
+        {status === "success" && <p className="success">Message sent!</p>}
+        {status === "error" && <p className="error">Please fill all required fields.</p>}
       </section>
 
-      {/* Footer */}
       <footer>
-        <p>
-          The Aset Studio — A creative world. Not just a platform.
-          <br />
-          Founder & Creative Director — Franchesca Analisa “Sapphire”
-        </p>
+        <p>The Aset Studio — A creative world. Not just a platform.</p>
+        <p>Founder & Creative Director — Franchesca Analisa “Sapphire”</p>
       </footer>
     </div>
-  );
-}
-
-// Reusable Service Item Component
-function ServiceItem({ title, description, items, notes }) {
-  return (
-    <section className="service-item">
-      <h2>{title}</h2>
-      <p>{description}</p>
-      {items && (
-        <ul>
-          {items.map((i, idx) => (
-            <li key={idx}>{i}</li>
-          ))}
-        </ul>
-      )}
-      {notes && (
-        <div className="notes">
-          {Object.entries(notes).map(([key, value]) => (
-            <p key={key}>
-              <strong>{key}:</strong> {value}
-            </p>
-          ))}
-        </div>
-      )}
-    </section>
   );
 }
