@@ -1,61 +1,32 @@
-// src/pages/ServicesPage.js
-import React, { useState } from "react";
+import React from "react";
 import "./ServicesPage.css";
-import heroImg from "./services-hero.png"; // ensure this file is in src/pages
+import heroImg from "./services-hero.png"; // make sure this image is in src/pages
 
-export default function ServicesPage() {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [status, setStatus] = useState("");
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setStatus("");
-    if (!form.name || !form.message) {
-      setStatus("error");
-      return;
-    }
-
-    try {
-      // Add your API or Supabase submission here
-      setStatus("success");
-      setForm({ name: "", email: "", message: "" });
-    } catch {
-      setStatus("error");
-    }
-  };
-
+const ServicesPage = () => {
   return (
     <div className="services-page">
       {/* HERO SECTION */}
-      <section
-        className="services-hero"
-        style={{
-          backgroundImage: `url(${heroImg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <h2>SERVICES</h2>
-        <h1>The Aset Studio</h1>
-        <h3>Private Support for Creatives & Talent</h3>
-        <p>
-          High-touch, luxury support services for individuals within the world
-          of entertainment and the arts. Each service is designed to ensure that
-          talent, creators, and professionals are supported with precision,
-          discretion, and intention.
-        </p>
-      </section>
+      <div className="services-hero">
+        <img src={heroImg} alt="The Aset Studio Hero" className="hero-img" />
+        <div className="hero-text">
+          <h2>SERVICES</h2>
+          <h1>The Aset Studio</h1>
+          <h3>Private Support for Creatives & Talent</h3>
+          <p>
+            High-touch, luxury support services for individuals within the world of
+            entertainment and the arts. Each service is designed to ensure that talent,
+            creators, and professionals are supported with precision, discretion, and
+            intention.
+          </p>
+        </div>
+      </div>
 
       {/* SERVICES LIST */}
-      <section className="services-list">
+      <div className="services-list">
         <div className="service-columns">
           <div className="service-item">
             <h2>Traveling Personal Assistant</h2>
+            <p>On-site support for production, talent, and creative execution.</p>
             <ul>
               <li>On-set coordination</li>
               <li>Talent liaison and communication</li>
@@ -63,10 +34,15 @@ export default function ServicesPage() {
               <li>Daily personal support during production or events</li>
               <li>Asset and media handling</li>
             </ul>
+            <p><strong>Availability:</strong> Flexible depending on project needs.</p>
+            <p><strong>Travel:</strong> Local, national, and international.</p>
+            <p><strong>Communication:</strong> Real-time updates.</p>
+            <p><strong>Billing:</strong> Project-based custom quotes.</p>
           </div>
 
           <div className="service-item">
             <h2>Virtual Assistant</h2>
+            <p>Digital support for creators, talent, and platform coordination.</p>
             <ul>
               <li>Talent profile setup and verification</li>
               <li>Creator communication and onboarding</li>
@@ -75,11 +51,16 @@ export default function ServicesPage() {
               <li>Platform-related assistance</li>
               <li>Regular virtual assistant duties</li>
             </ul>
+            <p><strong>Access:</strong> Elite clients get live support; standard clients 9–5.</p>
+            <p><strong>Communication:</strong> Elite — live updates; Standard — end-of-day summaries.</p>
+            <p><strong>Billing:</strong> Elite — project-based; Standard — hourly.</p>
           </div>
         </div>
 
+        {/* Additional services (single-column) */}
         <div className="service-item">
           <h2>Web Designer</h2>
+          <p>Custom digital presentation aligned with cinematic identity.</p>
           <ul>
             <li>Website design and full website builds</li>
             <li>Page design and layout development</li>
@@ -91,6 +72,7 @@ export default function ServicesPage() {
 
         <div className="service-item">
           <h2>Virtual Photographer</h2>
+          <p>Remote and on-site visual capture for talent and creatives.</p>
           <ul>
             <li>Profile imagery</li>
             <li>Campaign and promotional visuals</li>
@@ -101,6 +83,7 @@ export default function ServicesPage() {
 
         <div className="service-item">
           <h2>Red Carpet Interviewer</h2>
+          <p>On-location, cinematic interview experience.</p>
           <ul>
             <li>Live on-site interviews</li>
             <li>Talent engagement and coordination</li>
@@ -108,40 +91,18 @@ export default function ServicesPage() {
             <li>Content captured for platform or external use</li>
           </ul>
         </div>
-      </section>
+      </div>
 
       {/* INQUIRY FORM */}
-      <section className="inquiry-section">
+      <div className="inquiry-section">
         <h2>Request Access</h2>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            name="name"
-            placeholder="Name"
-            value={form.name}
-            onChange={handleChange}
-            required
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email (optional)"
-            value={form.email}
-            onChange={handleChange}
-          />
-          <textarea
-            name="message"
-            placeholder="Your message"
-            rows="5"
-            value={form.message}
-            onChange={handleChange}
-            required
-          />
+        <form>
+          <input type="text" placeholder="Name" required />
+          <input type="email" placeholder="Email (optional)" />
+          <textarea placeholder="Your message" rows="5"></textarea>
           <button type="submit">Send Inquiry</button>
         </form>
-        {status === "success" && <p className="success">Message sent!</p>}
-        {status === "error" && <p className="error">Please fill all required fields.</p>}
-      </section>
+      </div>
 
       <footer>
         <p>The Aset Studio — A creative world. Not just a platform.</p>
@@ -149,4 +110,6 @@ export default function ServicesPage() {
       </footer>
     </div>
   );
-}
+};
+
+export default ServicesPage;
