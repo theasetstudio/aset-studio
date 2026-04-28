@@ -1,4 +1,3 @@
-
 // src/components/CommentsPanel.js
 
 import React, { useEffect, useState } from "react";
@@ -11,20 +10,19 @@ export default function CommentsPanel({ mediaId, disabled }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // -------------------------
-  // AUTH
-  // -------------------------
   useEffect(() => {
     let mounted = true;
 
-    (async () => {
+    async function loadSession() {
       const { data } = await supabase.auth.getSession();
       if (!mounted) return;
       setSession(data?.session ?? null);
-    })();
+    }
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
+    loadSession();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession);
     });
 
     return () => {
@@ -33,14 +31,15 @@ export default function CommentsPanel({ mediaId, disabled }) {
     };
   }, []);
 
-  // -------------------------
-  // LOAD COMMENTS
-  // -------------------------
   useEffect(() => {
     let alive = true;
 
-    async function load() {
-      if (!mediaId) return;
+    async function loadComments() {
+      if (!mediaId) {
+        setComments([]);
+        setLoading(false);
+        return;
+      }
 
       setLoading(true);
 
@@ -48,7 +47,7 @@ export default function CommentsPanel({ mediaId, disabled }) {
         .from("media_comments")
         .select(`
           id,
-          content,
+          body,
           created_at,
           user_id,
           user:profiles!media_comments_user_id_fkey (
@@ -71,18 +70,43 @@ export default function CommentsPanel({ mediaId, disabled }) {
       setLoading(false);
     }
 
-    load();
+    loadComments();
 
     return () => {
       alive = false;
     };
   }, [mediaId]);
 
-  // -------------------------
-  // ADD COMMENT
-  // -------------------------
+  async function reloadComments() {
+    if (!mediaId) return;
+
+    const { data, error } = await supabase
+      .from("media_comments")
+      .select(`
+        id,
+        body,
+        created_at,
+        user_id,
+        user:profiles!media_comments_user_id_fkey (
+          display_name,
+          avatar_url
+        )
+      `)
+      .eq("media_id", mediaId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Comments reload error:", error);
+      setComments([]);
+      return;
+    }
+
+    setComments(data ?? []);
+  }
+
   async function handleSubmit() {
     if (!session?.user?.id) return;
+    if (!mediaId) return;
     if (!newComment.trim()) return;
 
     try {
@@ -91,30 +115,13 @@ export default function CommentsPanel({ mediaId, disabled }) {
       const { error } = await supabase.from("media_comments").insert({
         media_id: mediaId,
         user_id: session.user.id,
-        content: newComment.trim(),
+        body: newComment.trim(),
       });
 
       if (error) throw error;
 
       setNewComment("");
-
-      // reload comments
-      const { data } = await supabase
-        .from("media_comments")
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          user:profiles!media_comments_user_id_fkey (
-            display_name,
-            avatar_url
-          )
-        `)
-        .eq("media_id", mediaId)
-        .order("created_at", { ascending: true });
-
-      setComments(data ?? []);
+      await reloadComments();
     } catch (err) {
       console.error("Comment submit error:", err);
     } finally {
@@ -122,9 +129,6 @@ export default function CommentsPanel({ mediaId, disabled }) {
     }
   }
 
-  // -------------------------
-  // UI
-  // -------------------------
   return (
     <div style={{ marginTop: 30 }}>
       <h3>Comments</h3>
@@ -161,8 +165,9 @@ export default function CommentsPanel({ mediaId, disabled }) {
               border: "none",
               background: "#fff",
               color: "#111",
-              cursor: "pointer",
+              cursor: submitting ? "not-allowed" : "pointer",
               fontWeight: 600,
+              opacity: submitting ? 0.7 : 1,
             }}
           >
             {submitting ? "Posting..." : "Post Comment"}
@@ -180,16 +185,15 @@ export default function CommentsPanel({ mediaId, disabled }) {
         <div style={{ opacity: 0.6 }}>No comments yet.</div>
       ) : (
         <div style={{ display: "grid", gap: 14 }}>
-          {comments.map((c) => (
+          {comments.map((comment) => (
             <div
-              key={c.id}
+              key={comment.id}
               style={{
                 display: "flex",
                 gap: 10,
                 alignItems: "flex-start",
               }}
             >
-              {/* Avatar */}
               <div
                 style={{
                   width: 40,
@@ -200,9 +204,9 @@ export default function CommentsPanel({ mediaId, disabled }) {
                   flexShrink: 0,
                 }}
               >
-                {c.user?.avatar_url ? (
+                {comment.user?.avatar_url ? (
                   <img
-                    src={c.user.avatar_url}
+                    src={comment.user.avatar_url}
                     alt="avatar"
                     style={{
                       width: "100%",
@@ -222,22 +226,23 @@ export default function CommentsPanel({ mediaId, disabled }) {
                       fontWeight: 600,
                     }}
                   >
-                    {(c.user?.display_name || "U")[0]}
+                    {(comment.user?.display_name || "U")[0]}
                   </div>
                 )}
               </div>
 
-              {/* Content */}
               <div>
                 <div style={{ fontWeight: 600 }}>
-                  {c.user?.display_name || "User"}
+                  {comment.user?.display_name || "User"}
                 </div>
 
                 <div style={{ fontSize: 13, opacity: 0.6 }}>
-                  {new Date(c.created_at).toLocaleString()}
+                  {comment.created_at
+                    ? new Date(comment.created_at).toLocaleString()
+                    : ""}
                 </div>
 
-                <div style={{ marginTop: 4 }}>{c.content}</div>
+                <div style={{ marginTop: 4 }}>{comment.body}</div>
               </div>
             </div>
           ))}
