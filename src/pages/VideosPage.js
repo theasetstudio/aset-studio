@@ -5,8 +5,13 @@ import "./VideosPage.css";
 
 const VIDEO_CATEGORIES = ["all", "interview", "hot_take", "cinematic"];
 
-function norm(v) {
-  return String(v || "").trim().toLowerCase();
+function norm(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getCategoryLabel(category) {
+  const value = category || "Uncategorized";
+  return value.replaceAll("_", " ");
 }
 
 function isValidVideo(item) {
@@ -18,7 +23,7 @@ function isValidVideo(item) {
   return true;
 }
 
-export default function VideosPage() {
+export default function VideoPage() {
   const [featuredVideo, setFeaturedVideo] = useState(null);
   const [featuredVideoUrl, setFeaturedVideoUrl] = useState("");
   const [videoReady, setVideoReady] = useState(false);
@@ -32,49 +37,19 @@ export default function VideosPage() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadFeaturedVideo() {
-      try {
-        const { data, error: fetchError } = await supabase
-          .from("media_items")
-          .select("*")
-          .eq("type", "video")
-          .eq("featured", true)
-          .eq("status", "published")
-          .eq("hidden", false)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+    async function createVideoSignedUrl(filePath) {
+      if (!filePath) return "";
 
-        if (fetchError) throw fetchError;
-        if (!isMounted) return;
+      const { data, error } = await supabase.storage
+        .from("media")
+        .createSignedUrl(filePath, 3600);
 
-        if (!data || !isValidVideo(data)) {
-          setFeaturedVideo(null);
-          setFeaturedVideoUrl("");
-          return;
-        }
-
-        setFeaturedVideo(data);
-
-        const { data: signedData, error: signedError } = await supabase.storage
-          .from("media")
-          .createSignedUrl(data.file_path, 3600);
-
-        if (!isMounted) return;
-
-        if (signedError || !signedData?.signedUrl) {
-          console.error("Featured video signed URL failed:", signedError);
-          setFeaturedVideoUrl("");
-          return;
-        }
-
-        setFeaturedVideoUrl(signedData.signedUrl);
-      } catch (err) {
-        console.error("Failed to load featured video:", err);
-        if (!isMounted) return;
-        setFeaturedVideo(null);
-        setFeaturedVideoUrl("");
+      if (error || !data?.signedUrl) {
+        console.error("Signed URL failed:", error);
+        return "";
       }
+
+      return data.signedUrl;
     }
 
     async function loadVideos() {
@@ -96,33 +71,38 @@ export default function VideosPage() {
         const safeVideos = Array.isArray(data) ? data.filter(isValidVideo) : [];
         setVideos(safeVideos);
 
-        const urlMap = {};
+        const featured =
+          safeVideos.find((item) => item.featured === true) || null;
 
-        await Promise.all(
+        setFeaturedVideo(featured);
+
+        const urlEntries = await Promise.all(
           safeVideos.map(async (item) => {
-            try {
-              const { data: signedData, error: signedError } =
-                await supabase.storage
-                  .from("media")
-                  .createSignedUrl(item.file_path, 3600);
-
-              urlMap[item.id] = signedError || !signedData?.signedUrl
-                ? ""
-                : signedData.signedUrl;
-            } catch {
-              urlMap[item.id] = "";
-            }
+            const signedUrl = await createVideoSignedUrl(item.file_path);
+            return [item.id, signedUrl];
           })
         );
 
         if (!isMounted) return;
-        setSignedUrls(urlMap);
+
+        const nextSignedUrls = Object.fromEntries(urlEntries);
+        setSignedUrls(nextSignedUrls);
+
+        if (featured) {
+          setFeaturedVideoUrl(nextSignedUrls[featured.id] || "");
+        } else {
+          setFeaturedVideoUrl("");
+        }
       } catch (err) {
         console.error("Failed to load videos:", err);
+
         if (!isMounted) return;
+
         setError(err.message || "Failed to load videos.");
         setVideos([]);
         setSignedUrls({});
+        setFeaturedVideo(null);
+        setFeaturedVideoUrl("");
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -130,7 +110,6 @@ export default function VideosPage() {
       }
     }
 
-    loadFeaturedVideo();
     loadVideos();
 
     return () => {
@@ -139,23 +118,24 @@ export default function VideosPage() {
   }, []);
 
   const filteredVideos = useMemo(() => {
-    const baseVideos = featuredVideo
+    const withoutFeatured = featuredVideo
       ? videos.filter((video) => video.id !== featuredVideo.id)
       : videos;
 
-    if (activeCategory === "all") return baseVideos;
+    if (activeCategory === "all") return withoutFeatured;
 
-    return baseVideos.filter((item) => norm(item.category) === activeCategory);
+    return withoutFeatured.filter(
+      (video) => norm(video.category) === activeCategory
+    );
   }, [videos, activeCategory, featuredVideo]);
 
   return (
-    <div className="videos-page">
-      {/* Featured Hero Section */}
+    <main className="videos-page">
       {featuredVideo && featuredVideoUrl && (
-        <section className="featured-video">
+        <section className="featured-video" aria-label="Featured video">
           <div className="featured-video-wrapper">
             <video
-              className="featured-video-bg"
+              className={`featured-video-bg ${videoReady ? "is-ready" : ""}`}
               src={featuredVideoUrl}
               muted
               autoPlay
@@ -163,60 +143,22 @@ export default function VideosPage() {
               playsInline
               preload="metadata"
               onLoadedData={() => setVideoReady(true)}
-              style={{
-                width: "100%",
-                maxHeight: "90vh",
-                objectFit: "contain",
-                background: "#000",
-                opacity: videoReady ? 1 : 0,
-                transform: videoReady ? "scale(1)" : "scale(1.02)",
-                transition: "opacity 1.8s ease, transform 1.8s ease",
-              }}
             />
-            <div
-              className="featured-video-overlay"
-              style={{
-                position: "absolute",
-                inset: 0,
-                background:
-                  "linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.2) 70%, transparent 100%)",
-              }}
-            />
-            <div
-              className="featured-video-content"
-              style={{
-                position: "absolute",
-                left: "5%",
-                top: "60%",
-                transform: "translateY(-50%)",
-                color: "#fff",
-                maxWidth: "45%",
-                textShadow: "0 4px 12px rgba(0,0,0,0.45)",
-              }}
-            >
-              <h1 style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
-                {featuredVideo.title || "Featured Video"}
-              </h1>
-              {featuredVideo.description && <p>{featuredVideo.description}</p>}
+
+            <div className="featured-video-overlay" />
+
+            <div className="featured-video-content">
+              <p className="videos-eyebrow">Featured Screening</p>
+
+              <h1>{featuredVideo.title || "Featured Video"}</h1>
+
+              {featuredVideo.description && (
+                <p>{featuredVideo.description}</p>
+              )}
+
               <Link
                 to={`/media/${featuredVideo.id}`}
                 className="featured-video-button"
-                style={{
-                  marginTop: "1rem",
-                  padding: "0.6rem 1.2rem",
-                  borderRadius: "10px",
-                  background: "rgba(214,195,165,0.9)",
-                  color: "#000",
-                  textDecoration: "none",
-                  fontWeight: "600",
-                  transition: "all 0.3s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#d6c3a5cc";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(214,195,165,0.9)";
-                }}
               >
                 Watch Now
               </Link>
@@ -225,9 +167,9 @@ export default function VideosPage() {
         </section>
       )}
 
-      {/* Hero Header */}
       <section className="videos-hero">
         <div className="videos-hero-overlay" />
+
         <div className="videos-hero-content">
           <p className="videos-eyebrow">The Aset Studio</p>
           <h1 className="videos-title">Video Archive</h1>
@@ -238,8 +180,7 @@ export default function VideosPage() {
         </div>
       </section>
 
-      {/* Category Toolbar */}
-      <section className="videos-toolbar">
+      <section className="videos-toolbar" aria-label="Video categories">
         <div className="videos-toolbar-inner">
           {VIDEO_CATEGORIES.map((category) => (
             <button
@@ -260,7 +201,6 @@ export default function VideosPage() {
         </div>
       </section>
 
-      {/* Video Grid */}
       <section className="videos-content">
         {loading ? (
           <div className="videos-state-card">
@@ -278,55 +218,50 @@ export default function VideosPage() {
           <div className="videos-grid">
             {filteredVideos.map((video) => {
               const videoUrl = signedUrls[video.id] || "";
-              const categoryLabel = (video.category || "Uncategorized").replaceAll(
-                "_",
-                " "
-              );
+              const categoryLabel = getCategoryLabel(video.category);
 
               return (
                 <article key={video.id} className="video-card">
-                  <div className="video-card-media">
-                    {videoUrl ? (
-                      <video
-                        className="video-card-preview"
-                        src={videoUrl}
-                        muted
-                        loop
-                        playsInline
-                        preload="metadata"
-                        onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.pause();
-                          e.currentTarget.currentTime = 0;
-                        }}
-                      />
-                    ) : (
-                      <div className="video-card-placeholder">
-                        <span>Preview unavailable</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="video-card-body">
-                    <div className="video-card-meta">
-                      <span className="video-card-category">{categoryLabel}</span>
+                  <Link to={`/media/${video.id}`} className="video-card-link-wrap">
+                    <div className="video-card-media">
+                      {videoUrl ? (
+                        <video
+                          className="video-card-preview"
+                          src={videoUrl}
+                          muted
+                          loop
+                          playsInline
+                          preload="metadata"
+                        />
+                      ) : (
+                        <div className="video-card-placeholder">
+                          <span>Preview unavailable</span>
+                        </div>
+                      )}
                     </div>
 
-                    <h2 className="video-card-title">{video.title || "Untitled Video"}</h2>
-                    <p className="video-card-description">
-                      {video.description || "No description available yet."}
-                    </p>
+                    <div className="video-card-body">
+                      <span className="video-card-category">
+                        {categoryLabel}
+                      </span>
 
-                    <Link to={`/media/${video.id}`} className="video-card-link">
-                      Enter Screening
-                    </Link>
-                  </div>
+                      <h2 className="video-card-title">
+                        {video.title || "Untitled Video"}
+                      </h2>
+
+                      <p className="video-card-description">
+                        {video.description || "No description available yet."}
+                      </p>
+
+                      <span className="video-card-cta">Enter Screening</span>
+                    </div>
+                  </Link>
                 </article>
               );
             })}
           </div>
         )}
       </section>
-    </div>
+    </main>
   );
 }

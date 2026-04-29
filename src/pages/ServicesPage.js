@@ -1,30 +1,66 @@
-import React from "react";
+import React, { useState } from "react";
 import "./ServicesPage.css";
-import heroImg from "./services-hero.png"; // make sure this image is in src/pages
+import heroImg from "./services-hero.png";
 
-const ServicesPage = () => {
+export default function ServicesPage() {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+
+  const [status, setStatus] = useState("");
+
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!form.name || !form.message) {
+      setStatus("Please fill in your name and message.");
+      return;
+    }
+
+    setStatus("Inquiry sent.");
+    setForm({
+      name: "",
+      email: "",
+      message: "",
+    });
+  };
+
   return (
     <div className="services-page">
-      {/* HERO SECTION */}
-      <div className="services-hero">
-        <img src={heroImg} alt="The Aset Studio Hero" className="hero-img" />
-        <div className="hero-text">
-          <h2>SERVICES</h2>
+      <section className="services-hero">
+        <div className="services-hero-copy">
+          <p className="services-kicker">SERVICES</p>
           <h1>The Aset Studio</h1>
-          <h3>Private Support for Creatives & Talent</h3>
+          <h2>Private Support for Creatives & Talent</h2>
           <p>
-            High-touch, luxury support services for individuals within the world of
-            entertainment and the arts. Each service is designed to ensure that talent,
-            creators, and professionals are supported with precision, discretion, and
-            intention.
+            High-touch, luxury support services for individuals within the world
+            of entertainment and the arts. Each service is designed to ensure
+            that talent, creators, and professionals are supported with
+            precision, discretion, and intention.
           </p>
         </div>
-      </div>
 
-      {/* SERVICES LIST */}
-      <div className="services-list">
-        <div className="service-columns">
-          <div className="service-item">
+        <div className="services-hero-image-wrap">
+          <img
+            src={heroImg}
+            alt="The Aset Studio services"
+            className="services-hero-image"
+          />
+        </div>
+      </section>
+
+      <main className="services-content">
+        <section className="service-grid">
+          <article className="service-card">
             <h2>Traveling Personal Assistant</h2>
             <p>On-site support for production, talent, and creative execution.</p>
             <ul>
@@ -38,9 +74,9 @@ const ServicesPage = () => {
             <p><strong>Travel:</strong> Local, national, and international.</p>
             <p><strong>Communication:</strong> Real-time updates.</p>
             <p><strong>Billing:</strong> Project-based custom quotes.</p>
-          </div>
+          </article>
 
-          <div className="service-item">
+          <article className="service-card">
             <h2>Virtual Assistant</h2>
             <p>Digital support for creators, talent, and platform coordination.</p>
             <ul>
@@ -54,62 +90,84 @@ const ServicesPage = () => {
             <p><strong>Access:</strong> Elite clients get live support; standard clients 9–5.</p>
             <p><strong>Communication:</strong> Elite — live updates; Standard — end-of-day summaries.</p>
             <p><strong>Billing:</strong> Elite — project-based; Standard — hourly.</p>
-          </div>
-        </div>
+          </article>
+        </section>
 
-        {/* Additional services (single-column) */}
-        <div className="service-item">
-          <h2>Web Designer</h2>
-          <p>Custom digital presentation aligned with cinematic identity.</p>
-          <ul>
-            <li>Website design and full website builds</li>
-            <li>Page design and layout development</li>
-            <li>Branding and visual refinement</li>
-            <li>User experience alignment with luxury presentation</li>
-            <li>Custom visual direction for projects or platforms</li>
-          </ul>
-        </div>
+        <section className="service-stack">
+          <article className="service-card">
+            <h2>Web Designer</h2>
+            <p>Custom digital presentation aligned with cinematic identity.</p>
+            <ul>
+              <li>Website design and full website builds</li>
+              <li>Page design and layout development</li>
+              <li>Branding and visual refinement</li>
+              <li>User experience alignment with luxury presentation</li>
+              <li>Custom visual direction for projects or platforms</li>
+            </ul>
+          </article>
 
-        <div className="service-item">
-          <h2>Virtual Photographer</h2>
-          <p>Remote and on-site visual capture for talent and creatives.</p>
-          <ul>
-            <li>Profile imagery</li>
-            <li>Campaign and promotional visuals</li>
-            <li>Coordinated shoots</li>
-            <li>Integration with platform assets and media</li>
-          </ul>
-        </div>
+          <article className="service-card">
+            <h2>Virtual Photographer</h2>
+            <p>Remote and on-site visual capture for talent and creatives.</p>
+            <ul>
+              <li>Profile imagery</li>
+              <li>Campaign and promotional visuals</li>
+              <li>Coordinated shoots</li>
+              <li>Integration with platform assets and media</li>
+            </ul>
+          </article>
 
-        <div className="service-item">
-          <h2>Red Carpet Interviewer</h2>
-          <p>On-location, cinematic interview experience.</p>
-          <ul>
-            <li>Live on-site interviews</li>
-            <li>Talent engagement and coordination</li>
-            <li>Cinematic-style questioning and presence</li>
-            <li>Content captured for platform or external use</li>
-          </ul>
-        </div>
-      </div>
+          <article className="service-card">
+            <h2>Red Carpet Interviewer</h2>
+            <p>On-location, cinematic interview experience.</p>
+            <ul>
+              <li>Live on-site interviews</li>
+              <li>Talent engagement and coordination</li>
+              <li>Cinematic-style questioning and presence</li>
+              <li>Content captured for platform or external use</li>
+            </ul>
+          </article>
+        </section>
 
-      {/* INQUIRY FORM */}
-      <div className="inquiry-section">
-        <h2>Request Access</h2>
-        <form>
-          <input type="text" placeholder="Name" required />
-          <input type="email" placeholder="Email (optional)" />
-          <textarea placeholder="Your message" rows="5"></textarea>
-          <button type="submit">Send Inquiry</button>
-        </form>
-      </div>
+        <section className="inquiry-section">
+          <h2>Request Access</h2>
 
-      <footer>
+          <form onSubmit={handleSubmit} className="inquiry-form">
+            <input
+              type="text"
+              name="name"
+              placeholder="Name"
+              value={form.name}
+              onChange={handleChange}
+            />
+
+            <input
+              type="email"
+              name="email"
+              placeholder="Email (optional)"
+              value={form.email}
+              onChange={handleChange}
+            />
+
+            <textarea
+              name="message"
+              placeholder="Your message"
+              rows="5"
+              value={form.message}
+              onChange={handleChange}
+            />
+
+            <button type="submit">Send Inquiry</button>
+
+            {status && <p className="form-status">{status}</p>}
+          </form>
+        </section>
+      </main>
+
+      <footer className="services-footer">
         <p>The Aset Studio — A creative world. Not just a platform.</p>
         <p>Founder & Creative Director — Franchesca Analisa “Sapphire”</p>
       </footer>
     </div>
   );
-};
-
-export default ServicesPage;
+}
