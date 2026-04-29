@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./ServicesPage.css";
 import heroImg from "./services-hero.png";
-import { supabase } from "../supabaseClient"; // adjust path if needed
+import { supabase } from "../supabaseClient";
 
 export default function ServicesPage() {
   const [form, setForm] = useState({
@@ -27,7 +27,6 @@ export default function ServicesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Required fields validation
     if (
       !form.name ||
       !form.service_interest ||
@@ -49,6 +48,7 @@ export default function ServicesPage() {
           instagram: form.instagram,
           service_interest: form.service_interest,
           project_scope: form.project_scope,
+          budget_range: "Not collected",
           timeline: form.timeline,
           message: form.message,
         },
@@ -77,8 +77,6 @@ export default function ServicesPage() {
 
   return (
     <div className="services-page">
-
-      {/* HERO */}
       <section className="services-hero">
         <div className="services-hero-copy">
           <p className="services-kicker">SERVICES</p>
@@ -96,10 +94,7 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* CONTENT */}
       <main className="services-content">
-
-        {/* ROW 1 */}
         <section className="service-grid">
           <article className="service-card">
             <h2>Traveling Personal Assistant</h2>
@@ -134,7 +129,6 @@ export default function ServicesPage() {
           </article>
         </section>
 
-        {/* ROW 2 */}
         <section className="service-grid">
           <article className="service-card">
             <h2>Web Designer</h2>
@@ -160,7 +154,6 @@ export default function ServicesPage() {
           </article>
         </section>
 
-        {/* ROW 3 */}
         <section className="service-grid">
           <article className="service-card">
             <h2>Red Carpet Interviewer</h2>
@@ -186,13 +179,15 @@ export default function ServicesPage() {
           </article>
         </section>
 
-        {/* INTAKE FUNNEL */}
         <section className="inquiry-section">
           <h2>Apply for Private Access</h2>
 
           <form onSubmit={handleSubmit}>
-
-            <select name="service_interest" value={form.service_interest} onChange={handleChange}>
+            <select
+              name="service_interest"
+              value={form.service_interest}
+              onChange={handleChange}
+            >
               <option value="">Select Service</option>
               <option>Traveling Personal Assistant</option>
               <option>Virtual Assistant</option>
@@ -209,7 +204,11 @@ export default function ServicesPage() {
               onChange={handleChange}
             />
 
-            <select name="timeline" value={form.timeline} onChange={handleChange}>
+            <select
+              name="timeline"
+              value={form.timeline}
+              onChange={handleChange}
+            >
               <option value="">Select Timeline</option>
               <option>Immediate</option>
               <option>Within 30 days</option>
@@ -252,15 +251,12 @@ export default function ServicesPage() {
             {status && <p className="form-status">{status}</p>}
           </form>
         </section>
-
       </main>
 
-      {/* FOOTER */}
       <footer className="services-footer">
         <p>The Aset Studio — A creative world. Not just a platform.</p>
         <p>Founder & Creative Director — Franchesca Analisa “Sapphire”</p>
       </footer>
-
     </div>
   );
 }
