@@ -6,13 +6,13 @@
 }
 
 .services-hero {
-  min-height: 620px;
   display: grid;
-  grid-template-columns: 1fr 420px 1fr;
+  grid-template-columns: 1fr 420px;
   align-items: center;
-  gap: 48px;
-  padding: 80px 60px 60px;
-  background: #000;
+  gap: 60px;
+  padding: 80px 60px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .services-hero-copy {
@@ -55,11 +55,11 @@
   justify-self: center;
 }
 
-.services-hero-image {
+.services-hero-image-wrap img {
   width: 100%;
   height: auto;
+  max-width: 420px;
   display: block;
-  object-fit: contain;
 }
 
 .services-content {
@@ -83,11 +83,6 @@
   left: 50%;
   width: 1px;
   background: rgba(255, 255, 255, 0.18);
-}
-
-.service-stack {
-  max-width: 760px;
-  margin: 0 0 80px;
 }
 
 .service-card {
@@ -132,14 +127,14 @@
   margin-bottom: 18px;
 }
 
-.inquiry-form {
+.inquiry-section form {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-.inquiry-form input,
-.inquiry-form textarea {
+.inquiry-section input,
+.inquiry-section textarea {
   width: 100%;
   background: #111;
   border: 1px solid #363636;
@@ -149,23 +144,23 @@
   font-family: inherit;
 }
 
-.inquiry-form textarea {
+.inquiry-section textarea {
   resize: vertical;
   min-height: 110px;
 }
 
-.inquiry-form input:focus,
-.inquiry-form textarea:focus {
+.inquiry-section input:focus,
+.inquiry-section textarea:focus {
   outline: none;
   border-color: #c9a46a;
 }
 
-.inquiry-form button {
+.inquiry-section button {
   background: #d2a96f;
   color: #000;
   border: none;
   border-radius: 6px;
-  padding: 13px 16px;
+  padding: 16px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -189,9 +184,12 @@
 @media (max-width: 900px) {
   .services-hero {
     grid-template-columns: 1fr;
-    padding: 80px 24px 40px;
+    padding: 60px 20px 30px;
     gap: 30px;
-    min-height: auto;
+  }
+
+  .services-hero-copy {
+    max-width: 100%;
   }
 
   .services-hero-image-wrap {
@@ -212,7 +210,6 @@
     display: none;
   }
 
-  .service-stack,
   .inquiry-section {
     max-width: 100%;
   }
