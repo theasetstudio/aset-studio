@@ -1,15 +1,22 @@
 import React, { useState } from "react";
 import "./ServicesPage.css";
 import heroImg from "./services-hero.png";
+import { supabase } from "../supabaseClient"; // adjust path if needed
 
 export default function ServicesPage() {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    instagram: "",
+    service_interest: "",
+    project_scope: "",
+    budget_range: "",
+    timeline: "",
     message: "",
   });
 
   const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({
@@ -18,16 +25,58 @@ export default function ServicesPage() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.name || !form.message) {
-      setStatus("Please fill in your name and message.");
+    // Required fields validation
+    if (
+      !form.name ||
+      !form.service_interest ||
+      !form.project_scope ||
+      !form.budget_range ||
+      !form.timeline
+    ) {
+      setStatus("Please complete all required fields.");
       return;
     }
 
-    setStatus("Inquiry sent.");
-    setForm({ name: "", email: "", message: "" });
+    setLoading(true);
+    setStatus("");
+
+    try {
+      const { error } = await supabase.from("service_applications").insert([
+        {
+          name: form.name,
+          email: form.email,
+          instagram: form.instagram,
+          service_interest: form.service_interest,
+          project_scope: form.project_scope,
+          budget_range: form.budget_range,
+          timeline: form.timeline,
+          message: form.message,
+        },
+      ]);
+
+      if (error) throw error;
+
+      setStatus("Application received. Our team will review your request.");
+
+      setForm({
+        name: "",
+        email: "",
+        instagram: "",
+        service_interest: "",
+        project_scope: "",
+        budget_range: "",
+        timeline: "",
+        message: "",
+      });
+    } catch (err) {
+      console.error(err);
+      setStatus("Something went wrong. Please try again.");
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -141,16 +190,77 @@ export default function ServicesPage() {
           </article>
         </section>
 
-        {/* FORM */}
+        {/* INTAKE FUNNEL */}
         <section className="inquiry-section">
-          <h2>Request Access</h2>
+          <h2>Apply for Private Access</h2>
 
           <form onSubmit={handleSubmit}>
-            <input name="name" placeholder="Name" value={form.name} onChange={handleChange} />
-            <input name="email" placeholder="Email (optional)" value={form.email} onChange={handleChange} />
-            <textarea name="message" placeholder="Your message" value={form.message} onChange={handleChange} />
 
-            <button type="submit">Send Inquiry</button>
+            <select name="service_interest" value={form.service_interest} onChange={handleChange}>
+              <option value="">Select Service</option>
+              <option>Traveling Personal Assistant</option>
+              <option>Virtual Assistant</option>
+              <option>Web Designer</option>
+              <option>Virtual Photographer</option>
+              <option>Red Carpet Interviewer</option>
+              <option>Social Media Manager</option>
+            </select>
+
+            <textarea
+              name="project_scope"
+              placeholder="Describe your project or needs"
+              value={form.project_scope}
+              onChange={handleChange}
+            />
+
+            <select name="budget_range" value={form.budget_range} onChange={handleChange}>
+              <option value="">Select Budget Range</option>
+              <option>$500 - $1,000</option>
+              <option>$1,000 - $3,000</option>
+              <option>$3,000 - $7,000</option>
+              <option>$7,000+</option>
+            </select>
+
+            <select name="timeline" value={form.timeline} onChange={handleChange}>
+              <option value="">Select Timeline</option>
+              <option>Immediate</option>
+              <option>Within 30 days</option>
+              <option>1–3 months</option>
+              <option>Flexible</option>
+            </select>
+
+            <input
+              name="name"
+              placeholder="Full Name"
+              value={form.name}
+              onChange={handleChange}
+            />
+
+            <input
+              name="email"
+              placeholder="Email"
+              value={form.email}
+              onChange={handleChange}
+            />
+
+            <input
+              name="instagram"
+              placeholder="Instagram (optional)"
+              value={form.instagram}
+              onChange={handleChange}
+            />
+
+            <textarea
+              name="message"
+              placeholder="Additional details (optional)"
+              value={form.message}
+              onChange={handleChange}
+            />
+
+            <button type="submit" disabled={loading}>
+              {loading ? "Submitting..." : "Submit Application"}
+            </button>
+
             {status && <p className="form-status">{status}</p>}
           </form>
         </section>
