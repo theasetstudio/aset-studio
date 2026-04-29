@@ -9,7 +9,7 @@ export default function AdminInquiries() {
     setLoading(true);
 
     const { data, error } = await supabase
-      .from("inquiries")
+      .from("service_applications") // ✅ FIXED TABLE
       .select("*")
       .order("created_at", { ascending: false });
 
@@ -24,30 +24,73 @@ export default function AdminInquiries() {
     setLoading(false);
   };
 
+  const updateStatus = async (id, newStatus) => {
+    const { error } = await supabase
+      .from("service_applications")
+      .update({ status: newStatus })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Status update failed:", error);
+      return;
+    }
+
+    // refresh after update
+    fetchInquiries();
+  };
+
   useEffect(() => {
     fetchInquiries();
   }, []);
 
   return (
     <div style={styles.page}>
-      <h1 style={styles.title}>Admin — Service Inquiries</h1>
+      <h1 style={styles.title}>Admin — Service Applications</h1>
 
       {loading ? (
-        <p style={styles.text}>Loading inquiries...</p>
+        <p style={styles.text}>Loading applications...</p>
       ) : inquiries.length === 0 ? (
-        <p style={styles.text}>No inquiries yet.</p>
+        <p style={styles.text}>No applications yet.</p>
       ) : (
         <div style={styles.grid}>
           {inquiries.map((item) => (
             <div key={item.id} style={styles.card}>
+
+              <p style={styles.label}>Status</p>
+              <p style={styles.status}>{item.status || "new"}</p>
+
+              <p style={styles.label}>Service</p>
+              <p style={styles.value}>{item.service_interest}</p>
+
+              <p style={styles.label}>Project Scope</p>
+              <p style={styles.message}>{item.project_scope}</p>
+
+              <p style={styles.label}>Timeline</p>
+              <p style={styles.value}>{item.timeline}</p>
+
               <p style={styles.label}>Name</p>
-              <p style={styles.value}>{item.name || "Not provided"}</p>
+              <p style={styles.value}>{item.name}</p>
 
               <p style={styles.label}>Email</p>
               <p style={styles.value}>{item.email || "Not provided"}</p>
 
-              <p style={styles.label}>Message</p>
-              <p style={styles.message}>{item.message}</p>
+              <p style={styles.label}>Instagram</p>
+              <p style={styles.value}>{item.instagram || "Not provided"}</p>
+
+              <p style={styles.label}>Additional Notes</p>
+              <p style={styles.message}>{item.message || "—"}</p>
+
+              <div style={styles.actions}>
+                <button onClick={() => updateStatus(item.id, "reviewing")}>
+                  Reviewing
+                </button>
+                <button onClick={() => updateStatus(item.id, "approved")}>
+                  Approve
+                </button>
+                <button onClick={() => updateStatus(item.id, "rejected")}>
+                  Reject
+                </button>
+              </div>
 
               <p style={styles.date}>
                 {item.created_at
@@ -102,13 +145,26 @@ const styles = {
 
   value: {
     color: "#fff",
-    marginBottom: "16px",
+    marginBottom: "12px",
   },
 
   message: {
     color: "#ddd",
     lineHeight: "1.7",
     marginBottom: "16px",
+  },
+
+  status: {
+    color: "#fff",
+    marginBottom: "16px",
+    textTransform: "uppercase",
+    fontSize: "13px",
+  },
+
+  actions: {
+    display: "flex",
+    gap: "10px",
+    marginTop: "10px",
   },
 
   date: {
