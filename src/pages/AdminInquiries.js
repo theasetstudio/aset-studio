@@ -9,12 +9,15 @@ export default function AdminInquiries() {
     setLoading(true);
 
     const { data, error } = await supabase
-      .from("service_applications") // ✅ FIXED TABLE
+      .from("service_applications")
       .select("*")
       .order("created_at", { ascending: false });
 
+    console.log("SERVICE APPLICATIONS DATA:", data);
+    console.log("SERVICE APPLICATIONS ERROR:", error);
+
     if (error) {
-      console.error("Error loading inquiries:", error);
+      console.error("Error loading applications:", error);
       setInquiries([]);
       setLoading(false);
       return;
@@ -35,7 +38,6 @@ export default function AdminInquiries() {
       return;
     }
 
-    // refresh after update
     fetchInquiries();
   };
 
@@ -55,21 +57,20 @@ export default function AdminInquiries() {
         <div style={styles.grid}>
           {inquiries.map((item) => (
             <div key={item.id} style={styles.card}>
-
               <p style={styles.label}>Status</p>
               <p style={styles.status}>{item.status || "new"}</p>
 
               <p style={styles.label}>Service</p>
-              <p style={styles.value}>{item.service_interest}</p>
+              <p style={styles.value}>{item.service_interest || "Not provided"}</p>
 
               <p style={styles.label}>Project Scope</p>
-              <p style={styles.message}>{item.project_scope}</p>
+              <p style={styles.message}>{item.project_scope || "Not provided"}</p>
 
               <p style={styles.label}>Timeline</p>
-              <p style={styles.value}>{item.timeline}</p>
+              <p style={styles.value}>{item.timeline || "Not provided"}</p>
 
               <p style={styles.label}>Name</p>
-              <p style={styles.value}>{item.name}</p>
+              <p style={styles.value}>{item.name || "Not provided"}</p>
 
               <p style={styles.label}>Email</p>
               <p style={styles.value}>{item.email || "Not provided"}</p>
@@ -81,21 +82,19 @@ export default function AdminInquiries() {
               <p style={styles.message}>{item.message || "—"}</p>
 
               <div style={styles.actions}>
-                <button onClick={() => updateStatus(item.id, "reviewing")}>
+                <button style={styles.button} onClick={() => updateStatus(item.id, "reviewing")}>
                   Reviewing
                 </button>
-                <button onClick={() => updateStatus(item.id, "approved")}>
+                <button style={styles.button} onClick={() => updateStatus(item.id, "approved")}>
                   Approve
                 </button>
-                <button onClick={() => updateStatus(item.id, "rejected")}>
+                <button style={styles.button} onClick={() => updateStatus(item.id, "rejected")}>
                   Reject
                 </button>
               </div>
 
               <p style={styles.date}>
-                {item.created_at
-                  ? new Date(item.created_at).toLocaleString()
-                  : ""}
+                {item.created_at ? new Date(item.created_at).toLocaleString() : ""}
               </p>
             </div>
           ))}
@@ -113,60 +112,60 @@ const styles = {
     padding: "60px 24px",
     fontFamily: "Georgia, serif",
   },
-
   title: {
     fontSize: "34px",
     color: "#d8b06a",
     marginBottom: "30px",
   },
-
   text: {
     color: "#ccc",
     fontSize: "18px",
   },
-
   grid: {
     display: "grid",
     gap: "20px",
   },
-
   card: {
     background: "#111",
     border: "1px solid #333",
     borderRadius: "14px",
     padding: "22px",
   },
-
   label: {
     color: "#d8b06a",
     fontSize: "14px",
     marginBottom: "4px",
   },
-
   value: {
     color: "#fff",
     marginBottom: "12px",
   },
-
   message: {
     color: "#ddd",
     lineHeight: "1.7",
     marginBottom: "16px",
   },
-
   status: {
     color: "#fff",
     marginBottom: "16px",
     textTransform: "uppercase",
     fontSize: "13px",
   },
-
   actions: {
     display: "flex",
     gap: "10px",
     marginTop: "10px",
+    flexWrap: "wrap",
   },
-
+  button: {
+    background: "#d8b06a",
+    color: "#000",
+    border: "none",
+    borderRadius: "6px",
+    padding: "10px 14px",
+    fontWeight: "700",
+    cursor: "pointer",
+  },
   date: {
     color: "#888",
     fontSize: "12px",
