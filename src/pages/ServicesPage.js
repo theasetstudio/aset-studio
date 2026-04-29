@@ -10,7 +10,6 @@ export default function ServicesPage() {
     instagram: "",
     service_interest: "",
     project_scope: "",
-    budget_range: "",
     timeline: "",
     message: "",
   });
@@ -33,7 +32,6 @@ export default function ServicesPage() {
       !form.name ||
       !form.service_interest ||
       !form.project_scope ||
-      !form.budget_range ||
       !form.timeline
     ) {
       setStatus("Please complete all required fields.");
@@ -51,7 +49,6 @@ export default function ServicesPage() {
           instagram: form.instagram,
           service_interest: form.service_interest,
           project_scope: form.project_scope,
-          budget_range: form.budget_range,
           timeline: form.timeline,
           message: form.message,
         },
@@ -67,7 +64,6 @@ export default function ServicesPage() {
         instagram: "",
         service_interest: "",
         project_scope: "",
-        budget_range: "",
         timeline: "",
         message: "",
       });
@@ -212,14 +208,6 @@ export default function ServicesPage() {
               value={form.project_scope}
               onChange={handleChange}
             />
-
-            <select name="budget_range" value={form.budget_range} onChange={handleChange}>
-              <option value="">Select Budget Range</option>
-              <option>$500 - $1,000</option>
-              <option>$1,000 - $3,000</option>
-              <option>$3,000 - $7,000</option>
-              <option>$7,000+</option>
-            </select>
 
             <select name="timeline" value={form.timeline} onChange={handleChange}>
               <option value="">Select Timeline</option>
