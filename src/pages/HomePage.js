@@ -15,6 +15,14 @@ export default function HomePage() {
   const [featuredUrls, setFeaturedUrls] = useState({});
   const [loadingFeatured, setLoadingFeatured] = useState(true);
 
+  const getInitialWidth = () =>
+    typeof window !== "undefined" ? window.innerWidth : 1200;
+
+  const [width, setWidth] = useState(getInitialWidth);
+
+  const isMobile = width <= 760;
+  const isTablet = width > 760 && width <= 1050;
+
   const worlds = [
     {
       eyebrow: "THE FIRST DOOR",
@@ -62,6 +70,13 @@ export default function HomePage() {
       elevated: true,
     },
   ];
+
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth);
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -164,20 +179,46 @@ export default function HomePage() {
 
   return (
     <div style={styles.page}>
-      <section style={styles.hero}>
+      <section
+        style={{
+          ...styles.hero,
+          padding: isMobile
+            ? "96px 18px 64px"
+            : isTablet
+            ? "110px 28px 80px"
+            : "120px 22px 92px",
+          alignItems: isMobile || isTablet ? "flex-start" : "center",
+        }}
+      >
         <div
           style={{
             ...styles.heroImage,
             backgroundImage: `url("${heroImage}")`,
+            backgroundPosition: isMobile ? "center top" : "center 42%",
           }}
         />
+
         <div style={styles.heroShade} />
 
-        <div style={styles.heroShell}>
+        <div
+          style={{
+            ...styles.heroShell,
+            gridTemplateColumns:
+              isMobile || isTablet ? "1fr" : "minmax(0, 1fr) 360px",
+            gap: isMobile ? 28 : isTablet ? 34 : 28,
+          }}
+        >
           <div style={styles.heroContent}>
             <p style={styles.brand}>THE ASET STUDIO</p>
 
-            <h1 style={styles.headline}>
+            <h1
+              style={{
+                ...styles.headline,
+                fontSize: isMobile
+                  ? "44px"
+                  : "clamp(40px, 5.5vw, 72px)",
+              }}
+            >
               Egyptian Mystic
               <br />
               Powerhouse
@@ -199,10 +240,19 @@ export default function HomePage() {
             </div>
           </div>
 
-          <Link to="/aset-spotlight" style={styles.spotlightCard}>
+          <Link
+            to="/aset-spotlight"
+            style={{
+              ...styles.spotlightCard,
+              maxWidth: isMobile || isTablet ? "100%" : 360,
+              transform: "none",
+              marginTop: isMobile ? 18 : isTablet ? 28 : 0,
+            }}
+          >
             <div
               style={{
                 ...styles.spotlightImage,
+                height: isMobile ? 300 : isTablet ? 420 : 360,
                 backgroundImage: `url("${spotlightImage}")`,
               }}
             >
@@ -211,6 +261,7 @@ export default function HomePage() {
 
             <div style={styles.spotlightBody}>
               <p style={styles.spotlightEyebrow}>ASET SPOTLIGHT</p>
+
               <h3 style={styles.spotlightTitle}>Aset Spotlight</h3>
 
               <p style={styles.spotlightText}>
@@ -239,9 +290,24 @@ export default function HomePage() {
             <div
               style={{
                 ...styles.worldInner,
-                ...(world.featured ? styles.featuredWorldInner : {}),
-                ...(world.elevated ? styles.sirensWorldInner : {}),
-                direction: index % 2 === 1 ? "rtl" : "ltr",
+                ...(world.featured && !isMobile
+                  ? styles.featuredWorldInner
+                  : {}),
+                ...(world.elevated && !isMobile
+                  ? styles.sirensWorldInner
+                  : {}),
+                gridTemplateColumns:
+                  isMobile || isTablet
+                    ? "1fr"
+                    : world.featured
+                    ? "minmax(0, 1.6fr) minmax(320px, 0.6fr)"
+                    : "minmax(0, 1.18fr) minmax(280px, 0.82fr)",
+                direction:
+                  isMobile || isTablet
+                    ? "ltr"
+                    : index % 2 === 1
+                    ? "rtl"
+                    : "ltr",
               }}
             >
               <div
@@ -252,7 +318,9 @@ export default function HomePage() {
                 }}
               >
                 <p style={styles.eyebrow}>{world.eyebrow}</p>
+
                 <h2 style={styles.worldTitle}>{world.title}</h2>
+
                 <p style={styles.sectionText}>{world.text}</p>
 
                 {world.categories && (
@@ -417,18 +485,23 @@ export default function HomePage() {
             <Link to="/gallery" style={styles.portalCard}>
               Gallery
             </Link>
+
             <Link to="/videos" style={styles.portalCard}>
               Aset Cinema
             </Link>
+
             <Link to="/aset-spotlight" style={styles.portalCard}>
               Aset Spotlight
             </Link>
+
             <Link to="/sirens-realm" style={styles.portalCard}>
               Sirens Realm
             </Link>
+
             <Link to="/creators" style={styles.portalCard}>
               Creators
             </Link>
+
             <Link to="/services" style={styles.portalCard}>
               Services
             </Link>
@@ -450,9 +523,7 @@ const styles = {
     minHeight: "92vh",
     position: "relative",
     display: "flex",
-    alignItems: "center",
     justifyContent: "center",
-    padding: "120px 22px 92px",
     overflow: "hidden",
     background: "#050505",
   },
@@ -461,7 +532,6 @@ const styles = {
     position: "absolute",
     inset: 0,
     backgroundSize: "cover",
-    backgroundPosition: "center 42%",
     opacity: 0.9,
     transform: "scale(1.015)",
   },
@@ -470,7 +540,7 @@ const styles = {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.3) 48%, rgba(5,5,5,0.98) 100%), radial-gradient(circle at center, rgba(0,0,0,0.04), rgba(0,0,0,0.76))",
+      "linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.36) 45%, rgba(5,5,5,0.98) 100%), radial-gradient(circle at center, rgba(0,0,0,0.04), rgba(0,0,0,0.76))",
   },
 
   heroShell: {
@@ -479,8 +549,6 @@ const styles = {
     width: "100%",
     maxWidth: 1180,
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) 360px",
-    gap: 28,
     alignItems: "center",
   },
 
@@ -500,7 +568,6 @@ const styles = {
 
   headline: {
     margin: "0 0 16px",
-    fontSize: "clamp(40px, 5.5vw, 72px)",
     lineHeight: 0.9,
     letterSpacing: "-0.058em",
     fontWeight: 850,
@@ -528,29 +595,27 @@ const styles = {
     borderRadius: 24,
     textDecoration: "none",
     color: "#f5f1eb",
-    border: "1px solid rgba(245,241,235,0.18)",
+    border: "1px solid rgba(245,241,235,0.2)",
     background: "rgba(5,5,5,0.72)",
     boxShadow:
       "0 60px 160px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04)",
     backdropFilter: "blur(16px)",
-    transform: "scale(1.05)",
   },
 
   spotlightImage: {
     position: "relative",
     width: "100%",
-    height: 360,
     backgroundSize: "cover",
-    backgroundPosition: "center 28%",
+    backgroundPosition: "center 25%",
     backgroundColor: "rgba(255,255,255,0.04)",
-    filter: "brightness(0.95) contrast(1.05)",
+    filter: "brightness(0.92) contrast(1.05)",
   },
 
   spotlightImageOverlay: {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.18) 44%, rgba(0,0,0,0.76) 100%)",
+      "linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.24) 42%, rgba(0,0,0,0.86) 100%)",
   },
 
   spotlightBody: {
@@ -650,13 +715,11 @@ const styles = {
     maxWidth: 1180,
     margin: "0 auto",
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1.18fr) minmax(280px, 0.82fr)",
     gap: 24,
     alignItems: "stretch",
   },
 
   featuredWorldInner: {
-    gridTemplateColumns: "minmax(0, 1.6fr) minmax(320px, 0.6fr)",
     transform: "scale(1.02)",
   },
 
@@ -718,7 +781,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     justifyContent: "flex-end",
-    minHeight: 300,
+    minHeight: 260,
     boxShadow: "0 26px 80px rgba(0,0,0,0.38)",
   },
 
