@@ -132,7 +132,7 @@ export default function VideoPage() {
   return (
     <main className="videos-page">
       {featuredVideo && featuredVideoUrl && (
-        <section className="featured-video" aria-label="Featured video">
+        <section className="featured-video" aria-label="Featured screening">
           <div className="featured-video-wrapper">
             <video
               className={`featured-video-bg ${videoReady ? "is-ready" : ""}`}
@@ -150,7 +150,7 @@ export default function VideoPage() {
             <div className="featured-video-content">
               <p className="videos-eyebrow">Featured Screening</p>
 
-              <h1>{featuredVideo.title || "Featured Video"}</h1>
+              <h1>{featuredVideo.title || "Featured Presentation"}</h1>
 
               {featuredVideo.description && (
                 <p>{featuredVideo.description}</p>
@@ -160,7 +160,7 @@ export default function VideoPage() {
                 to={`/media/${featuredVideo.id}`}
                 className="featured-video-button"
               >
-                Watch Now
+                Enter Screening
               </Link>
             </div>
           </div>
@@ -171,16 +171,16 @@ export default function VideoPage() {
         <div className="videos-hero-overlay" />
 
         <div className="videos-hero-content">
-          <p className="videos-eyebrow">The Aset Studio</p>
-          <h1 className="videos-title">Video Archive</h1>
+          <p className="videos-eyebrow">The Aset Studio Presents</p>
+          <h1 className="videos-title">Aset Cinema</h1>
           <p className="videos-subtitle">
-            Cinematic interviews, sharp takes, and visual storytelling — all in
-            one place.
+            A curated cinematic portal for featured films, intimate interviews,
+            sharp cultural commentary, and story-driven visual work.
           </p>
         </div>
       </section>
 
-      <section className="videos-toolbar" aria-label="Video categories">
+      <section className="videos-toolbar" aria-label="Cinema categories">
         <div className="videos-toolbar-inner">
           {VIDEO_CATEGORIES.map((category) => (
             <button
@@ -204,7 +204,7 @@ export default function VideoPage() {
       <section className="videos-content">
         {loading ? (
           <div className="videos-state-card">
-            <p>Loading video archive...</p>
+            <p>Preparing the cinema...</p>
           </div>
         ) : error ? (
           <div className="videos-state-card error">
@@ -212,7 +212,7 @@ export default function VideoPage() {
           </div>
         ) : filteredVideos.length === 0 ? (
           <div className="videos-state-card">
-            <p>No videos available.</p>
+            <p>No screenings available.</p>
           </div>
         ) : (
           <div className="videos-grid">
@@ -246,11 +246,11 @@ export default function VideoPage() {
                       </span>
 
                       <h2 className="video-card-title">
-                        {video.title || "Untitled Video"}
+                        {video.title || "Untitled Screening"}
                       </h2>
 
                       <p className="video-card-description">
-                        {video.description || "No description available yet."}
+                        {video.description || "Details coming soon."}
                       </p>
 
                       <span className="video-card-cta">Enter Screening</span>

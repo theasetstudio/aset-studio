@@ -28,6 +28,8 @@ import DebugAuthPage from "./pages/DebugAuthPage";
 import VideosPage from "./pages/VideosPage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
 import ExpressionVaultPage from "./pages/ExpressionVaultPage";
+import AsetSpotlightPage from "./pages/AsetSpotlightPage";
+import SpotlightProfilePage from "./pages/SpotlightProfilePage";
 
 import AsetLoungePage from "./pages/AsetLoungePage";
 import PuzzleLibraryPage from "./pages/PuzzleLibraryPage";
@@ -105,6 +107,8 @@ function App() {
 
         {/* DISCOVERY */}
         <Route path="/featured" element={<FeaturedPage />} />
+        <Route path="/aset-spotlight" element={<AsetSpotlightPage />} />
+        <Route path="/aset-spotlight/:slug" element={<SpotlightProfilePage />} />
         <Route path="/debug-auth" element={<DebugAuthPage />} />
         <Route path="/videos" element={<VideosPage />} />
         <Route path="/video/:slug" element={<VideoPlayerPage />} />

@@ -3,142 +3,105 @@ import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
 export default function HomePage() {
-  const [featuredVideoId, setFeaturedVideoId] = useState(null);
-  const [featuredVideoUrl, setFeaturedVideoUrl] = useState("");
-  const [featuredVideoPoster, setFeaturedVideoPoster] = useState("");
-  const [loadingVideo, setLoadingVideo] = useState(true);
-  const [videoReady, setVideoReady] = useState(false);
+  const heroImage = `${process.env.PUBLIC_URL}/images/aset-powerhouse.png`;
+  const spotlightImage = `${process.env.PUBLIC_URL}/images/aset-spotlight.png`;
+
+  const [videoUrl, setVideoUrl] = useState("");
+  const [poster, setPoster] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
 
   const [featuredItems, setFeaturedItems] = useState([]);
-  const [featuredItemUrls, setFeaturedItemUrls] = useState({});
-  const [loadingFeaturedItems, setLoadingFeaturedItems] = useState(true);
+  const [featuredUrls, setFeaturedUrls] = useState({});
+  const [loadingFeatured, setLoadingFeatured] = useState(true);
 
-  const [reviews, setReviews] = useState([]);
-  const [loadingReviews, setLoadingReviews] = useState(true);
-
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-  const heroImageSrc = `${process.env.PUBLIC_URL}/images/aset-hero.png`;
-  const peopleImageSrc = `${process.env.PUBLIC_URL}/images/aset-person.png`;
-
-  const portalCards = [
+  const worlds = [
     {
-      title: "Gallery",
-      text: "Explore the public visual archive and immersive image collections.",
+      eyebrow: "THE FIRST DOOR",
+      title: "Enter the Gallery",
+      text:
+        "The Gallery is where Aset began. Before the cinema, before the portals, before the studio became a larger world, there was image: a visual archive, a portfolio, and the first signal.",
+      panelEyebrow: "ORIGIN WORLD",
+      panelTitle: "Gallery",
+      panelText: "Image was the seed. The studio grew from there.",
       path: "/gallery",
+      button: "Open Gallery",
+      variant: "gold",
     },
     {
-      title: "Featured",
-      text: "Enter the curated front-facing showcase of highlighted Aset work.",
-      path: "/featured",
-    },
-    {
-      title: "Video Archive",
-      text: "Enter cinematic interviews, visual storytelling, and featured screenings.",
+      eyebrow: "ASET CINEMA",
+      title: "The release room for the world we are building.",
+      text:
+        "A controlled stage for feature presentations, visual releases, private conversations, Aset Studio originals, red carpet moments, and curated studio work.",
+      panelEyebrow: "NOW PRESENTING",
+      panelTitle: "Aset Cinema",
+      panelText: "Not a feed. Not a shelf. A curated premiere environment.",
       path: "/videos",
+      button: "Open Aset Cinema",
+      variant: "light",
+      featured: true,
+      categories: [
+        "Films",
+        "Music Videos",
+        "Interviews",
+        "Studio Releases",
+        "Red Carpet",
+      ],
     },
     {
-      title: "Creators Hub",
-      text: "Step into the creator side of The Aset Studio.",
-      path: "/creators",
-    },
-    {
-      title: "The People of Aset",
-      text: "Explore recognized individuals, elite profiles, and featured talent.",
-      path: "/talent",
-    },
-    {
-      title: "Sirens Realm",
-      text: "Step into the spiritual, mythic, and alchemical side of the world.",
+      eyebrow: "SIRENS REALM",
+      title: "The mythic current beneath Aset.",
+      text:
+        "Sirens Realm carries the symbolic and spiritual layer of the studio: stones, signs, moods, protection, intuition, beauty, shadow, and transformation.",
+      panelEyebrow: "MYTHIC WORLD",
+      panelTitle: "Sirens Realm",
+      panelText: "A deeper layer of ritual, archetype, mystery, and power.",
       path: "/sirens-realm",
-    },
-    {
-      title: "Aset Lounge",
-      text: "Enter the social and community side of the platform.",
-      path: "/lounge",
-    },
-    {
-      title: "Supreme Access",
-      text: "Unlock the premium side of The Aset Studio experience.",
-      path: "/supreme-access",
-    },
-    {
-      title: "Services",
-      text: "Explore creative services, bookings, and premium offerings.",
-      path: "/services",
+      button: "Enter Sirens Realm",
+      variant: "light",
+      elevated: true,
     },
   ];
-
-  useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth <= 768);
-    }
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadFeaturedVideo() {
-      setLoadingVideo(true);
-      setVideoReady(false);
+      setLoading(true);
 
-      try {
-        const { data, error } = await supabase
-          .from("media_items")
-          .select("*")
-          .eq("type", "video")
-          .eq("featured", true)
-          .eq("status", "published")
-          .eq("hidden", false)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+      const { data } = await supabase
+        .from("media_items")
+        .select("*")
+        .eq("type", "video")
+        .eq("featured", true)
+        .eq("status", "published")
+        .eq("hidden", false)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-        if (error) throw error;
-        if (!mounted) return;
+      if (!mounted) return;
 
-        if (!data?.file_path) {
-          setFeaturedVideoId(null);
-          setFeaturedVideoUrl("");
-          setFeaturedVideoPoster("");
-          setLoadingVideo(false);
-          return;
-        }
-
-        setFeaturedVideoId(data.id);
-
-        const { data: signedVideo, error: signedVideoError } =
-          await supabase.storage
-            .from("media")
-            .createSignedUrl(data.file_path, 3600);
-
-        if (!mounted) return;
-        if (signedVideoError) throw signedVideoError;
-
-        setFeaturedVideoUrl(signedVideo?.signedUrl || "");
-
-        if (data.watermarked_path) {
-          const { data: signedPoster } = await supabase.storage
-            .from("media")
-            .createSignedUrl(data.watermarked_path, 3600);
-
-          if (!mounted) return;
-          setFeaturedVideoPoster(signedPoster?.signedUrl || "");
-        } else {
-          setFeaturedVideoPoster("");
-        }
-      } catch (err) {
-        console.error("Error loading featured video:", err);
-        if (!mounted) return;
-        setFeaturedVideoId(null);
-        setFeaturedVideoUrl("");
-        setFeaturedVideoPoster("");
-      } finally {
-        if (mounted) setLoadingVideo(false);
+      if (!data?.file_path) {
+        setLoading(false);
+        return;
       }
+
+      const { data: signed } = await supabase.storage
+        .from("media")
+        .createSignedUrl(data.file_path, 3600);
+
+      setVideoUrl(signed?.signedUrl || "");
+
+      if (data.watermarked_path) {
+        const { data: signedPoster } = await supabase.storage
+          .from("media")
+          .createSignedUrl(data.watermarked_path, 3600);
+
+        setPoster(signedPoster?.signedUrl || "");
+      }
+
+      setLoading(false);
     }
 
     loadFeaturedVideo();
@@ -152,57 +115,43 @@ export default function HomePage() {
     let mounted = true;
 
     async function loadFeaturedItems() {
-      setLoadingFeaturedItems(true);
+      setLoadingFeatured(true);
 
-      try {
-        const { data, error } = await supabase
-          .from("media_items")
-          .select("*")
-          .eq("featured", true)
-          .eq("status", "published")
-          .eq("hidden", false)
-          .order("created_at", { ascending: false })
-          .limit(8);
+      const { data, error } = await supabase
+        .from("media_items")
+        .select("*")
+        .eq("featured", true)
+        .eq("status", "published")
+        .eq("hidden", false)
+        .order("created_at", { ascending: false })
+        .limit(8);
 
-        if (error) throw error;
-        if (!mounted) return;
+      if (error || !mounted) {
+        setFeaturedItems([]);
+        setLoadingFeatured(false);
+        return;
+      }
 
-        const allItems = data || [];
-        const items =
-          featuredVideoId != null
-            ? allItems.filter((item) => item.id !== featuredVideoId)
-            : allItems;
+      setFeaturedItems(data || []);
 
-        setFeaturedItems(items);
+      const urlMap = {};
 
-        const signedMap = {};
-
-        for (const item of items) {
-          if (!item.file_path) {
-            signedMap[item.id] = null;
-            continue;
-          }
-
-          const { data: signedData, error: signedError } =
-            await supabase.storage
-              .from("media")
-              .createSignedUrl(item.file_path, 3600);
-
-          if (!mounted) return;
-
-          signedMap[item.id] = signedError
-            ? null
-            : signedData?.signedUrl || null;
+      for (const item of data || []) {
+        if (!item.file_path) {
+          urlMap[item.id] = "";
+          continue;
         }
 
-        setFeaturedItemUrls(signedMap);
-      } catch (err) {
-        console.error("Error loading featured items:", err);
-        if (!mounted) return;
-        setFeaturedItems([]);
-        setFeaturedItemUrls({});
-      } finally {
-        if (mounted) setLoadingFeaturedItems(false);
+        const { data: signed } = await supabase.storage
+          .from("media")
+          .createSignedUrl(item.file_path, 3600);
+
+        urlMap[item.id] = signed?.signedUrl || "";
+      }
+
+      if (mounted) {
+        setFeaturedUrls(urlMap);
+        setLoadingFeatured(false);
       }
     }
 
@@ -211,240 +160,201 @@ export default function HomePage() {
     return () => {
       mounted = false;
     };
-  }, [featuredVideoId]);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadReviews() {
-      setLoadingReviews(true);
-
-      try {
-        const { data, error } = await supabase
-          .from("service_reviews")
-          .select("*")
-          .eq("status", "approved")
-          .order("created_at", { ascending: false })
-          .limit(3);
-
-        if (error) throw error;
-        if (!mounted) return;
-
-        setReviews(data || []);
-      } catch (err) {
-        console.error("Error loading reviews:", err);
-        if (!mounted) return;
-        setReviews([]);
-      } finally {
-        if (mounted) setLoadingReviews(false);
-      }
-    }
-
-    loadReviews();
-
-    return () => {
-      mounted = false;
-    };
   }, []);
-
-  const heroInnerStyle = {
-    ...styles.heroInner,
-    maxWidth: isMobile ? 980 : 1220,
-  };
-
-  const heroRowStyle = {
-    ...styles.heroRow,
-    flexDirection: isMobile ? "column" : "row",
-    alignItems: "center",
-    gap: isMobile ? 28 : 64,
-  };
-
-  const heroLeftStyle = {
-    ...styles.heroLeft,
-    maxWidth: isMobile ? 760 : 600,
-    textAlign: isMobile ? "center" : "left",
-  };
-
-  const heroRightStyle = {
-    ...styles.heroRight,
-    width: isMobile ? "100%" : "320px",
-    marginTop: isMobile ? 0 : -70,
-    marginLeft: isMobile ? 0 : -60,
-    display: "flex",
-    justifyContent: "center",
-  };
-
-  const introGridStyle = {
-    ...styles.introGrid,
-    gridTemplateColumns: isMobile
-      ? "1fr"
-      : "minmax(0, 1.2fr) minmax(320px, 0.8fr)",
-  };
-
-  const portalGridStyle = {
-    ...styles.portalGrid,
-    gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
-  };
 
   return (
     <div style={styles.page}>
-      <section
-        style={{
-          ...styles.hero,
-          backgroundImage: `url('${heroImageSrc}')`,
-        }}
-      >
-        <div style={styles.heroOverlay} />
+      <section style={styles.hero}>
+        <div
+          style={{
+            ...styles.heroImage,
+            backgroundImage: `url("${heroImage}")`,
+          }}
+        />
+        <div style={styles.heroShade} />
 
-        <div style={heroInnerStyle}>
-          <div style={heroRowStyle}>
-            <div style={heroLeftStyle}>
-              <div style={styles.brand}>THE ASET STUDIO</div>
+        <div style={styles.heroShell}>
+          <div style={styles.heroContent}>
+            <p style={styles.brand}>THE ASET STUDIO</p>
 
-              <h1 style={styles.headline}>
-                A Creative Temple of Image, Sound &amp; Sovereignty.
-              </h1>
+            <h1 style={styles.headline}>
+              Egyptian Mystic
+              <br />
+              Powerhouse
+            </h1>
 
-              <p style={styles.subtext}>
-                Egyptian royalty. Mythic cinema. A siren&apos;s whisper beneath
-                the surface.
-              </p>
+            <p style={styles.subtext}>
+              A cinematic entertainment company shaped by image, sound, story,
+              mythology, talent, and sovereign creative presentation.
+            </p>
 
-              <div
-                style={{
-                  ...styles.ctaRow,
-                  justifyContent: isMobile ? "center" : "flex-start",
-                }}
-              >
-                <Link to="/gallery" style={styles.primaryBtn}>
-                  Enter the Gallery
-                </Link>
+            <div style={styles.ctaRow}>
+              <Link to="/gallery" style={styles.goldBtn}>
+                Enter the Gallery
+              </Link>
 
-                <Link to="/sirens-realm" style={styles.ghostBtn}>
-                  Enter Sirens Realm
-                </Link>
-              </div>
-
-              <div style={styles.note}>
-                Public access is open. Boudoir requires age verification.
-              </div>
-            </div>
-
-            <div style={heroRightStyle}>
-              <div style={styles.peoplePanel}>
-                <img
-                  src={peopleImageSrc}
-                  alt="The People of Aset"
-                  style={styles.peopleImage}
-                />
-
-                <div style={styles.peopleContent}>
-                  <div style={styles.peopleTitle}>The People of Aset</div>
-
-                  <div style={styles.peopleSubtext}>
-                    Recognized individuals within the world of Aset.
-                  </div>
-
-                  <Link to="/talent" style={styles.peopleButton}>
-                    Explore The People of Aset
-                  </Link>
-                </div>
-              </div>
+              <Link to="/videos" style={styles.lightBtn}>
+                Enter Aset Cinema
+              </Link>
             </div>
           </div>
+
+          <Link to="/aset-spotlight" style={styles.spotlightCard}>
+            <div
+              style={{
+                ...styles.spotlightImage,
+                backgroundImage: `url("${spotlightImage}")`,
+              }}
+            >
+              <div style={styles.spotlightImageOverlay} />
+            </div>
+
+            <div style={styles.spotlightBody}>
+              <p style={styles.spotlightEyebrow}>ASET SPOTLIGHT</p>
+              <h3 style={styles.spotlightTitle}>Aset Spotlight</h3>
+
+              <p style={styles.spotlightText}>
+                Recognized individuals, featured talent, and cultural presence
+                within the world of Aset.
+              </p>
+
+              <span style={styles.spotlightButton}>
+                Explore Aset Spotlight
+              </span>
+            </div>
+          </Link>
         </div>
       </section>
 
-      <section style={styles.introSection}>
-        <div style={styles.sectionInner}>
-          <div style={styles.sectionEyebrow}>WHO IS THE ASET STUDIO</div>
+      <section style={styles.worldsWrap}>
+        {worlds.map((world, index) => (
+          <section
+            key={world.title}
+            style={{
+              ...styles.worldSection,
+              ...(world.featured ? styles.featuredWorldSection : {}),
+              ...(world.elevated ? styles.sirensWorldSection : {}),
+            }}
+          >
+            <div
+              style={{
+                ...styles.worldInner,
+                ...(world.featured ? styles.featuredWorldInner : {}),
+                ...(world.elevated ? styles.sirensWorldInner : {}),
+                direction: index % 2 === 1 ? "rtl" : "ltr",
+              }}
+            >
+              <div
+                style={{
+                  ...styles.worldCopy,
+                  ...(world.elevated ? styles.sirensWorldCopy : {}),
+                  direction: "ltr",
+                }}
+              >
+                <p style={styles.eyebrow}>{world.eyebrow}</p>
+                <h2 style={styles.worldTitle}>{world.title}</h2>
+                <p style={styles.sectionText}>{world.text}</p>
 
-          <div style={introGridStyle}>
-            <div style={styles.introVideoWrap}>
-              {loadingVideo ? (
-                <div style={styles.introPlaceholder}>
-                  Loading featured experience...
-                </div>
-              ) : featuredVideoUrl ? (
-                <video
-                  src={featuredVideoUrl}
-                  poster={featuredVideoPoster || undefined}
-                  muted
-                  autoPlay
-                  loop
-                  playsInline
-                  preload="metadata"
-                  onLoadedData={() => setVideoReady(true)}
-                  style={{
-                    ...styles.introVideo,
-                    opacity: videoReady ? 1 : 0,
-                    transform: videoReady ? "scale(1)" : "scale(1.02)",
-                    transition: "opacity 1.6s ease, transform 1.6s ease",
-                    filter: "brightness(0.92) contrast(1.05)",
-                  }}
-                />
-              ) : (
-                <div style={styles.introPlaceholder}>
-                  Featured video coming soon.
-                </div>
-              )}
-            </div>
+                {world.categories && (
+                  <div style={styles.categoryRow}>
+                    {world.categories.map((category) => (
+                      <span key={category} style={styles.categoryPill}>
+                        {category}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
-            <div style={styles.introCard}>
-              <h2 style={styles.sectionTitle}>
-                A world built for image, story, sound, and power.
-              </h2>
-
-              <p style={styles.sectionText}>
-                The Aset Studio is not just a platform. It is a cinematic
-                ecosystem built for galleries, creators, immersive storytelling,
-                elevated visual culture, and premium digital experiences.
-              </p>
-
-              <p style={styles.sectionText}>
-                Enter a world where beauty, mythology, sensuality, sovereignty,
-                and media all move together under one identity.
-              </p>
-
-              <div style={styles.introActions}>
-                <Link to="/videos" style={styles.primaryBtn}>
-                  Enter Video Archive
-                </Link>
-
-                <Link to="/creators" style={styles.secondaryBtn}>
-                  Explore Creators
+                <Link
+                  to={world.path}
+                  style={
+                    world.variant === "gold" ? styles.goldBtn : styles.lightBtn
+                  }
+                >
+                  {world.button}
                 </Link>
               </div>
+
+              <div
+                style={{
+                  ...styles.worldPanel,
+                  ...(world.elevated ? styles.sirensWorldPanel : {}),
+                  direction: "ltr",
+                }}
+              >
+                <p style={styles.panelEyebrow}>{world.panelEyebrow}</p>
+                <h3 style={styles.panelTitle}>{world.panelTitle}</h3>
+                <p style={styles.panelText}>{world.panelText}</p>
+              </div>
             </div>
+          </section>
+        ))}
+      </section>
+
+      <section style={styles.screeningSection}>
+        <div style={styles.sectionInnerNarrow}>
+          <p style={styles.eyebrow}>FEATURED SCREENING</p>
+          <h2 style={styles.sectionTitle}>Who Is The Aset Studio</h2>
+
+          <div style={styles.videoFrame}>
+            {loading ? (
+              <div style={styles.placeholder}>Preparing screening...</div>
+            ) : videoUrl ? (
+              <video
+                src={videoUrl}
+                poster={poster || undefined}
+                muted
+                autoPlay
+                loop
+                playsInline
+                preload="metadata"
+                onLoadedData={() => setReady(true)}
+                style={{
+                  ...styles.video,
+                  opacity: ready ? 1 : 0,
+                }}
+              />
+            ) : (
+              <div style={styles.placeholder}>
+                Featured screening coming soon.
+              </div>
+            )}
           </div>
         </div>
       </section>
 
       <section style={styles.featuredSection}>
         <div style={styles.sectionInner}>
-          <div style={styles.sectionEyebrow}>FEATURED PREVIEW</div>
+          <div style={styles.sectionHeader}>
+            <div>
+              <p style={styles.eyebrow}>CURATED FROM THE STUDIO</p>
+              <h2 style={styles.sectionTitle}>Featured Work</h2>
+            </div>
 
-          <h2 style={styles.sectionTitleCenter}>
-            A glimpse into the world of Aset.
-          </h2>
+            <Link to="/videos" style={styles.textLink}>
+              View Aset Cinema →
+            </Link>
+          </div>
 
-          {loadingFeaturedItems ? (
-            <div style={styles.featuredLoading}>Loading featured work...</div>
+          {loadingFeatured ? (
+            <div style={styles.placeholderCard}>Loading featured work...</div>
           ) : featuredItems.length === 0 ? (
-            <div style={styles.featuredLoading}>
-              Featured work is being rebuilt.
+            <div style={styles.placeholderCard}>
+              Featured work is being prepared.
             </div>
           ) : (
             <div style={styles.featuredStrip}>
               {featuredItems.map((item) => {
-                const itemUrl = featuredItemUrls[item.id];
+                const itemUrl = featuredUrls[item.id];
                 const isVideo =
                   String(item.type || "").trim().toLowerCase() === "video";
 
                 return (
                   <Link
                     key={item.id}
-                    to={isVideo ? `/media/${item.id}` : "/gallery"}
+                    to={
+                      isVideo && item.slug ? `/video/${item.slug}` : "/gallery"
+                    }
                     style={styles.featuredCard}
                   >
                     <div style={styles.featuredMediaWrap}>
@@ -468,12 +378,12 @@ export default function HomePage() {
                         ) : (
                           <img
                             src={itemUrl}
-                            alt={item.title || "Featured item"}
+                            alt={item.title || "Featured work"}
                             style={styles.featuredMedia}
                           />
                         )
                       ) : (
-                        <div style={styles.featuredFallback}>
+                        <div style={styles.mediaFallback}>
                           Preview unavailable
                         </div>
                       )}
@@ -482,13 +392,14 @@ export default function HomePage() {
                     </div>
 
                     <div style={styles.featuredMeta}>
-                      <div style={styles.featuredType}>
-                        {isVideo ? "VIDEO" : "FEATURED"}
-                      </div>
+                      <p style={styles.featuredType}>
+                        {item.category ||
+                          (isVideo ? "Aset Cinema" : "Featured")}
+                      </p>
 
-                      <div style={styles.featuredTitle}>
+                      <h3 style={styles.featuredTitle}>
                         {item.title || "Untitled"}
-                      </div>
+                      </h3>
                     </div>
                   </Link>
                 );
@@ -500,413 +411,490 @@ export default function HomePage() {
 
       <section style={styles.portalSection}>
         <div style={styles.sectionInner}>
-          <div style={styles.sectionEyebrow}>ENTER THE PLATFORM</div>
+          <p style={styles.eyebrow}>ENTER THE STUDIO</p>
 
-          <h2 style={styles.sectionTitleCenter}>Choose your path.</h2>
-
-          <div style={portalGridStyle}>
-            {portalCards.map((portal) => (
-              <Link key={portal.path} to={portal.path} style={styles.portalCard}>
-                <div style={styles.portalTitle}>{portal.title}</div>
-                <div style={styles.portalText}>{portal.text}</div>
-              </Link>
-            ))}
+          <div style={styles.portalGrid}>
+            <Link to="/gallery" style={styles.portalCard}>
+              Gallery
+            </Link>
+            <Link to="/videos" style={styles.portalCard}>
+              Aset Cinema
+            </Link>
+            <Link to="/aset-spotlight" style={styles.portalCard}>
+              Aset Spotlight
+            </Link>
+            <Link to="/sirens-realm" style={styles.portalCard}>
+              Sirens Realm
+            </Link>
+            <Link to="/creators" style={styles.portalCard}>
+              Creators
+            </Link>
+            <Link to="/services" style={styles.portalCard}>
+              Services
+            </Link>
           </div>
         </div>
       </section>
-
-      <section style={styles.reviewSection}>
-        <div style={styles.sectionInner}>
-          <div style={styles.sectionEyebrow}>TESTIMONIALS</div>
-
-          <h2 style={styles.sectionTitleCenter}>
-            What people are saying about Aset.
-          </h2>
-
-          {loadingReviews ? (
-            <div style={styles.featuredLoading}>Loading testimonials...</div>
-          ) : reviews.length === 0 ? (
-            <div style={styles.featuredLoading}>
-              Testimonials and reviews are coming soon.
-            </div>
-          ) : (
-            <div
-              style={{
-                ...styles.reviewGrid,
-                gridTemplateColumns: isMobile
-                  ? "1fr"
-                  : "repeat(3, minmax(0, 1fr))",
-              }}
-            >
-              {reviews.map((review) => {
-                const name =
-                  review.name ||
-                  review.client_name ||
-                  review.reviewer_name ||
-                  "Client";
-
-                const text =
-                  review.review_text ||
-                  review.testimonial ||
-                  review.message ||
-                  review.body ||
-                  "";
-
-                const service =
-                  review.service_name || review.service || "The Aset Studio";
-
-                return (
-                  <div key={review.id} style={styles.reviewCard}>
-                    <div style={styles.quoteMark}>“</div>
-
-                    <p style={styles.reviewText}>
-                      {text || "A beautiful experience with The Aset Studio."}
-                    </p>
-
-                    <div style={styles.reviewDivider} />
-
-                    <div style={styles.reviewName}>{name}</div>
-                    <div style={styles.reviewService}>{service}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <footer style={styles.footer}>
-        <div style={styles.footerLine}>
-          The Aset Studio — building a world of image, sound, story, and
-          sovereignty since 2025.
-        </div>
-      </footer>
     </div>
   );
 }
 
 const styles = {
   page: {
-    background: "#050507",
-    color: "#f2f0ea",
+    minHeight: "100vh",
+    background: "#050505",
+    color: "#f5f1eb",
   },
 
   hero: {
+    minHeight: "92vh",
     position: "relative",
-    minHeight: "94vh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "clamp(72px, 9vw, 120px) clamp(16px, 4vw, 32px)",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
+    padding: "120px 22px 92px",
+    overflow: "hidden",
+    background: "#050505",
   },
 
-  heroOverlay: {
+  heroImage: {
+    position: "absolute",
+    inset: 0,
+    backgroundSize: "cover",
+    backgroundPosition: "center 42%",
+    opacity: 0.9,
+    transform: "scale(1.015)",
+  },
+
+  heroShade: {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(to bottom, rgba(0,0,0,0.42), rgba(0,0,0,0.72))",
+      "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.3) 48%, rgba(5,5,5,0.98) 100%), radial-gradient(circle at center, rgba(0,0,0,0.04), rgba(0,0,0,0.76))",
   },
 
-  heroInner: {
+  heroShell: {
     position: "relative",
-    zIndex: 1,
+    zIndex: 2,
     width: "100%",
+    maxWidth: 1180,
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 360px",
+    gap: 28,
+    alignItems: "center",
   },
 
-  heroRow: {
-    display: "flex",
-    justifyContent: "space-between",
+  heroContent: {
+    width: "100%",
+    maxWidth: 720,
+    textAlign: "left",
   },
-
-  heroLeft: {},
-
-  heroRight: {},
 
   brand: {
-    fontSize: 12,
-    letterSpacing: "0.2em",
-    marginBottom: 10,
-    opacity: 0.88,
+    margin: "0 0 12px",
+    fontSize: 11,
+    letterSpacing: "0.36em",
+    textTransform: "uppercase",
+    color: "rgba(245,241,235,0.72)",
   },
 
   headline: {
-    fontSize: "clamp(34px,6vw,56px)",
-    fontFamily: "Georgia",
-    marginBottom: 16,
-    lineHeight: 1.02,
+    margin: "0 0 16px",
+    fontSize: "clamp(40px, 5.5vw, 72px)",
+    lineHeight: 0.9,
+    letterSpacing: "-0.058em",
+    fontWeight: 850,
+    textShadow: "0 20px 70px rgba(0,0,0,0.92)",
   },
 
   subtext: {
-    marginBottom: 24,
-    fontSize: 16,
-    lineHeight: 1.7,
-    opacity: 0.9,
-    maxWidth: 560,
+    maxWidth: 640,
+    margin: "0 0 26px",
+    fontSize: 15,
+    lineHeight: 1.75,
+    color: "rgba(245,241,235,0.84)",
+    textShadow: "0 10px 35px rgba(0,0,0,0.82)",
   },
 
   ctaRow: {
     display: "flex",
     gap: 12,
-    marginBottom: 12,
     flexWrap: "wrap",
   },
 
-  primaryBtn: {
-    background: "#d4af37",
-    padding: "14px 18px",
-    borderRadius: 12,
-    color: "#000",
-    textDecoration: "none",
-    fontWeight: 700,
-  },
-
-  ghostBtn: {
-    border: "1px solid gold",
-    padding: "14px 18px",
-    borderRadius: 12,
-    textDecoration: "none",
-    color: "#fff",
-    fontWeight: 600,
-  },
-
-  secondaryBtn: {
-    border: "1px solid rgba(255,255,255,0.18)",
-    padding: "14px 18px",
-    borderRadius: 12,
-    textDecoration: "none",
-    color: "#fff",
-    fontWeight: 600,
-    background: "rgba(255,255,255,0.03)",
-  },
-
-  note: {
-    fontSize: 12,
-    opacity: 0.8,
-  },
-
-  peoplePanel: {
-    width: 320,
-    borderRadius: 18,
+  spotlightCard: {
+    display: "block",
     overflow: "hidden",
-    border: "1px solid rgba(212,175,55,0.8)",
-    boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
-    background: "rgba(0,0,0,0.5)",
-  },
-
-  peopleImage: {
-    width: "100%",
-    height: 400,
-    objectFit: "cover",
-    objectPosition: "center 15%",
-    display: "block",
-  },
-
-  peopleContent: {
-    padding: 16,
-    background: "rgba(0,0,0,0.85)",
-  },
-
-  peopleTitle: {
-    fontSize: 22,
-    marginBottom: 8,
-    fontFamily: "Georgia",
-  },
-
-  peopleSubtext: {
-    fontSize: 13,
-    marginBottom: 12,
-    lineHeight: 1.6,
-    opacity: 0.9,
-  },
-
-  peopleButton: {
-    display: "block",
-    padding: 12,
-    border: "1px solid gold",
-    borderRadius: 10,
-    textAlign: "center",
+    borderRadius: 24,
     textDecoration: "none",
-    color: "#fff",
-    fontWeight: 600,
+    color: "#f5f1eb",
+    border: "1px solid rgba(245,241,235,0.18)",
+    background: "rgba(5,5,5,0.72)",
+    boxShadow:
+      "0 60px 160px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04)",
+    backdropFilter: "blur(16px)",
+    transform: "scale(1.05)",
   },
 
-  introSection: {
+  spotlightImage: {
     position: "relative",
-    padding: "72px 20px 48px",
+    width: "100%",
+    height: 360,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    filter: "brightness(0.95) contrast(1.05)",
+  },
+
+  spotlightImageOverlay: {
+    position: "absolute",
+    inset: 0,
     background:
-      "linear-gradient(180deg, #050507 0%, #09090d 40%, #08080a 100%)",
+      "linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.7) 100%)",
   },
 
-  featuredSection: {
-    position: "relative",
-    padding: "24px 20px 56px",
+  spotlightBody: {
+    padding: "18px 18px 20px",
     background:
-      "linear-gradient(180deg, #08080a 0%, #070709 50%, #050507 100%)",
+      "linear-gradient(180deg, rgba(10,10,10,0.94), rgba(0,0,0,0.98))",
   },
 
-  portalSection: {
-    position: "relative",
-    padding: "24px 20px 72px",
-    background: "linear-gradient(180deg, #050507 0%, #050507 100%)",
+  spotlightEyebrow: {
+    margin: "0 0 8px",
+    fontSize: 10,
+    letterSpacing: "0.28em",
+    textTransform: "uppercase",
+    color: "rgba(245,241,235,0.58)",
   },
 
-  reviewSection: {
-    position: "relative",
-    padding: "24px 20px 72px",
-    background:
-      "linear-gradient(180deg, #050507 0%, #08080a 50%, #050507 100%)",
+  spotlightTitle: {
+    margin: "0 0 8px",
+    fontSize: 25,
+    lineHeight: 1,
+    letterSpacing: "-0.035em",
   },
 
-  sectionInner: {
-    maxWidth: 1220,
-    margin: "0 auto",
+  spotlightText: {
+    margin: "0 0 14px",
+    fontSize: 13,
+    lineHeight: 1.55,
+    color: "rgba(245,241,235,0.72)",
   },
 
-  sectionEyebrow: {
+  spotlightButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "10px 14px",
+    borderRadius: 999,
+    border: "1px solid rgba(245,241,235,0.22)",
+    color: "#f5f1eb",
     fontSize: 12,
-    letterSpacing: "0.22em",
-    marginBottom: 16,
-    opacity: 0.68,
+    fontWeight: 850,
+    letterSpacing: "0.02em",
   },
 
-  sectionTitle: {
-    fontSize: "clamp(28px, 4vw, 42px)",
-    lineHeight: 1.08,
-    margin: "0 0 18px",
-    fontFamily: "Georgia",
+  goldBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "13px 22px",
+    borderRadius: 999,
+    background: "linear-gradient(135deg, #c58d36, #f1d08a)",
+    color: "#111",
+    textDecoration: "none",
+    fontWeight: 850,
+    letterSpacing: "0.03em",
+    boxShadow: "0 18px 50px rgba(151,101,33,0.26)",
   },
 
-  sectionTitleCenter: {
-    fontSize: "clamp(28px, 4vw, 42px)",
-    lineHeight: 1.08,
-    margin: "0 0 26px",
-    fontFamily: "Georgia",
-    textAlign: "center",
+  lightBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "13px 22px",
+    borderRadius: 999,
+    background: "#f5f1eb",
+    color: "#111",
+    textDecoration: "none",
+    fontWeight: 850,
+    letterSpacing: "0.03em",
   },
 
-  sectionText: {
-    fontSize: 15,
-    lineHeight: 1.8,
-    opacity: 0.9,
-    marginBottom: 16,
+  worldsWrap: {
+    marginTop: "28px",
+    paddingTop: "8px",
+    background:
+      "linear-gradient(180deg, #050505 0%, #080706 50%, #050505 100%)",
   },
 
-  introGrid: {
+  worldSection: {
+    padding: "54px 22px",
+    borderBottom: "1px solid rgba(245,241,235,0.055)",
+  },
+
+  featuredWorldSection: {
+    padding: "90px 22px",
+    background:
+      "radial-gradient(circle at center, rgba(214,168,79,0.18), transparent 60%)",
+  },
+
+  sirensWorldSection: {
+    padding: "48px 22px 72px",
+    marginTop: "-18px",
+    background:
+      "radial-gradient(circle at 50% 22%, rgba(198,136,55,0.18), transparent 58%), linear-gradient(180deg, rgba(53,29,13,0.26), rgba(5,5,5,0.98))",
+  },
+
+  worldInner: {
+    maxWidth: 1180,
+    margin: "0 auto",
     display: "grid",
+    gridTemplateColumns: "minmax(0, 1.18fr) minmax(280px, 0.82fr)",
     gap: 24,
     alignItems: "stretch",
   },
 
-  introVideoWrap: {
-    position: "relative",
-    borderRadius: 22,
+  featuredWorldInner: {
+    gridTemplateColumns: "minmax(0, 1.6fr) minmax(320px, 0.6fr)",
+    transform: "scale(1.02)",
+  },
+
+  sirensWorldInner: {
+    maxWidth: 1120,
+    transform: "translateY(-18px)",
+  },
+
+  worldCopy: {
+    borderRadius: 20,
+    padding: "38px",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.043), rgba(255,255,255,0.016))",
+    border: "1px solid rgba(245,241,235,0.085)",
+    boxShadow: "0 26px 80px rgba(0,0,0,0.38)",
+  },
+
+  sirensWorldCopy: {
+    background:
+      "linear-gradient(180deg, rgba(95,51,22,0.32), rgba(255,255,255,0.018))",
+    border: "1px solid rgba(214,168,79,0.18)",
+    boxShadow:
+      "0 30px 90px rgba(0,0,0,0.52), 0 0 70px rgba(198,136,55,0.08)",
+  },
+
+  worldTitle: {
+    margin: "0 0 16px",
+    maxWidth: 760,
+    fontSize: "clamp(34px, 4.5vw, 60px)",
+    lineHeight: 0.96,
+    letterSpacing: "-0.052em",
+    fontWeight: 850,
+  },
+
+  categoryRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 9,
+    margin: "0 0 26px",
+  },
+
+  categoryPill: {
+    padding: "8px 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(245,241,235,0.12)",
+    background: "rgba(255,255,255,0.035)",
+    color: "rgba(245,241,235,0.78)",
+    fontSize: 11,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+  },
+
+  worldPanel: {
+    borderRadius: 20,
+    padding: "32px",
+    background:
+      "linear-gradient(160deg, rgba(198,136,55,0.16), rgba(255,255,255,0.025) 46%, rgba(0,0,0,0.22))",
+    border: "1px solid rgba(245,241,235,0.1)",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-end",
+    minHeight: 300,
+    boxShadow: "0 26px 80px rgba(0,0,0,0.38)",
+  },
+
+  sirensWorldPanel: {
+    minHeight: 260,
+    background:
+      "linear-gradient(160deg, rgba(198,136,55,0.22), rgba(65,29,14,0.26) 48%, rgba(0,0,0,0.34))",
+    border: "1px solid rgba(214,168,79,0.2)",
+  },
+
+  panelEyebrow: {
+    margin: "0 0 10px",
+    fontSize: 10,
+    letterSpacing: "0.28em",
+    color: "rgba(245,241,235,0.52)",
+  },
+
+  panelTitle: {
+    margin: "0 0 10px",
+    fontSize: 34,
+    lineHeight: 1,
+    letterSpacing: "-0.04em",
+  },
+
+  panelText: {
+    margin: 0,
+    fontSize: 14,
+    lineHeight: 1.65,
+    color: "rgba(245,241,235,0.7)",
+  },
+
+  screeningSection: {
+    padding: "76px 22px 86px",
+    background:
+      "linear-gradient(180deg, #050505 0%, #080808 48%, #050505 100%)",
+  },
+
+  sectionInner: {
+    maxWidth: 1180,
+    margin: "0 auto",
+  },
+
+  sectionInnerNarrow: {
+    maxWidth: 980,
+    margin: "0 auto",
+  },
+
+  eyebrow: {
+    margin: "0 0 11px",
+    fontSize: 11,
+    letterSpacing: "0.3em",
+    textTransform: "uppercase",
+    color: "rgba(245,241,235,0.5)",
+  },
+
+  sectionTitle: {
+    margin: "0 0 22px",
+    fontSize: "clamp(30px, 4vw, 46px)",
+    lineHeight: 1.02,
+    letterSpacing: "-0.038em",
+    fontWeight: 850,
+  },
+
+  sectionText: {
+    margin: "0 0 26px",
+    maxWidth: 720,
+    fontSize: 15,
+    lineHeight: 1.78,
+    color: "rgba(245,241,235,0.72)",
+  },
+
+  videoFrame: {
+    width: "100%",
+    aspectRatio: "16 / 9",
+    borderRadius: 28,
     overflow: "hidden",
     background: "#000",
-    minHeight: 320,
-    border: "1px solid rgba(255,255,255,0.08)",
-    boxShadow: "0 24px 80px rgba(0,0,0,0.48)",
+    border: "1px solid rgba(245,241,235,0.1)",
+    boxShadow:
+      "0 60px 160px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04)",
   },
 
-  introVideo: {
+  video: {
     width: "100%",
     height: "100%",
-    display: "block",
     objectFit: "cover",
-    minHeight: 320,
+    display: "block",
+    transition: "opacity 1s ease",
     background: "#000",
   },
 
-  introPlaceholder: {
+  placeholder: {
+    height: "100%",
     minHeight: 320,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
-    textAlign: "center",
-    color: "rgba(242,240,234,0.78)",
-    background: "rgba(255,255,255,0.02)",
-  },
-
-  introCard: {
-    borderRadius: 22,
-    border: "1px solid rgba(255,255,255,0.08)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
-    padding: 28,
-    boxShadow: "0 18px 50px rgba(0,0,0,0.22)",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-  },
-
-  introActions: {
-    display: "flex",
-    gap: 12,
-    flexWrap: "wrap",
-    marginTop: 8,
-  },
-
-  featuredLoading: {
-    borderRadius: 18,
-    padding: "28px 20px",
-    textAlign: "center",
-    color: "rgba(242,240,234,0.74)",
+    color: "rgba(245,241,235,0.68)",
     background: "rgba(255,255,255,0.025)",
-    border: "1px solid rgba(255,255,255,0.06)",
+  },
+
+  featuredSection: {
+    padding: "78px 22px",
+    background:
+      "linear-gradient(180deg, #050505 0%, #070707 48%, #050505 100%)",
+  },
+
+  sectionHeader: {
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 18,
+    marginBottom: 22,
+    flexWrap: "wrap",
+  },
+
+  textLink: {
+    color: "rgba(245,241,235,0.74)",
+    textDecoration: "none",
+    fontSize: 14,
+  },
+
+  placeholderCard: {
+    borderRadius: 22,
+    padding: "30px 24px",
+    textAlign: "center",
+    color: "rgba(245,241,235,0.68)",
+    border: "1px solid rgba(245,241,235,0.08)",
+    background: "rgba(255,255,255,0.025)",
   },
 
   featuredStrip: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 18,
+    gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+    gap: 16,
   },
 
   featuredCard: {
+    display: "block",
+    overflow: "hidden",
+    borderRadius: 22,
     textDecoration: "none",
     color: "#fff",
-    borderRadius: 20,
-    overflow: "hidden",
-    border: "1px solid rgba(255,255,255,0.08)",
+    border: "1px solid rgba(245,241,235,0.08)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))",
-    boxShadow: "0 18px 40px rgba(0,0,0,0.25)",
-    transition: "transform 0.25s ease, box-shadow 0.25s ease",
+      "linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012))",
+    boxShadow: "0 20px 54px rgba(0,0,0,0.25)",
   },
 
   featuredMediaWrap: {
     position: "relative",
     aspectRatio: "16 / 10",
+    background: "#000",
     overflow: "hidden",
-    background: "#0c0c0c",
   },
 
   featuredMedia: {
     width: "100%",
     height: "100%",
-    display: "block",
     objectFit: "cover",
-    background: "#000",
-  },
-
-  featuredFallback: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 18,
-    textAlign: "center",
-    color: "rgba(242,240,234,0.65)",
+    display: "block",
   },
 
   featuredOverlay: {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.45) 100%)",
-    pointerEvents: "none",
+      "linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.56))",
+  },
+
+  mediaFallback: {
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "rgba(245,241,235,0.55)",
   },
 
   featuredMeta: {
@@ -914,115 +902,37 @@ const styles = {
   },
 
   featuredType: {
-    fontSize: 11,
-    letterSpacing: "0.18em",
-    opacity: 0.65,
-    marginBottom: 8,
+    margin: "0 0 8px",
+    fontSize: 10,
+    letterSpacing: "0.22em",
+    textTransform: "uppercase",
+    color: "rgba(245,241,235,0.5)",
   },
 
   featuredTitle: {
+    margin: 0,
     fontSize: 18,
-    lineHeight: 1.3,
-    fontFamily: "Georgia",
+    lineHeight: 1.22,
+    letterSpacing: "-0.02em",
+  },
+
+  portalSection: {
+    padding: "38px 22px 92px",
+    background: "#050505",
   },
 
   portalGrid: {
     display: "grid",
-    gap: 18,
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: 14,
   },
 
   portalCard: {
+    padding: "20px 18px",
+    borderRadius: 18,
     textDecoration: "none",
-    color: "#fff",
-    borderRadius: 20,
-    padding: 24,
-    border: "1px solid rgba(255,255,255,0.08)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))",
-    boxShadow: "0 18px 40px rgba(0,0,0,0.2)",
-  },
-
-  portalTitle: {
-    fontSize: 22,
-    marginBottom: 10,
-    fontFamily: "Georgia",
-  },
-
-  portalText: {
-    fontSize: 14,
-    lineHeight: 1.7,
-    opacity: 0.84,
-  },
-
-  reviewGrid: {
-    display: "grid",
-    gap: 18,
-  },
-
-  reviewCard: {
-    position: "relative",
-    borderRadius: 22,
-    padding: 24,
-    border: "1px solid rgba(212,175,55,0.22)",
-    background:
-      "linear-gradient(180deg, rgba(212,175,55,0.08), rgba(255,255,255,0.018))",
-    boxShadow: "0 18px 40px rgba(0,0,0,0.25)",
-    overflow: "hidden",
-  },
-
-  quoteMark: {
-    position: "absolute",
-    top: 8,
-    right: 18,
-    fontFamily: "Georgia",
-    fontSize: 72,
-    lineHeight: 1,
-    color: "rgba(212,175,55,0.22)",
-  },
-
-  reviewText: {
-    position: "relative",
-    zIndex: 1,
-    fontSize: 15,
-    lineHeight: 1.8,
-    opacity: 0.92,
-    margin: "0 0 18px",
-  },
-
-  reviewDivider: {
-    height: 1,
-    width: "100%",
-    background: "rgba(255,255,255,0.08)",
-    marginBottom: 14,
-  },
-
-  reviewName: {
-    fontFamily: "Georgia",
-    fontSize: 18,
-    marginBottom: 4,
-  },
-
-  reviewService: {
-    fontSize: 12,
-    letterSpacing: "0.14em",
-    textTransform: "uppercase",
-    color: "rgba(212,175,55,0.82)",
-  },
-
-  footer: {
-    padding: "34px 20px 48px",
-    borderTop: "1px solid rgba(255,255,255,0.06)",
-    background: "#050507",
-    textAlign: "center",
-  },
-
-  footerLine: {
-    maxWidth: 900,
-    margin: "0 auto",
-    fontSize: 12,
-    letterSpacing: "0.16em",
-    textTransform: "uppercase",
-    color: "rgba(242,240,234,0.58)",
-    lineHeight: 1.8,
+    color: "#f5f1eb",
+    border: "1px solid rgba(245,241,235,0.08)",
+    background: "rgba(255,255,255,0.023)",
   },
 };
