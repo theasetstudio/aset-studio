@@ -4,7 +4,7 @@ import { supabase } from "../supabaseClient";
 
 export default function HomePage() {
   const heroImage = `${process.env.PUBLIC_URL}/images/aset-powerhouse.png`;
-  const spotlightImage = `${process.env.PUBLIC_URL}/images/aset-spotlight.png`;
+  const spotlightImage = `${process.env.PUBLIC_URL}/images/aset-person.png`;
 
   const [videoUrl, setVideoUrl] = useState("");
   const [poster, setPoster] = useState("");
@@ -541,7 +541,7 @@ const styles = {
     width: "100%",
     height: 360,
     backgroundSize: "cover",
-    backgroundPosition: "center",
+    backgroundPosition: "center 28%",
     backgroundColor: "rgba(255,255,255,0.04)",
     filter: "brightness(0.95) contrast(1.05)",
   },
@@ -550,7 +550,7 @@ const styles = {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.7) 100%)",
+      "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.18) 44%, rgba(0,0,0,0.76) 100%)",
   },
 
   spotlightBody: {
