@@ -19,7 +19,6 @@ export default function HomePage() {
     typeof window !== "undefined" ? window.innerWidth : 1200;
 
   const [width, setWidth] = useState(getInitialWidth);
-
   const isMobile = width <= 760;
   const isTablet = width > 760 && width <= 1050;
 
@@ -197,7 +196,6 @@ export default function HomePage() {
             backgroundPosition: isMobile ? "center top" : "center 42%",
           }}
         />
-
         <div style={styles.heroShade} />
 
         <div
@@ -261,7 +259,6 @@ export default function HomePage() {
 
             <div style={styles.spotlightBody}>
               <p style={styles.spotlightEyebrow}>ASET SPOTLIGHT</p>
-
               <h3 style={styles.spotlightTitle}>Aset Spotlight</h3>
 
               <p style={styles.spotlightText}>
@@ -290,10 +287,10 @@ export default function HomePage() {
             <div
               style={{
                 ...styles.worldInner,
-                ...(world.featured && !isMobile
+                ...(world.featured && !isMobile && !isTablet
                   ? styles.featuredWorldInner
                   : {}),
-                ...(world.elevated && !isMobile
+                ...(world.elevated && !isMobile && !isTablet
                   ? styles.sirensWorldInner
                   : {}),
                 gridTemplateColumns:
@@ -318,9 +315,7 @@ export default function HomePage() {
                 }}
               >
                 <p style={styles.eyebrow}>{world.eyebrow}</p>
-
                 <h2 style={styles.worldTitle}>{world.title}</h2>
-
                 <p style={styles.sectionText}>{world.text}</p>
 
                 {world.categories && (
@@ -485,23 +480,18 @@ export default function HomePage() {
             <Link to="/gallery" style={styles.portalCard}>
               Gallery
             </Link>
-
             <Link to="/videos" style={styles.portalCard}>
               Aset Cinema
             </Link>
-
             <Link to="/aset-spotlight" style={styles.portalCard}>
               Aset Spotlight
             </Link>
-
             <Link to="/sirens-realm" style={styles.portalCard}>
               Sirens Realm
             </Link>
-
             <Link to="/creators" style={styles.portalCard}>
               Creators
             </Link>
-
             <Link to="/services" style={styles.portalCard}>
               Services
             </Link>

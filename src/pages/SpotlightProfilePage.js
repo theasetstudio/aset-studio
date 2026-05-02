@@ -1,136 +1,186 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { spotlightProfiles } from "../data/spotlightProfiles";
 
 export default function SpotlightProfilePage() {
   const { slug } = useParams();
 
-  const profile = spotlightProfiles.find((p) => p.slug === slug);
+  const profile = Array.isArray(spotlightProfiles)
+    ? spotlightProfiles.find((item) => item.slug === slug)
+    : null;
 
   if (!profile) {
     return (
-      <div style={{ padding: 100, color: "white" }}>
-        Profile not found.
-      </div>
+      <main style={{ minHeight: "100vh", padding: "90px 6vw", color: "#fff" }}>
+        <h1>Spotlight Profile Not Found</h1>
+        <p>This spotlight profile is not available.</p>
+        <Link to="/aset-spotlight" style={{ color: "#c9a46a" }}>
+          Back to Aset Spotlight
+        </Link>
+      </main>
     );
   }
 
   return (
-    <div style={styles.page}>
-      <section style={styles.hero}>
-        <img
-          src={profile.image}
-          alt={`${profile.name} portrait`}
-          style={styles.heroImage}
-        />
+    <main
+      style={{
+        minHeight: "100vh",
+        color: "#fff",
+        background:
+          "radial-gradient(circle at top left, rgba(201,164,106,0.12), transparent 34%), #050505",
+      }}
+    >
+      <section
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          gridTemplateColumns: "1.05fr 0.95fr",
+          alignItems: "center",
+          gap: "56px",
+          padding: "120px 6vw 80px",
+        }}
+      >
+        <div>
+          <Link
+            to="/aset-spotlight"
+            style={{
+              color: "#c9a46a",
+              textDecoration: "none",
+              fontSize: "13px",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+            }}
+          >
+            Back to Aset Spotlight
+          </Link>
 
-        <div style={styles.overlay} />
+          <p
+            style={{
+              marginTop: "42px",
+              marginBottom: "18px",
+              color: "#c9a46a",
+              letterSpacing: "0.28em",
+              textTransform: "uppercase",
+              fontSize: "12px",
+            }}
+          >
+            Aset Spotlight
+          </p>
 
-        <div style={styles.heroContent}>
-          <div style={styles.status}>{profile.status}</div>
-
-          <h1 style={styles.name}>
+          <h1
+            style={{
+              fontSize: "clamp(48px, 7vw, 92px)",
+              lineHeight: "0.95",
+              margin: "0 0 18px",
+            }}
+          >
             {profile.name}
-            <br />
-            <span style={styles.alias}>{profile.alias}</span>
           </h1>
 
-          <div style={styles.role}>{profile.role}</div>
+          <h2
+            style={{
+              fontSize: "clamp(22px, 3vw, 34px)",
+              color: "#c9a46a",
+              margin: "0 0 24px",
+              fontWeight: "400",
+            }}
+          >
+            {profile.alias}
+          </h2>
+
+          <p
+            style={{
+              maxWidth: "620px",
+              color: "#d8d8d8",
+              fontSize: "17px",
+              lineHeight: "1.8",
+              marginBottom: "18px",
+            }}
+          >
+            {profile.role}
+          </p>
+
+          <p
+            style={{
+              maxWidth: "680px",
+              color: "#f1f1f1",
+              fontSize: "18px",
+              lineHeight: "1.8",
+              marginBottom: "18px",
+            }}
+          >
+            {profile.focus}
+          </p>
+
+          <p
+            style={{
+              maxWidth: "680px",
+              color: "#bdbdbd",
+              fontSize: "16px",
+              lineHeight: "1.85",
+            }}
+          >
+            {profile.bio}
+          </p>
         </div>
-      </section>
 
-      <section style={styles.section}>
-        <div style={styles.inner}>
-          <p style={styles.bio}>{profile.bio}</p>
+        <div
+          style={{
+            position: "relative",
+            minHeight: "620px",
+            borderRadius: "34px",
+            overflow: "hidden",
+            border: "1px solid rgba(255,255,255,0.13)",
+            boxShadow: "0 35px 90px rgba(0,0,0,0.55)",
+          }}
+        >
+          {profile.profileImage && (
+            <img
+              src={profile.profileImage}
+              alt={profile.name}
+              style={{
+                width: "100%",
+                height: "100%",
+                minHeight: "620px",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          )}
 
-          <div style={styles.tags}>
-            {profile.focus.map((tag) => (
-              <span key={tag} style={styles.tag}>
-                {tag}
-              </span>
-            ))}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to top, rgba(0,0,0,0.72), transparent 55%)",
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              left: "28px",
+              right: "28px",
+              bottom: "28px",
+            }}
+          >
+            <p
+              style={{
+                color: "#c9a46a",
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                fontSize: "11px",
+                marginBottom: "8px",
+              }}
+            >
+              Featured Presence
+            </p>
+
+            <h3 style={{ fontSize: "28px", margin: 0 }}>{profile.alias}</h3>
           </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 }
-
-const styles = {
-  page: {
-    background: "#050507",
-    color: "#f2f0ea",
-  },
-
-  hero: {
-    position: "relative",
-    height: "90vh",
-  },
-
-  heroImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    objectPosition: "center top",
-  },
-
-  overlay: {
-    position: "absolute",
-    inset: 0,
-    background: "linear-gradient(to top, #050507, transparent)",
-  },
-
-  heroContent: {
-    position: "absolute",
-    bottom: 60,
-    left: 40,
-  },
-
-  status: {
-    color: "gold",
-    fontSize: 12,
-  },
-
-  name: {
-    fontSize: 60,
-    lineHeight: 1.1,
-  },
-
-  alias: {
-    fontSize: 28,
-    opacity: 0.6,
-  },
-
-  role: {
-    marginTop: 10,
-    color: "gold",
-  },
-
-  section: {
-    padding: "80px 20px",
-  },
-
-  inner: {
-    maxWidth: 1000,
-    margin: "0 auto",
-  },
-
-  bio: {
-    fontSize: 18,
-    lineHeight: 1.8,
-    marginBottom: 30,
-  },
-
-  tags: {
-    display: "flex",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-
-  tag: {
-    border: "1px solid gold",
-    padding: "6px 10px",
-    borderRadius: 20,
-    fontSize: 12,
-  },
-};
