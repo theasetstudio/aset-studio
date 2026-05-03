@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 
 import TopNav from "./components/TopNav";
 
-// Pages
 import HomePage from "./pages/HomePage";
 import GalleryPage from "./pages/GalleryPage";
 import MediaDetailPage from "./pages/MediaDetailPage";
@@ -67,7 +66,6 @@ import PurplePage from "./pages/stones/PurplePage";
 
 import EliteGeneratorPage from "./pages/EliteGeneratorPage";
 import SupremeAccessPage from "./pages/SupremeAccessPage";
-
 import TalentPage from "./pages/TalentPage";
 import ServicesPage from "./pages/ServicesPage";
 
@@ -77,7 +75,6 @@ function App() {
       <TopNav />
 
       <Routes>
-        {/* CORE */}
         <Route path="/" element={<HomePage />} />
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/media/:id" element={<MediaDetailPage />} />
@@ -89,10 +86,8 @@ function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/services" element={<ServicesPage />} />
 
-        {/* ACCESS */}
         <Route path="/supreme-access" element={<SupremeAccessPage />} />
 
-        {/* CREATOR SYSTEM */}
         <Route path="/upload" element={<CreatorUploadPage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/creators" element={<CreatorsDirectoryPage />} />
@@ -105,7 +100,6 @@ function App() {
         <Route path="/creator-hub" element={<CreatorsHubPage />} />
         <Route path="/creators-corner" element={<CreatorsCornerPage />} />
 
-        {/* DISCOVERY */}
         <Route path="/featured" element={<FeaturedPage />} />
         <Route path="/aset-spotlight" element={<AsetSpotlightPage />} />
         <Route path="/aset-spotlight/:slug" element={<SpotlightProfilePage />} />
@@ -113,16 +107,13 @@ function App() {
         <Route path="/videos" element={<VideosPage />} />
         <Route path="/video/:slug" element={<VideoPlayerPage />} />
 
-        {/* THE STUDIO */}
         <Route path="/studio/expression-vault" element={<ExpressionVaultPage />} />
 
-        {/* ASET LOUNGE */}
         <Route path="/aset-lounge" element={<AsetLoungePage />} />
         <Route path="/aset-lounge/puzzle-library" element={<PuzzleLibraryPage />} />
         <Route path="/aset-lounge/puzzle-play" element={<PuzzlePlayPage />} />
         <Route path="/aset-lounge/my-creations" element={<MyCreationsPage />} />
 
-        {/* SIRENS REALM */}
         <Route path="/sirens-realm" element={<SirensRealmPage />} />
         <Route path="/sirens-realm/stones" element={<StoneCollectionPage />} />
         <Route path="/sirens-realm/stones/:slug" element={<StoneDetailPage />} />
@@ -151,14 +142,11 @@ function App() {
         <Route path="/sirens-realm/purple" element={<PurplePage />} />
         <Route path="/sirens-realm/return-to-sender-deities" element={<ReturnToSenderDeities />} />
 
-        {/* GENERATOR */}
         <Route path="/elite-generator" element={<EliteGeneratorPage />} />
         <Route path="/studio/writer" element={<Navigate to="/" replace />} />
 
-        {/* TALENT */}
         <Route path="/talent" element={<TalentPage />} />
 
-        {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
