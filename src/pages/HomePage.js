@@ -19,7 +19,6 @@ export default function HomePage() {
     typeof window !== "undefined" ? window.innerWidth : 1200;
 
   const [width, setWidth] = useState(getInitialWidth);
-
   const isMobile = width <= 760;
   const isTablet = width > 760 && width <= 1050;
 
@@ -183,9 +182,9 @@ export default function HomePage() {
         style={{
           ...styles.hero,
           padding: isMobile
-            ? "110px 18px 48px"
+            ? "135px 18px 56px"
             : isTablet
-            ? "110px 28px 80px"
+            ? "140px 34px 90px"
             : "120px 22px 92px",
           alignItems: isMobile || isTablet ? "flex-start" : "center",
         }}
@@ -197,7 +196,6 @@ export default function HomePage() {
             backgroundPosition: isMobile ? "center top" : "center 42%",
           }}
         />
-
         <div style={styles.heroShade} />
 
         <div
@@ -244,7 +242,7 @@ export default function HomePage() {
             to="/aset-spotlight"
             style={{
               ...styles.spotlightCard,
-              maxWidth: isMobile || isTablet ? "100%" : 360,
+              maxWidth: isMobile ? "100%" : isTablet ? 760 : 360,
               transform: "none",
               marginTop: isMobile ? 26 : isTablet ? 28 : 0,
             }}
@@ -252,7 +250,7 @@ export default function HomePage() {
             <div
               style={{
                 ...styles.spotlightImage,
-                height: isMobile ? 220 : isTablet ? 300 : 360,
+                height: isMobile ? 200 : isTablet ? 260 : 360,
                 backgroundImage: `url("${spotlightImage}")`,
                 backgroundPosition: isMobile ? "center 15%" : "center 25%",
               }}
@@ -262,7 +260,6 @@ export default function HomePage() {
 
             <div style={styles.spotlightBody}>
               <p style={styles.spotlightEyebrow}>ASET SPOTLIGHT</p>
-
               <h3 style={styles.spotlightTitle}>Aset Spotlight</h3>
 
               <p style={styles.spotlightText}>
@@ -319,9 +316,7 @@ export default function HomePage() {
                 }}
               >
                 <p style={styles.eyebrow}>{world.eyebrow}</p>
-
                 <h2 style={styles.worldTitle}>{world.title}</h2>
-
                 <p style={styles.sectionText}>{world.text}</p>
 
                 {world.categories && (
@@ -486,23 +481,18 @@ export default function HomePage() {
             <Link to="/gallery" style={styles.portalCard}>
               Gallery
             </Link>
-
             <Link to="/videos" style={styles.portalCard}>
               Aset Cinema
             </Link>
-
             <Link to="/aset-spotlight" style={styles.portalCard}>
               Aset Spotlight
             </Link>
-
             <Link to="/sirens-realm" style={styles.portalCard}>
               Sirens Realm
             </Link>
-
             <Link to="/creators" style={styles.portalCard}>
               Creators
             </Link>
-
             <Link to="/services" style={styles.portalCard}>
               Services
             </Link>
@@ -524,7 +514,9 @@ const styles = {
     minHeight: "92vh",
     position: "relative",
     display: "flex",
+    alignItems: "center",
     justifyContent: "center",
+    padding: "120px 22px 92px",
     overflow: "hidden",
     background: "#050505",
   },
@@ -533,6 +525,7 @@ const styles = {
     position: "absolute",
     inset: 0,
     backgroundSize: "cover",
+    backgroundPosition: "center 42%",
     opacity: 0.9,
     transform: "scale(1.015)",
   },
@@ -541,7 +534,7 @@ const styles = {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.36) 45%, rgba(5,5,5,0.98) 100%), radial-gradient(circle at center, rgba(0,0,0,0.04), rgba(0,0,0,0.76))",
+      "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.3) 48%, rgba(5,5,5,0.98) 100%), radial-gradient(circle at center, rgba(0,0,0,0.04), rgba(0,0,0,0.76))",
   },
 
   heroShell: {
@@ -550,6 +543,8 @@ const styles = {
     width: "100%",
     maxWidth: 1180,
     display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 360px",
+    gap: 28,
     alignItems: "center",
   },
 
@@ -569,6 +564,7 @@ const styles = {
 
   headline: {
     margin: "0 0 16px",
+    fontSize: "clamp(40px, 5.5vw, 72px)",
     lineHeight: 0.9,
     letterSpacing: "-0.058em",
     fontWeight: 850,
@@ -596,26 +592,29 @@ const styles = {
     borderRadius: 24,
     textDecoration: "none",
     color: "#f5f1eb",
-    border: "1px solid rgba(245,241,235,0.2)",
+    border: "1px solid rgba(245,241,235,0.18)",
     background: "rgba(5,5,5,0.72)",
     boxShadow:
       "0 60px 160px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04)",
     backdropFilter: "blur(16px)",
+    transform: "scale(1.05)",
   },
 
   spotlightImage: {
     position: "relative",
     width: "100%",
+    height: 360,
     backgroundSize: "cover",
+    backgroundPosition: "center",
     backgroundColor: "rgba(255,255,255,0.04)",
-    filter: "brightness(0.92) contrast(1.05)",
+    filter: "brightness(0.95) contrast(1.05)",
   },
 
   spotlightImageOverlay: {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.24) 42%, rgba(0,0,0,0.86) 100%)",
+      "linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.7) 100%)",
   },
 
   spotlightBody: {
@@ -715,11 +714,13 @@ const styles = {
     maxWidth: 1180,
     margin: "0 auto",
     display: "grid",
+    gridTemplateColumns: "minmax(0, 1.18fr) minmax(280px, 0.82fr)",
     gap: 24,
     alignItems: "stretch",
   },
 
   featuredWorldInner: {
+    gridTemplateColumns: "minmax(0, 1.6fr) minmax(320px, 0.6fr)",
     transform: "scale(1.02)",
   },
 
@@ -781,7 +782,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     justifyContent: "flex-end",
-    minHeight: 260,
+    minHeight: 300,
     boxShadow: "0 26px 80px rgba(0,0,0,0.38)",
   },
 
