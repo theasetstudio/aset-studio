@@ -9,6 +9,7 @@ import MediaDetailPage from "./pages/MediaDetailPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import AdminPage from "./pages/AdminPage";
 import AdminInquiries from "./pages/AdminInquiries";
+import AdminSpotlight from "./pages/AdminSpotlight";
 import AuthPage from "./pages/AuthPage";
 import AuthCallback from "./pages/AuthCallback";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -79,8 +80,11 @@ function App() {
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/media/:id" element={<MediaDetailPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
+
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/inquiries" element={<AdminInquiries />} />
+        <Route path="/admin/spotlight" element={<AdminSpotlight />} />
+
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
