@@ -19,6 +19,7 @@ export default function HomePage() {
     typeof window !== "undefined" ? window.innerWidth : 1200;
 
   const [width, setWidth] = useState(getInitialWidth);
+
   const isMobile = width <= 760;
   const isTablet = width > 760 && width <= 1050;
 
@@ -182,7 +183,7 @@ export default function HomePage() {
         style={{
           ...styles.hero,
           padding: isMobile
-            ? "96px 18px 64px"
+            ? "110px 18px 48px"
             : isTablet
             ? "110px 28px 80px"
             : "120px 22px 92px",
@@ -196,6 +197,7 @@ export default function HomePage() {
             backgroundPosition: isMobile ? "center top" : "center 42%",
           }}
         />
+
         <div style={styles.heroShade} />
 
         <div
@@ -244,14 +246,15 @@ export default function HomePage() {
               ...styles.spotlightCard,
               maxWidth: isMobile || isTablet ? "100%" : 360,
               transform: "none",
-              marginTop: isMobile ? 18 : isTablet ? 28 : 0,
+              marginTop: isMobile ? 26 : isTablet ? 28 : 0,
             }}
           >
             <div
               style={{
                 ...styles.spotlightImage,
-                height: isMobile ? 300 : isTablet ? 420 : 360,
+                height: isMobile ? 220 : isTablet ? 300 : 360,
                 backgroundImage: `url("${spotlightImage}")`,
+                backgroundPosition: isMobile ? "center 15%" : "center 25%",
               }}
             >
               <div style={styles.spotlightImageOverlay} />
@@ -259,6 +262,7 @@ export default function HomePage() {
 
             <div style={styles.spotlightBody}>
               <p style={styles.spotlightEyebrow}>ASET SPOTLIGHT</p>
+
               <h3 style={styles.spotlightTitle}>Aset Spotlight</h3>
 
               <p style={styles.spotlightText}>
@@ -315,7 +319,9 @@ export default function HomePage() {
                 }}
               >
                 <p style={styles.eyebrow}>{world.eyebrow}</p>
+
                 <h2 style={styles.worldTitle}>{world.title}</h2>
+
                 <p style={styles.sectionText}>{world.text}</p>
 
                 {world.categories && (
@@ -480,18 +486,23 @@ export default function HomePage() {
             <Link to="/gallery" style={styles.portalCard}>
               Gallery
             </Link>
+
             <Link to="/videos" style={styles.portalCard}>
               Aset Cinema
             </Link>
+
             <Link to="/aset-spotlight" style={styles.portalCard}>
               Aset Spotlight
             </Link>
+
             <Link to="/sirens-realm" style={styles.portalCard}>
               Sirens Realm
             </Link>
+
             <Link to="/creators" style={styles.portalCard}>
               Creators
             </Link>
+
             <Link to="/services" style={styles.portalCard}>
               Services
             </Link>
@@ -596,7 +607,6 @@ const styles = {
     position: "relative",
     width: "100%",
     backgroundSize: "cover",
-    backgroundPosition: "center 25%",
     backgroundColor: "rgba(255,255,255,0.04)",
     filter: "brightness(0.92) contrast(1.05)",
   },
