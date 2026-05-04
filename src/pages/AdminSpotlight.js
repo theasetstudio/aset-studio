@@ -84,9 +84,11 @@ export default function AdminSpotlight() {
     },
   });
 
+  const getSetter = (mode) => (mode === "edit" ? setEditForm : setForm);
+
   const handleChange = (e, mode = "create") => {
     const { name, value, type, checked } = e.target;
-    const setter = mode === "edit" ? setEditForm : setForm;
+    const setter = getSetter(mode);
 
     setter((prev) => ({
       ...prev,
@@ -95,7 +97,7 @@ export default function AdminSpotlight() {
   };
 
   const updateOfficialPresence = (field, value, mode = "create") => {
-    const setter = mode === "edit" ? setEditForm : setForm;
+    const setter = getSetter(mode);
 
     setter((prev) => ({
       ...prev,
@@ -106,6 +108,56 @@ export default function AdminSpotlight() {
           [field]: value,
         },
       },
+    }));
+  };
+
+  const updateFilmographyItem = (index, field, value, mode = "create") => {
+    const setter = getSetter(mode);
+
+    setter((prev) => {
+      const nextFilmography = Array.isArray(prev.filmography)
+        ? [...prev.filmography]
+        : [];
+
+      nextFilmography[index] = {
+        ...(nextFilmography[index] || {}),
+        [field]: value,
+      };
+
+      return {
+        ...prev,
+        filmography: nextFilmography,
+      };
+    });
+  };
+
+  const addFilmographyItem = (mode = "create") => {
+    const setter = getSetter(mode);
+
+    setter((prev) => ({
+      ...prev,
+      filmography: [
+        ...(Array.isArray(prev.filmography) ? prev.filmography : []),
+        {
+          title: "",
+          year: "",
+          role: "",
+          status: "",
+          description: "",
+        },
+      ],
+    }));
+  };
+
+  const removeFilmographyItem = (index, mode = "create") => {
+    const setter = getSetter(mode);
+
+    setter((prev) => ({
+      ...prev,
+      filmography: (Array.isArray(prev.filmography)
+        ? prev.filmography
+        : []
+      ).filter((_, itemIndex) => itemIndex !== index),
     }));
   };
 
@@ -152,7 +204,7 @@ export default function AdminSpotlight() {
     const uploaded = await uploadFile(file, activeForm.slug, "profile-image");
     if (!uploaded) return;
 
-    const setter = mode === "edit" ? setEditForm : setForm;
+    const setter = getSetter(mode);
     setter((prev) => ({
       ...prev,
       profile_image_url: uploaded.url,
@@ -171,7 +223,7 @@ export default function AdminSpotlight() {
     const uploaded = await uploadFile(file, activeForm.slug, "featured-video");
     if (!uploaded) return;
 
-    const setter = mode === "edit" ? setEditForm : setForm;
+    const setter = getSetter(mode);
     setter((prev) => ({
       ...prev,
       featured_video_url: uploaded.url,
@@ -199,7 +251,7 @@ export default function AdminSpotlight() {
       if (uploaded) uploads.push(uploaded);
     }
 
-    const setter = mode === "edit" ? setEditForm : setForm;
+    const setter = getSetter(mode);
 
     setter((prev) => ({
       ...prev,
@@ -208,7 +260,7 @@ export default function AdminSpotlight() {
   };
 
   const updateGalleryCaption = (index, caption, mode = "create") => {
-    const setter = mode === "edit" ? setEditForm : setForm;
+    const setter = getSetter(mode);
 
     setter((prev) => {
       const nextGallery = [...(Array.isArray(prev.gallery) ? prev.gallery : [])];
@@ -226,7 +278,7 @@ export default function AdminSpotlight() {
   };
 
   const removeGalleryItem = (index, mode = "create") => {
-    const setter = mode === "edit" ? setEditForm : setForm;
+    const setter = getSetter(mode);
 
     setter((prev) => ({
       ...prev,
@@ -529,6 +581,82 @@ export default function AdminSpotlight() {
         />
       )}
 
+      <h3 style={styles.subheading}>Filmography</h3>
+
+      <p style={styles.helpText}>
+        Add official, upcoming, or in-development screen projects. Use this for
+        films, series, studio-origin features, and productions like Brick by
+        Brick or Port Carlisle.
+      </p>
+
+      {Array.isArray(activeForm.filmography) &&
+        activeForm.filmography.map((item, index) => (
+          <div key={`filmography-${index}`} style={styles.filmCard}>
+            <div style={styles.grid}>
+              <input
+                style={styles.input}
+                placeholder="Title example: Brick by Brick: The Series"
+                value={item.title || ""}
+                onChange={(e) =>
+                  updateFilmographyItem(index, "title", e.target.value, mode)
+                }
+              />
+
+              <input
+                style={styles.input}
+                placeholder="Year example: 2026"
+                value={item.year || ""}
+                onChange={(e) =>
+                  updateFilmographyItem(index, "year", e.target.value, mode)
+                }
+              />
+
+              <input
+                style={styles.input}
+                placeholder="Status example: In Development"
+                value={item.status || ""}
+                onChange={(e) =>
+                  updateFilmographyItem(index, "status", e.target.value, mode)
+                }
+              />
+
+              <input
+                style={styles.input}
+                placeholder="Role example: Creator / Writer / Lead"
+                value={item.role || ""}
+                onChange={(e) =>
+                  updateFilmographyItem(index, "role", e.target.value, mode)
+                }
+              />
+            </div>
+
+            <textarea
+              style={styles.textarea}
+              placeholder="Description example: Original soap opera and novel in development..."
+              value={item.description || ""}
+              onChange={(e) =>
+                updateFilmographyItem(index, "description", e.target.value, mode)
+              }
+            />
+
+            <button
+              style={styles.dangerButton}
+              type="button"
+              onClick={() => removeFilmographyItem(index, mode)}
+            >
+              Remove Project
+            </button>
+          </div>
+        ))}
+
+      <button
+        style={styles.secondaryButton}
+        type="button"
+        onClick={() => addFilmographyItem(mode)}
+      >
+        + Add Project
+      </button>
+
       <h3 style={styles.subheading}>Gallery Images & Videos</h3>
 
       <input
@@ -638,8 +766,12 @@ export default function AdminSpotlight() {
             <article key={profile.id} style={styles.profileCard}>
               <div>
                 <p style={styles.kicker}>Aset Spotlight</p>
-                <h3 style={styles.profileName}>{profile.alias || profile.name}</h3>
-                {profile.alias && <p style={styles.profileAlias}>{profile.name}</p>}
+                <h3 style={styles.profileName}>
+                  {profile.alias || profile.name}
+                </h3>
+                {profile.alias && (
+                  <p style={styles.profileAlias}>{profile.name}</p>
+                )}
                 <p style={styles.muted}>Slug: {profile.slug}</p>
                 <p style={styles.muted}>Status: {profile.status}</p>
                 <p style={styles.muted}>
@@ -651,6 +783,12 @@ export default function AdminSpotlight() {
                   {Array.isArray(profile.gallery) ? profile.gallery.length : 0}
                 </p>
                 <p style={styles.muted}>
+                  Filmography Projects:{" "}
+                  {Array.isArray(profile.filmography)
+                    ? profile.filmography.length
+                    : 0}
+                </p>
+                <p style={styles.muted}>
                   Verified Presence:{" "}
                   {profile.representation?.official_presence?.instagram_url ||
                   profile.representation?.official_presence?.youtube_url
@@ -660,7 +798,10 @@ export default function AdminSpotlight() {
               </div>
 
               <div style={styles.actions}>
-                <button style={styles.smallButton} onClick={() => startEdit(profile)}>
+                <button
+                  style={styles.smallButton}
+                  onClick={() => startEdit(profile)}
+                >
                   Edit Profile
                 </button>
 
@@ -838,6 +979,14 @@ const styles = {
     display: "block",
     marginBottom: "12px",
     background: "#000",
+  },
+
+  filmCard: {
+    border: "1px solid rgba(255,255,255,0.1)",
+    padding: "16px",
+    marginBottom: "14px",
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.045), rgba(255,255,255,0.018))",
   },
 
   profileCard: {
