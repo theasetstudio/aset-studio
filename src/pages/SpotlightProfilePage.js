@@ -8,6 +8,7 @@ export default function SpotlightProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -30,6 +31,7 @@ export default function SpotlightProfilePage() {
       }
 
       setProfile(data);
+      setActiveIndex(0);
       setLoading(false);
     };
 
@@ -70,9 +72,7 @@ export default function SpotlightProfilePage() {
   const bibliography = asArray(profile.bibliography);
   const fanClub = profile.fan_club || null;
   const representation = profile.representation || null;
-
-  const leadGalleryItem = gallery[0];
-  const supportingGallery = gallery.slice(1);
+  const leadGalleryItem = gallery[activeIndex] || gallery[0];
 
   const renderCollection = (title, items, emptyText) => {
     const safeItems = asArray(items);
@@ -212,9 +212,14 @@ export default function SpotlightProfilePage() {
       </section>
 
       <section className="section">
-        <div className="section-heading">
-          <p className="section-kicker">Visual Record</p>
-          <h2 className="section-title">Gallery</h2>
+        <div className="section-heading gallery-heading">
+          <div>
+            <p className="section-kicker">Visual Record</p>
+            <h2 className="section-title">Gallery</h2>
+          </div>
+          {gallery.length > 1 && (
+            <p className="gallery-instruction">Select a frame to feature it.</p>
+          )}
         </div>
 
         {gallery.length > 0 ? (
@@ -225,7 +230,7 @@ export default function SpotlightProfilePage() {
 
                 {(leadGalleryItem.title || leadGalleryItem.caption) && (
                   <figcaption>
-                    <p className="meta">Lead Frame</p>
+                    <p className="meta">Selected Frame</p>
                     {leadGalleryItem.title && <h3>{leadGalleryItem.title}</h3>}
                     {leadGalleryItem.caption && <p>{leadGalleryItem.caption}</p>}
                   </figcaption>
@@ -233,29 +238,43 @@ export default function SpotlightProfilePage() {
               </figure>
             )}
 
-            {supportingGallery.length > 0 && (
-              <div className="supporting-gallery">
-                {supportingGallery.map((item, index) => (
-                  <figure className="supporting-card" key={`gallery-${index}`}>
-                    {renderGalleryMedia(item, "supporting-media")}
+            <div className="supporting-gallery">
+              {gallery.map((item, index) => (
+                <button
+                  type="button"
+                  className={`supporting-card ${
+                    index === activeIndex ? "active" : ""
+                  }`}
+                  key={`gallery-${index}`}
+                  onClick={() => setActiveIndex(index)}
+                  aria-label={`Feature gallery image ${index + 1}`}
+                >
+                  <span className="thumb-number">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
 
-                    {(item.title || item.caption) && (
-                      <figcaption>
-                        {item.title && <h3>{item.title}</h3>}
-                        {item.caption && <p>{item.caption}</p>}
-                      </figcaption>
-                    )}
-                  </figure>
-                ))}
-              </div>
-            )}
+                  {renderGalleryMedia(item, "supporting-media")}
+
+                  {(item.title || item.caption) && (
+                    <span className="thumb-caption">
+                      {item.title && <strong>{item.title}</strong>}
+                      {item.caption && <span>{item.caption}</span>}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <p className="empty">No spotlight gallery images added yet.</p>
         )}
       </section>
 
-      {renderCollection("Honors & Recognition", awards, "No honors or recognition listed yet.")}
+      {renderCollection(
+        "Honors & Recognition",
+        awards,
+        "No honors or recognition listed yet."
+      )}
       {renderCollection("Filmography", filmography, "No filmography listed yet.")}
       {renderCollection("Discography", discography, "No discography listed yet.")}
       {renderCollection("Bibliography", bibliography, "No bibliography listed yet.")}
@@ -269,7 +288,12 @@ export default function SpotlightProfilePage() {
             <h3>{fanClub.name || "Official Fan Club"}</h3>
             {fanClub.description && <p>{fanClub.description}</p>}
             {fanClub.link && (
-              <a href={fanClub.link} target="_blank" rel="noreferrer" className="gold-link">
+              <a
+                href={fanClub.link}
+                target="_blank"
+                rel="noreferrer"
+                className="gold-link"
+              >
                 Enter Official Fan Club
               </a>
             )}
@@ -290,7 +314,10 @@ export default function SpotlightProfilePage() {
                 <h3>Agent</h3>
                 {representation.agent.name && <p>{representation.agent.name}</p>}
                 {representation.agent.email && (
-                  <a href={`mailto:${representation.agent.email}`} className="gold-link">
+                  <a
+                    href={`mailto:${representation.agent.email}`}
+                    className="gold-link"
+                  >
                     {representation.agent.email}
                   </a>
                 )}
@@ -300,9 +327,14 @@ export default function SpotlightProfilePage() {
             {representation.aset_studio && (
               <article className="archive-card">
                 <h3>The Aset Studio</h3>
-                {representation.aset_studio.name && <p>{representation.aset_studio.name}</p>}
+                {representation.aset_studio.name && (
+                  <p>{representation.aset_studio.name}</p>
+                )}
                 {representation.aset_studio.email && (
-                  <a href={`mailto:${representation.aset_studio.email}`} className="gold-link">
+                  <a
+                    href={`mailto:${representation.aset_studio.email}`}
+                    className="gold-link"
+                  >
                     {representation.aset_studio.email}
                   </a>
                 )}
@@ -473,6 +505,21 @@ const baseStyles = `
     letter-spacing: -0.06em;
   }
 
+  .gallery-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 22px;
+    align-items: end;
+  }
+
+  .gallery-instruction {
+    margin: 0 0 34px;
+    color: #bda889;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
   .reel-frame {
     background: #000;
     border: 1px solid rgba(255,255,255,0.12);
@@ -547,8 +594,7 @@ const baseStyles = `
     align-items: stretch;
   }
 
-  .lead-gallery-card,
-  .supporting-card {
+  .lead-gallery-card {
     margin: 0;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,0.1);
@@ -562,12 +608,88 @@ const baseStyles = `
     object-fit: cover;
     display: block;
     background: #000;
+    animation: galleryReveal 0.28s ease;
+  }
+
+  @keyframes galleryReveal {
+    from {
+      opacity: 0.68;
+      transform: scale(0.992);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   .supporting-gallery {
     display: grid;
     grid-template-columns: 1fr;
     gap: 20px;
+  }
+
+  .supporting-card {
+    position: relative;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    text-align: left;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.035);
+    color: inherit;
+    box-shadow: 0 18px 60px rgba(0,0,0,0.28);
+    opacity: 0.72;
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease,
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .supporting-card:hover {
+    opacity: 1;
+    transform: translateY(-2px);
+    border-color: rgba(216,173,96,0.48);
+  }
+
+  .supporting-card.active {
+    opacity: 1;
+    border-color: #d8ad60;
+    box-shadow:
+      0 0 0 1px rgba(216,173,96,0.42),
+      0 22px 70px rgba(0,0,0,0.46);
+  }
+
+  .supporting-card.active:after {
+    content: "Selected";
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 7px 10px;
+    background: rgba(0,0,0,0.72);
+    border: 1px solid rgba(216,173,96,0.58);
+    color: #f6d796;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 800;
+  }
+
+  .thumb-number {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+    padding: 7px 9px;
+    background: rgba(0,0,0,0.58);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: #e1c280;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    font-weight: 800;
   }
 
   .supporting-media {
@@ -578,16 +700,21 @@ const baseStyles = `
     background: #000;
   }
 
+  .thumb-caption,
   figcaption {
+    display: block;
     padding: 18px;
   }
 
+  .thumb-caption strong,
   figcaption h3 {
+    display: block;
     color: #fff1d7;
     font-size: 20px;
     margin: 0 0 8px;
   }
 
+  .thumb-caption span,
   figcaption p {
     color: #d8cab6;
     font-size: 14px;
@@ -679,6 +806,14 @@ const baseStyles = `
     .cinematic-gallery {
       grid-template-columns: 1fr;
       gap: 30px;
+    }
+
+    .gallery-heading {
+      display: block;
+    }
+
+    .gallery-instruction {
+      margin: -12px 0 28px;
     }
 
     .portrait-shell {
