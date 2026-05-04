@@ -10,6 +10,7 @@ export default function SpotlightProfilePage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showFullBio, setShowFullBio] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -34,6 +35,7 @@ export default function SpotlightProfilePage() {
       setProfile(data);
       setActiveIndex(0);
       setIsTransitioning(false);
+      setShowFullBio(false);
       setLoading(false);
     };
 
@@ -225,10 +227,32 @@ export default function SpotlightProfilePage() {
 
       <section className="section bio-section">
         <p className="section-kicker">Personal Archive</p>
-        <h2 className="section-title">Bio</h2>
-        <p className="bio">
-          {profile.bio || "This personal archive has not been written yet."}
-        </p>
+        <h2 className="section-title">Profile</h2>
+
+        <div className="bio-wrapper">
+          <div className="bio-intro">
+            <p>
+              Cinematic creator. Storyteller. On-screen presence shaping
+              controlled, immersive worlds.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="bio-toggle"
+            onClick={() => setShowFullBio((prev) => !prev)}
+          >
+            {showFullBio ? "Hide Full Profile" : "Read Full Profile"}
+          </button>
+
+          {showFullBio && (
+            <div className="bio-full">
+              <p>
+                {profile.bio || "This personal archive has not been written yet."}
+              </p>
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="section">
@@ -311,8 +335,8 @@ export default function SpotlightProfilePage() {
                   <p className="presence-badge">Studio-Approved Link</p>
                   <h3>Instagram</h3>
                   <p>
-                    This verified external presence helps visitors find the official
-                    account and avoid scam or imitation profiles.
+                    This verified external presence helps visitors find the
+                    official account and avoid scam or imitation profiles.
                   </p>
                 </div>
 
@@ -585,6 +609,70 @@ const baseStyles = `
     margin: 0 0 28px;
     color: #fff7e8;
     letter-spacing: -0.06em;
+  }
+
+  .bio-wrapper {
+    max-width: 920px;
+  }
+
+  .bio-intro {
+    margin-bottom: 22px;
+  }
+
+  .bio-intro p {
+    font-size: clamp(22px, 2.6vw, 34px);
+    line-height: 1.36;
+    color: #fff4dc;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  .bio-toggle {
+    background: transparent;
+    border: 1px solid rgba(216,173,96,0.6);
+    color: #d8ad60;
+    padding: 13px 18px;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-bottom: 24px;
+    font-weight: 900;
+  }
+
+  .bio-toggle:hover {
+    background: rgba(216,173,96,0.1);
+    color: #ffe0a0;
+  }
+
+  .bio-full {
+    animation: bioFadeIn 0.42s ease;
+    padding: 26px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background:
+      radial-gradient(circle at top left, rgba(216,173,96,0.08), transparent 38%),
+      rgba(255,255,255,0.025);
+  }
+
+  .bio-full p {
+    color: #eadfcd;
+    font-size: 17px;
+    line-height: 1.92;
+    margin: 0;
+    white-space: pre-line;
+  }
+
+  @keyframes bioFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .gallery-heading {
