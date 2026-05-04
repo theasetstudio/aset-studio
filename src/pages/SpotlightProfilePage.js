@@ -38,36 +38,10 @@ export default function SpotlightProfilePage() {
 
   const asArray = (value) => (Array.isArray(value) ? value : []);
 
-  const renderCollection = (title, items, emptyText) => {
-    const safeItems = asArray(items);
-
-    return (
-      <section className="section">
-        <p className="section-kicker">Aset Archive</p>
-        <h2 className="section-title">{title}</h2>
-
-        {safeItems.length > 0 ? (
-          <div className="card-grid">
-            {safeItems.map((item, index) => (
-              <article className="card" key={`${title}-${index}`}>
-                {(item.title || item.name) && <h3>{item.title || item.name}</h3>}
-                {item.year && <p className="meta">{item.year}</p>}
-                {item.role && <p>{item.role}</p>}
-                {item.description && <p>{item.description}</p>}
-                {item.caption && <p>{item.caption}</p>}
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p className="empty">{emptyText}</p>
-        )}
-      </section>
-    );
-  };
-
   if (loading) {
     return (
-      <main className="page">
+      <main className="spotlight-page">
+        <style>{baseStyles}</style>
         <p className="loading">Loading Aset Spotlight...</p>
       </main>
     );
@@ -75,7 +49,8 @@ export default function SpotlightProfilePage() {
 
   if (!profile) {
     return (
-      <main className="page">
+      <main className="spotlight-page">
+        <style>{baseStyles}</style>
         <section className="not-found">
           <p className="kicker">The Aset Studio</p>
           <h1>Spotlight Not Found</h1>
@@ -96,342 +71,66 @@ export default function SpotlightProfilePage() {
   const fanClub = profile.fan_club || null;
   const representation = profile.representation || null;
 
+  const leadGalleryItem = gallery[0];
+  const supportingGallery = gallery.slice(1);
+
+  const renderCollection = (title, items, emptyText) => {
+    const safeItems = asArray(items);
+
+    return (
+      <section className="section">
+        <p className="section-kicker">Aset Archive</p>
+        <h2 className="section-title">{title}</h2>
+
+        {safeItems.length > 0 ? (
+          <div className="card-grid">
+            {safeItems.map((item, index) => (
+              <article className="archive-card" key={`${title}-${index}`}>
+                {(item.title || item.name) && <h3>{item.title || item.name}</h3>}
+                {item.year && <p className="meta">{item.year}</p>}
+                {item.role && <p>{item.role}</p>}
+                {item.description && <p>{item.description}</p>}
+                {item.caption && <p>{item.caption}</p>}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty">{emptyText}</p>
+        )}
+      </section>
+    );
+  };
+
+  const renderGalleryMedia = (item, className = "") => {
+    if (!item || !item.url) return null;
+
+    if (item.type === "video") {
+      return (
+        <video
+          src={item.url}
+          controls
+          playsInline
+          preload="metadata"
+          className={className}
+        />
+      );
+    }
+
+    return (
+      <img
+        src={item.url}
+        alt={item.caption || item.title || profile.name || "Aset Spotlight gallery"}
+        className={className}
+      />
+    );
+  };
+
   return (
-    <main className="page">
-      <style>{`
-        .page {
-          min-height: 100vh;
-          background:
-            radial-gradient(circle at top left, rgba(169,112,42,0.18), transparent 34%),
-            linear-gradient(180deg, #050505 0%, #0a0806 55%, #000 100%);
-          color: #f5efe5;
-          padding: 110px 6vw 70px;
-        }
-
-        .loading {
-          color: #d8c6aa;
-          font-size: 16px;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .hero {
-          max-width: 1280px;
-          margin: 0 auto 70px;
-          display: grid;
-          grid-template-columns: minmax(280px, 0.9fr) minmax(300px, 1fr);
-          gap: 48px;
-          align-items: center;
-        }
-
-        .image-panel {
-          border: 1px solid rgba(214, 174, 101, 0.22);
-          background: rgba(255, 255, 255, 0.03);
-          box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
-          overflow: hidden;
-        }
-
-        .hero-image {
-          width: 100%;
-          height: min(760px, 78vh);
-          object-fit: cover;
-          display: block;
-        }
-
-        .image-placeholder {
-          min-height: 600px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #b89762;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-        }
-
-        .identity {
-          padding: 30px 0;
-        }
-
-        .kicker,
-        .section-kicker {
-          color: #d7b46c;
-          font-size: 11px;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          font-weight: 700;
-          margin: 0 0 14px;
-        }
-
-        .alias {
-          font-size: clamp(56px, 8vw, 118px);
-          line-height: 0.9;
-          margin: 0 0 16px;
-          letter-spacing: -0.05em;
-          text-transform: uppercase;
-          color: #ffffff;
-        }
-
-        .name {
-          font-size: clamp(24px, 3vw, 44px);
-          margin: 0 0 22px;
-          color: #ead7b4;
-          font-weight: 600;
-          letter-spacing: 0.03em;
-        }
-
-        .role {
-          color: #c9b89e;
-          font-size: 15px;
-          line-height: 1.8;
-          max-width: 720px;
-          margin: 0 0 30px;
-        }
-
-        .statement {
-          border-left: 3px solid #d7a84f;
-          padding: 22px 0 22px 24px;
-          max-width: 760px;
-        }
-
-        .statement p {
-          font-size: clamp(21px, 2.4vw, 34px);
-          line-height: 1.3;
-          color: #fff4df;
-          margin: 0;
-          font-weight: 700;
-        }
-
-        .screening {
-          max-width: 1080px;
-          margin: 0 auto 48px;
-          padding: 34px;
-          border: 1px solid rgba(214, 174, 101, 0.18);
-          background:
-            radial-gradient(circle at top right, rgba(215,168,79,0.10), transparent 36%),
-            linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
-        }
-
-        .section {
-          max-width: 1280px;
-          margin: 0 auto 34px;
-          padding: 38px 0;
-          border-top: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .section-title,
-        .screening-title {
-          font-size: clamp(32px, 5vw, 68px);
-          margin: 0 0 24px;
-          color: #fff7e8;
-          letter-spacing: -0.05em;
-        }
-
-        .reel-frame {
-          background: #000;
-          border: 1px solid rgba(255,255,255,0.12);
-          box-shadow: 0 26px 70px rgba(0,0,0,0.55);
-          overflow: hidden;
-        }
-
-        .video {
-          width: 100%;
-          max-height: 620px;
-          background: #000;
-          display: block;
-        }
-
-        .screening-note {
-          color: #b8aa96;
-          font-size: 12px;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          margin: 14px 0 0;
-        }
-
-        .screening-meta {
-          margin-top: 18px;
-          padding-top: 16px;
-          border-top: 1px solid rgba(255,255,255,0.08);
-          max-width: 900px;
-        }
-
-        .screening-meta h3 {
-          font-size: 22px;
-          color: #fff4dd;
-          margin: 0 0 6px;
-          letter-spacing: 0.02em;
-        }
-
-        .screening-meta p {
-          font-size: 15px;
-          color: #d9ccb8;
-          line-height: 1.7;
-          margin: 0;
-        }
-
-        .empty-screening {
-          min-height: 240px;
-          border: 1px solid rgba(215, 168, 79, 0.22);
-          background: radial-gradient(circle at center, rgba(215,168,79,0.12), rgba(0,0,0,0.55));
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 30px;
-          text-align: center;
-        }
-
-        .empty-screening p {
-          color: #d9c49c;
-          font-size: 17px;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          max-width: 760px;
-          line-height: 1.7;
-          margin: 0;
-        }
-
-        .bio {
-          color: #e8dcc8;
-          font-size: 18px;
-          line-height: 1.95;
-          max-width: 980px;
-          margin: 0;
-        }
-
-        .card-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: 18px;
-        }
-
-        .card {
-          padding: 24px;
-          border: 1px solid rgba(255,255,255,0.1);
-          background: rgba(255,255,255,0.035);
-        }
-
-        .card h3 {
-          color: #fff4dd;
-          font-size: 20px;
-          margin: 0 0 8px;
-        }
-
-        .card p,
-        .empty {
-          color: #d9ccb8;
-          font-size: 15px;
-          line-height: 1.8;
-          margin: 8px 0;
-        }
-
-        .meta {
-          color: #b9975f !important;
-          font-size: 13px !important;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .gallery-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 18px;
-        }
-
-        .gallery-item {
-          margin: 0;
-          border: 1px solid rgba(255,255,255,0.1);
-          background: rgba(255,255,255,0.035);
-          overflow: hidden;
-        }
-
-        .gallery-item img,
-        .gallery-item video {
-          width: 100%;
-          height: 320px;
-          object-fit: cover;
-          display: block;
-          background: #000;
-        }
-
-        .gallery-caption {
-          padding: 14px;
-        }
-
-        .gallery-caption h3 {
-          color: #fff4dd;
-          font-size: 17px;
-          margin: 0 0 6px;
-        }
-
-        .gallery-caption p {
-          color: #d9ccb8;
-          font-size: 14px;
-          line-height: 1.6;
-          margin: 0;
-        }
-
-        .gold-link {
-          color: #d7b46c;
-          text-decoration: none;
-          font-weight: 700;
-        }
-
-        .footer {
-          max-width: 1280px;
-          margin: 40px auto 0;
-        }
-
-        .back-link {
-          color: #d7b46c;
-          text-decoration: none;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          font-size: 12px;
-        }
-
-        .not-found {
-          max-width: 720px;
-          margin: 0 auto;
-          padding: 80px 0;
-        }
-
-        .not-found h1 {
-          font-size: 52px;
-          margin: 0 0 18px;
-        }
-
-        @media (max-width: 900px) {
-          .page {
-            padding: 92px 22px 56px;
-          }
-
-          .hero {
-            grid-template-columns: 1fr;
-            gap: 30px;
-          }
-
-          .hero-image {
-            height: auto;
-            max-height: 680px;
-          }
-
-          .screening {
-            padding: 24px;
-          }
-
-          .alias {
-            font-size: clamp(48px, 15vw, 78px);
-          }
-
-          .video {
-            max-height: 520px;
-          }
-        }
-      `}</style>
+    <main className="spotlight-page">
+      <style>{baseStyles}</style>
 
       <section className="hero">
-        <div className="image-panel">
+        <div className="portrait-shell">
           {profile.profile_image_url ? (
             <img
               src={profile.profile_image_url}
@@ -445,16 +144,14 @@ export default function SpotlightProfilePage() {
 
         <div className="identity">
           <p className="kicker">Recognized by The Aset Studio</p>
+          <h1>{profile.alias || profile.name}</h1>
 
-          <h1 className="alias">{profile.alias || profile.name}</h1>
-
-          {profile.name && profile.alias && (
-            <h2 className="name">{profile.name}</h2>
-          )}
+          {profile.name && profile.alias && <h2>{profile.name}</h2>}
 
           {profile.role && <p className="role">{profile.role}</p>}
 
           <div className="statement">
+            <span>Studio Statement</span>
             <p>
               {profile.aset_statement ||
                 "A defining cinematic presence in authorship, visual storytelling, and controlled creative environments."}
@@ -464,8 +161,10 @@ export default function SpotlightProfilePage() {
       </section>
 
       <section className="screening">
-        <p className="section-kicker">Spotlight Reel</p>
-        <h2 className="screening-title">Featured Reel</h2>
+        <div className="section-heading">
+          <p className="section-kicker">Spotlight Reel</p>
+          <h2 className="section-title">Featured Screening</h2>
+        </div>
 
         {profile.featured_video_url ? (
           <>
@@ -478,14 +177,9 @@ export default function SpotlightProfilePage() {
                 loop
                 playsInline
                 preload="metadata"
-                className="video"
+                className="featured-video"
               />
             </div>
-
-            <p className="screening-note">
-              Short-form spotlight presentation. Full cinematic releases live in
-              Aset Cinema.
-            </p>
 
             {(profile.featured_video_title || profile.featured_video_caption) && (
               <div className="screening-meta">
@@ -497,19 +191,19 @@ export default function SpotlightProfilePage() {
                 )}
               </div>
             )}
+
+            <p className="screening-note">
+              Short-form spotlight presentation. Full cinematic releases live in Aset Cinema.
+            </p>
           </>
         ) : (
           <div className="empty-screening">
-            <p>
-              A spotlight reel is currently in development.
-              <br />
-              Full cinematic releases are presented within Aset Cinema.
-            </p>
+            <p>A spotlight reel is currently in development.</p>
           </div>
         )}
       </section>
 
-      <section className="section">
+      <section className="section bio-section">
         <p className="section-kicker">Personal Archive</p>
         <h2 className="section-title">Bio</h2>
         <p className="bio">
@@ -518,49 +212,50 @@ export default function SpotlightProfilePage() {
       </section>
 
       <section className="section">
-        <p className="section-kicker">Visual Record</p>
-        <h2 className="section-title">Gallery</h2>
+        <div className="section-heading">
+          <p className="section-kicker">Visual Record</p>
+          <h2 className="section-title">Gallery</h2>
+        </div>
 
         {gallery.length > 0 ? (
-          <div className="gallery-grid">
-            {gallery.map((item, index) => (
-              <figure className="gallery-item" key={`gallery-${index}`}>
-                {item.url && item.type === "video" ? (
-                  <video src={item.url} controls playsInline preload="metadata" />
-                ) : (
-                  item.url && (
-                    <img
-                      src={item.url}
-                      alt={
-                        item.caption ||
-                        item.title ||
-                        profile.name ||
-                        "Aset Spotlight gallery"
-                      }
-                    />
-                  )
-                )}
+          <div className="cinematic-gallery">
+            {leadGalleryItem && (
+              <figure className="lead-gallery-card">
+                {renderGalleryMedia(leadGalleryItem, "lead-gallery-media")}
 
-                {(item.title || item.caption) && (
-                  <figcaption className="gallery-caption">
-                    {item.title && <h3>{item.title}</h3>}
-                    {item.caption && <p>{item.caption}</p>}
+                {(leadGalleryItem.title || leadGalleryItem.caption) && (
+                  <figcaption>
+                    <p className="meta">Lead Frame</p>
+                    {leadGalleryItem.title && <h3>{leadGalleryItem.title}</h3>}
+                    {leadGalleryItem.caption && <p>{leadGalleryItem.caption}</p>}
                   </figcaption>
                 )}
               </figure>
-            ))}
+            )}
+
+            {supportingGallery.length > 0 && (
+              <div className="supporting-gallery">
+                {supportingGallery.map((item, index) => (
+                  <figure className="supporting-card" key={`gallery-${index}`}>
+                    {renderGalleryMedia(item, "supporting-media")}
+
+                    {(item.title || item.caption) && (
+                      <figcaption>
+                        {item.title && <h3>{item.title}</h3>}
+                        {item.caption && <p>{item.caption}</p>}
+                      </figcaption>
+                    )}
+                  </figure>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <p className="empty">No spotlight gallery images added yet.</p>
         )}
       </section>
 
-      {renderCollection(
-        "Honors & Recognition",
-        awards,
-        "No honors or recognition listed yet."
-      )}
-
+      {renderCollection("Honors & Recognition", awards, "No honors or recognition listed yet.")}
       {renderCollection("Filmography", filmography, "No filmography listed yet.")}
       {renderCollection("Discography", discography, "No discography listed yet.")}
       {renderCollection("Bibliography", bibliography, "No bibliography listed yet.")}
@@ -570,16 +265,11 @@ export default function SpotlightProfilePage() {
         <h2 className="section-title">Official Fan Club</h2>
 
         {fanClub && fanClub.enabled ? (
-          <article className="card">
+          <article className="archive-card">
             <h3>{fanClub.name || "Official Fan Club"}</h3>
             {fanClub.description && <p>{fanClub.description}</p>}
             {fanClub.link && (
-              <a
-                href={fanClub.link}
-                target="_blank"
-                rel="noreferrer"
-                className="gold-link"
-              >
+              <a href={fanClub.link} target="_blank" rel="noreferrer" className="gold-link">
                 Enter Official Fan Club
               </a>
             )}
@@ -596,14 +286,11 @@ export default function SpotlightProfilePage() {
         {representation ? (
           <div className="card-grid">
             {representation.agent && (
-              <article className="card">
+              <article className="archive-card">
                 <h3>Agent</h3>
                 {representation.agent.name && <p>{representation.agent.name}</p>}
                 {representation.agent.email && (
-                  <a
-                    href={`mailto:${representation.agent.email}`}
-                    className="gold-link"
-                  >
+                  <a href={`mailto:${representation.agent.email}`} className="gold-link">
                     {representation.agent.email}
                   </a>
                 )}
@@ -611,16 +298,11 @@ export default function SpotlightProfilePage() {
             )}
 
             {representation.aset_studio && (
-              <article className="card">
+              <article className="archive-card">
                 <h3>The Aset Studio</h3>
-                {representation.aset_studio.name && (
-                  <p>{representation.aset_studio.name}</p>
-                )}
+                {representation.aset_studio.name && <p>{representation.aset_studio.name}</p>}
                 {representation.aset_studio.email && (
-                  <a
-                    href={`mailto:${representation.aset_studio.email}`}
-                    className="gold-link"
-                  >
+                  <a href={`mailto:${representation.aset_studio.email}`} className="gold-link">
                     {representation.aset_studio.email}
                   </a>
                 )}
@@ -628,9 +310,7 @@ export default function SpotlightProfilePage() {
             )}
           </div>
         ) : (
-          <p className="empty">
-            Representation details have not been added yet.
-          </p>
+          <p className="empty">Representation details have not been added yet.</p>
         )}
       </section>
 
@@ -642,3 +322,382 @@ export default function SpotlightProfilePage() {
     </main>
   );
 }
+
+const baseStyles = `
+  .spotlight-page {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 16% 8%, rgba(194, 133, 54, 0.2), transparent 30%),
+      radial-gradient(circle at 88% 24%, rgba(114, 68, 26, 0.22), transparent 34%),
+      linear-gradient(180deg, #050403 0%, #0b0806 46%, #000 100%);
+    color: #f7efe1;
+    padding: 118px 6vw 76px;
+  }
+
+  .loading {
+    color: #d9c39d;
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .hero {
+    max-width: 1320px;
+    margin: 0 auto 82px;
+    display: grid;
+    grid-template-columns: minmax(280px, 0.82fr) minmax(320px, 1fr);
+    gap: 58px;
+    align-items: center;
+  }
+
+  .portrait-shell {
+    position: relative;
+    overflow: hidden;
+    min-height: 620px;
+    border: 1px solid rgba(222, 179, 95, 0.24);
+    background: rgba(255,255,255,0.035);
+    box-shadow: 0 34px 100px rgba(0,0,0,0.62);
+  }
+
+  .portrait-shell:after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, transparent 42%, rgba(0,0,0,0.64)),
+      linear-gradient(90deg, rgba(215,168,79,0.12), transparent 38%);
+    pointer-events: none;
+  }
+
+  .hero-image {
+    width: 100%;
+    height: min(780px, 78vh);
+    object-fit: cover;
+    display: block;
+  }
+
+  .image-placeholder {
+    min-height: 620px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #cda96c;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .kicker,
+  .section-kicker {
+    color: #d8ad60;
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin: 0 0 14px;
+  }
+
+  .identity h1 {
+    font-size: clamp(62px, 8.6vw, 132px);
+    line-height: 0.86;
+    margin: 0 0 20px;
+    letter-spacing: -0.075em;
+    text-transform: uppercase;
+    color: #fffaf0;
+  }
+
+  .identity h2 {
+    font-size: clamp(24px, 3vw, 46px);
+    margin: 0 0 22px;
+    color: #ead2a6;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .role {
+    color: #cdbfa8;
+    font-size: 15px;
+    line-height: 1.85;
+    max-width: 720px;
+    margin: 0 0 34px;
+  }
+
+  .statement {
+    max-width: 780px;
+    padding: 26px;
+    border: 1px solid rgba(218, 174, 94, 0.22);
+    background:
+      radial-gradient(circle at top left, rgba(215,168,79,0.13), transparent 42%),
+      rgba(255,255,255,0.035);
+  }
+
+  .statement span {
+    display: block;
+    color: #c79545;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    font-weight: 800;
+  }
+
+  .statement p {
+    font-size: clamp(21px, 2.4vw, 34px);
+    line-height: 1.32;
+    color: #fff4dc;
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .section,
+  .screening {
+    max-width: 1320px;
+    margin: 0 auto 36px;
+    padding: 42px 0;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .screening {
+    padding: 42px;
+    border: 1px solid rgba(218, 174, 94, 0.18);
+    background:
+      radial-gradient(circle at top right, rgba(215,168,79,0.12), transparent 38%),
+      linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
+    box-shadow: 0 22px 80px rgba(0,0,0,0.35);
+  }
+
+  .section-title {
+    font-size: clamp(34px, 5.4vw, 74px);
+    line-height: 0.95;
+    margin: 0 0 28px;
+    color: #fff7e8;
+    letter-spacing: -0.06em;
+  }
+
+  .reel-frame {
+    background: #000;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 28px 82px rgba(0,0,0,0.62);
+    overflow: hidden;
+  }
+
+  .featured-video {
+    width: 100%;
+    max-height: 640px;
+    display: block;
+    background: #000;
+  }
+
+  .screening-meta {
+    max-width: 900px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .screening-meta h3 {
+    color: #fff1d7;
+    font-size: 23px;
+    margin: 0 0 8px;
+  }
+
+  .screening-meta p,
+  .screening-note {
+    color: #cfc0aa;
+    font-size: 15px;
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  .screening-note {
+    margin-top: 16px;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .empty-screening {
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(215,168,79,0.22);
+    background: radial-gradient(circle at center, rgba(215,168,79,0.12), rgba(0,0,0,0.58));
+    text-align: center;
+  }
+
+  .empty-screening p,
+  .empty {
+    color: #d9c8a9;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .bio {
+    color: #eadfcd;
+    font-size: 18px;
+    line-height: 1.95;
+    max-width: 980px;
+    margin: 0;
+  }
+
+  .cinematic-gallery {
+    display: grid;
+    grid-template-columns: minmax(280px, 1.2fr) minmax(260px, 0.8fr);
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .lead-gallery-card,
+  .supporting-card {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.035);
+    box-shadow: 0 18px 60px rgba(0,0,0,0.28);
+  }
+
+  .lead-gallery-media {
+    width: 100%;
+    height: 680px;
+    object-fit: cover;
+    display: block;
+    background: #000;
+  }
+
+  .supporting-gallery {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .supporting-media {
+    width: 100%;
+    height: 330px;
+    object-fit: cover;
+    display: block;
+    background: #000;
+  }
+
+  figcaption {
+    padding: 18px;
+  }
+
+  figcaption h3 {
+    color: #fff1d7;
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+
+  figcaption p {
+    color: #d8cab6;
+    font-size: 14px;
+    line-height: 1.65;
+    margin: 0;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+    gap: 18px;
+  }
+
+  .archive-card {
+    padding: 25px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background:
+      linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.018));
+  }
+
+  .archive-card h3 {
+    color: #fff1d7;
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+
+  .archive-card p {
+    color: #d8cab6;
+    font-size: 15px;
+    line-height: 1.75;
+    margin: 8px 0;
+  }
+
+  .meta {
+    color: #c99b4f !important;
+    font-size: 12px !important;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 800;
+  }
+
+  .gold-link {
+    color: #d8ad60;
+    text-decoration: none;
+    font-weight: 800;
+  }
+
+  .gold-link:hover,
+  .back-link:hover {
+    color: #ffe0a0;
+  }
+
+  .footer {
+    max-width: 1320px;
+    margin: 44px auto 0;
+  }
+
+  .back-link {
+    color: #d8ad60;
+    text-decoration: none;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 12px;
+  }
+
+  .not-found {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 80px 0;
+  }
+
+  .not-found h1 {
+    font-size: 54px;
+    margin: 0 0 18px;
+  }
+
+  .not-found p {
+    color: #d8cab6;
+    line-height: 1.8;
+  }
+
+  @media (max-width: 980px) {
+    .spotlight-page {
+      padding: 96px 22px 58px;
+    }
+
+    .hero,
+    .cinematic-gallery {
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+
+    .portrait-shell {
+      min-height: auto;
+    }
+
+    .hero-image {
+      height: auto;
+      max-height: 720px;
+    }
+
+    .screening {
+      padding: 26px;
+    }
+
+    .lead-gallery-media,
+    .supporting-media {
+      height: auto;
+      max-height: 620px;
+    }
+  }
+`;
