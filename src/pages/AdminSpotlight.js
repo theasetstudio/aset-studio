@@ -409,21 +409,42 @@ export default function AdminSpotlight() {
         />
       )}
 
+      <h3 style={styles.subheading}>Studio Statement</h3>
+
+      <p style={styles.helpText}>
+        Short statement shown near the top of the public Spotlight profile. Keep
+        this sharp, cinematic, and positioning-focused.
+      </p>
+
       <textarea
         style={styles.textarea}
         name="aset_statement"
-        placeholder="Aset Statement"
+        placeholder="A defining cinematic presence in authorship, visual storytelling, and controlled creative environments."
         value={activeForm.aset_statement}
         onChange={(e) => handleChange(e, mode)}
       />
 
+      <h3 style={styles.subheading}>Full Profile Bio</h3>
+
+      <p style={styles.helpText}>
+        This is the full cinematic profile shown on the public Spotlight page.
+        Write this as a complete entertainment biography including origin,
+        experience, creative identity, current projects, and future direction.
+        This appears inside the “Read Full Profile” section.
+      </p>
+
       <textarea
-        style={styles.textarea}
+        style={{ ...styles.textarea, minHeight: "220px" }}
         name="bio"
-        placeholder="Personal Bio / Archive"
+        placeholder="Paste full cinematic biography here..."
         value={activeForm.bio}
         onChange={(e) => handleChange(e, mode)}
       />
+
+      <p style={styles.helpText}>
+        Tip: Use paragraph breaks. The Spotlight page preserves spacing for a
+        cinematic reading experience.
+      </p>
 
       <h3 style={styles.subheading}>Verified Official Presence</h3>
 
