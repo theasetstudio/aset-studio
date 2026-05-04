@@ -24,7 +24,8 @@ export default function AdminSpotlight() {
     representation: {
       official_presence: {
         instagram_url: "",
-        label: "Verified Instagram",
+        youtube_url: "",
+        label: "Verified Official Presence",
       },
     },
     status: "draft",
@@ -74,9 +75,11 @@ export default function AdminSpotlight() {
       official_presence: {
         instagram_url:
           profile.representation?.official_presence?.instagram_url || "",
+        youtube_url:
+          profile.representation?.official_presence?.youtube_url || "",
         label:
           profile.representation?.official_presence?.label ||
-          "Verified Instagram",
+          "Verified Official Presence",
       },
     },
   });
@@ -425,23 +428,21 @@ export default function AdminSpotlight() {
       <h3 style={styles.subheading}>Verified Official Presence</h3>
 
       <p style={styles.helpText}>
-        Add the official Instagram account for this Spotlight profile. This protects
-        artists from scam or fake accounts by giving visitors one studio-approved link.
+        Add official external accounts for this Spotlight profile. These links
+        help visitors avoid scam, fake, or imitation accounts.
       </p>
 
-      <div style={styles.grid}>
-        <input
-          style={styles.input}
-          placeholder="Label example: Verified Instagram"
-          value={
-            activeForm.representation?.official_presence?.label ||
-            "Verified Instagram"
-          }
-          onChange={(e) =>
-            updateOfficialPresence("label", e.target.value, mode)
-          }
-        />
+      <input
+        style={styles.input}
+        placeholder="Section Label example: Verified Official Presence"
+        value={
+          activeForm.representation?.official_presence?.label ||
+          "Verified Official Presence"
+        }
+        onChange={(e) => updateOfficialPresence("label", e.target.value, mode)}
+      />
 
+      <div style={styles.grid}>
         <input
           style={styles.input}
           placeholder="Official Instagram URL"
@@ -450,6 +451,17 @@ export default function AdminSpotlight() {
           }
           onChange={(e) =>
             updateOfficialPresence("instagram_url", e.target.value, mode)
+          }
+        />
+
+        <input
+          style={styles.input}
+          placeholder="Official YouTube Channel URL"
+          value={
+            activeForm.representation?.official_presence?.youtube_url || ""
+          }
+          onChange={(e) =>
+            updateOfficialPresence("youtube_url", e.target.value, mode)
           }
         />
       </div>
@@ -619,7 +631,8 @@ export default function AdminSpotlight() {
                 </p>
                 <p style={styles.muted}>
                   Verified Presence:{" "}
-                  {profile.representation?.official_presence?.instagram_url
+                  {profile.representation?.official_presence?.instagram_url ||
+                  profile.representation?.official_presence?.youtube_url
                     ? "Added"
                     : "Not added"}
                 </p>

@@ -74,10 +74,9 @@ export default function SpotlightProfilePage() {
   const bibliography = asArray(profile.bibliography);
   const fanClub = profile.fan_club || null;
   const representation = profile.representation || {};
-  const officialPresence = representation.official_presence || null;
+  const officialPresence = representation.official_presence || {};
   const officialInstagramUrl = officialPresence?.instagram_url || "";
-  const officialPresenceLabel =
-    officialPresence?.label || "Verified Instagram";
+  const officialYoutubeUrl = officialPresence?.youtube_url || "";
   const leadGalleryItem = gallery[activeIndex] || gallery[0];
 
   const handleGallerySelect = (index) => {
@@ -300,30 +299,56 @@ export default function SpotlightProfilePage() {
         )}
       </section>
 
-      {officialInstagramUrl && (
+      {(officialInstagramUrl || officialYoutubeUrl) && (
         <section className="section official-presence-section">
           <p className="section-kicker">Verified Official Presence</p>
           <h2 className="section-title">Official Presence</h2>
 
-          <article className="official-presence-card">
-            <div>
-              <p className="presence-badge">Studio-Approved Link</p>
-              <h3>{officialPresenceLabel}</h3>
-              <p>
-                This verified external presence helps visitors find the official
-                account and avoid scam or imitation profiles.
-              </p>
-            </div>
+          <div className="presence-grid">
+            {officialInstagramUrl && (
+              <article className="official-presence-card">
+                <div>
+                  <p className="presence-badge">Studio-Approved Link</p>
+                  <h3>Instagram</h3>
+                  <p>
+                    This verified external presence helps visitors find the official
+                    account and avoid scam or imitation profiles.
+                  </p>
+                </div>
 
-            <a
-              href={officialInstagramUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="presence-link"
-            >
-              Enter Official Profile
-            </a>
-          </article>
+                <a
+                  href={officialInstagramUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="presence-link"
+                >
+                  Enter Profile
+                </a>
+              </article>
+            )}
+
+            {officialYoutubeUrl && (
+              <article className="official-presence-card">
+                <div>
+                  <p className="presence-badge">Studio-Approved Link</p>
+                  <h3>YouTube Channel</h3>
+                  <p>
+                    Official video presence, releases, interviews, and
+                    studio-approved channel activity.
+                  </p>
+                </div>
+
+                <a
+                  href={officialYoutubeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="presence-link"
+                >
+                  Enter Channel
+                </a>
+              </article>
+            )}
+          </div>
         </section>
       )}
 
@@ -818,6 +843,12 @@ const baseStyles = `
   figcaption {
     position: relative;
     z-index: 5;
+  }
+
+  .presence-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
   }
 
   .official-presence-card {
