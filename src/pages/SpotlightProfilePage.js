@@ -473,6 +473,9 @@ export default function SpotlightProfilePage() {
               <video
                 src={profile.featured_video_url}
                 controls
+                autoPlay
+                muted
+                loop
                 playsInline
                 preload="metadata"
                 className="video"
