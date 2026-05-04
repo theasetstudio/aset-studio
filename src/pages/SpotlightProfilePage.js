@@ -202,11 +202,13 @@ export default function SpotlightProfilePage() {
         }
 
         .screening {
-          max-width: 1280px;
+          max-width: 1080px;
           margin: 0 auto 48px;
-          padding: 42px;
+          padding: 34px;
           border: 1px solid rgba(214, 174, 101, 0.18);
-          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
+          background:
+            radial-gradient(circle at top right, rgba(215,168,79,0.10), transparent 36%),
+            linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
         }
 
         .section {
@@ -224,16 +226,51 @@ export default function SpotlightProfilePage() {
           letter-spacing: -0.05em;
         }
 
+        .reel-frame {
+          background: #000;
+          border: 1px solid rgba(255,255,255,0.12);
+          box-shadow: 0 26px 70px rgba(0,0,0,0.55);
+          overflow: hidden;
+        }
+
         .video {
           width: 100%;
-          max-height: 720px;
+          max-height: 620px;
           background: #000;
-          border: 1px solid rgba(255,255,255,0.1);
           display: block;
         }
 
+        .screening-note {
+          color: #b8aa96;
+          font-size: 12px;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          margin: 14px 0 0;
+        }
+
+        .screening-meta {
+          margin-top: 18px;
+          padding-top: 16px;
+          border-top: 1px solid rgba(255,255,255,0.08);
+          max-width: 900px;
+        }
+
+        .screening-meta h3 {
+          font-size: 22px;
+          color: #fff4dd;
+          margin: 0 0 6px;
+          letter-spacing: 0.02em;
+        }
+
+        .screening-meta p {
+          font-size: 15px;
+          color: #d9ccb8;
+          line-height: 1.7;
+          margin: 0;
+        }
+
         .empty-screening {
-          min-height: 260px;
+          min-height: 240px;
           border: 1px solid rgba(215, 168, 79, 0.22);
           background: radial-gradient(circle at center, rgba(215,168,79,0.12), rgba(0,0,0,0.55));
           display: flex;
@@ -245,10 +282,10 @@ export default function SpotlightProfilePage() {
 
         .empty-screening p {
           color: #d9c49c;
-          font-size: 18px;
+          font-size: 17px;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          max-width: 720px;
+          max-width: 760px;
           line-height: 1.7;
           margin: 0;
         }
@@ -307,17 +344,30 @@ export default function SpotlightProfilePage() {
           overflow: hidden;
         }
 
-        .gallery-item img {
+        .gallery-item img,
+        .gallery-item video {
           width: 100%;
           height: 320px;
           object-fit: cover;
           display: block;
+          background: #000;
         }
 
-        .gallery-item figcaption {
-          color: #d9ccb8;
+        .gallery-caption {
           padding: 14px;
+        }
+
+        .gallery-caption h3 {
+          color: #fff4dd;
+          font-size: 17px;
+          margin: 0 0 6px;
+        }
+
+        .gallery-caption p {
+          color: #d9ccb8;
           font-size: 14px;
+          line-height: 1.6;
+          margin: 0;
         }
 
         .gold-link {
@@ -367,11 +417,15 @@ export default function SpotlightProfilePage() {
           }
 
           .screening {
-            padding: 26px;
+            padding: 24px;
           }
 
           .alias {
             font-size: clamp(48px, 15vw, 78px);
+          }
+
+          .video {
+            max-height: 520px;
           }
         }
       `}</style>
@@ -410,35 +464,43 @@ export default function SpotlightProfilePage() {
       </section>
 
       <section className="screening">
-        <p className="section-kicker">Featured Presence</p>
-        <h2 className="screening-title">Featured Screening</h2>
+        <p className="section-kicker">Spotlight Reel</p>
+        <h2 className="screening-title">Featured Reel</h2>
 
         {profile.featured_video_url ? (
           <>
-            <video
-              src={profile.featured_video_url}
-              controls
-              playsInline
-              className="video"
-            />
+            <div className="reel-frame">
+              <video
+                src={profile.featured_video_url}
+                controls
+                playsInline
+                preload="metadata"
+                className="video"
+              />
+            </div>
+
+            <p className="screening-note">
+              Short-form spotlight presentation. Full cinematic releases live in
+              Aset Cinema.
+            </p>
 
             {(profile.featured_video_title || profile.featured_video_caption) && (
-              <article className="card">
+              <div className="screening-meta">
                 {profile.featured_video_title && (
                   <h3>{profile.featured_video_title}</h3>
                 )}
                 {profile.featured_video_caption && (
                   <p>{profile.featured_video_caption}</p>
                 )}
-              </article>
+              </div>
             )}
           </>
         ) : (
           <div className="empty-screening">
             <p>
-              A featured screening is currently in development.
+              A spotlight reel is currently in development.
               <br />
-              This presentation will be released by The Aset Studio.
+              Full cinematic releases are presented within Aset Cinema.
             </p>
           </div>
         )}
@@ -458,15 +520,30 @@ export default function SpotlightProfilePage() {
 
         {gallery.length > 0 ? (
           <div className="gallery-grid">
-            {gallery.map((image, index) => (
+            {gallery.map((item, index) => (
               <figure className="gallery-item" key={`gallery-${index}`}>
-                {image.url && (
-                  <img
-                    src={image.url}
-                    alt={image.caption || profile.name || "Aset Spotlight gallery"}
-                  />
+                {item.url && item.type === "video" ? (
+                  <video src={item.url} controls playsInline preload="metadata" />
+                ) : (
+                  item.url && (
+                    <img
+                      src={item.url}
+                      alt={
+                        item.caption ||
+                        item.title ||
+                        profile.name ||
+                        "Aset Spotlight gallery"
+                      }
+                    />
+                  )
                 )}
-                {image.caption && <figcaption>{image.caption}</figcaption>}
+
+                {(item.title || item.caption) && (
+                  <figcaption className="gallery-caption">
+                    {item.title && <h3>{item.title}</h3>}
+                    {item.caption && <p>{item.caption}</p>}
+                  </figcaption>
+                )}
               </figure>
             ))}
           </div>
