@@ -9,6 +9,7 @@ export default function SpotlightProfilePage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -32,6 +33,7 @@ export default function SpotlightProfilePage() {
 
       setProfile(data);
       setActiveIndex(0);
+      setIsTransitioning(false);
       setLoading(false);
     };
 
@@ -73,6 +75,17 @@ export default function SpotlightProfilePage() {
   const fanClub = profile.fan_club || null;
   const representation = profile.representation || null;
   const leadGalleryItem = gallery[activeIndex] || gallery[0];
+
+  const handleGallerySelect = (index) => {
+    if (index === activeIndex) return;
+
+    setIsTransitioning(true);
+
+    window.setTimeout(() => {
+      setActiveIndex(index);
+      setIsTransitioning(false);
+    }, 120);
+  };
 
   const renderCollection = (title, items, emptyText) => {
     const safeItems = asArray(items);
@@ -217,6 +230,7 @@ export default function SpotlightProfilePage() {
             <p className="section-kicker">Visual Record</p>
             <h2 className="section-title">Gallery</h2>
           </div>
+
           {gallery.length > 1 && (
             <p className="gallery-instruction">Select a frame to feature it.</p>
           )}
@@ -226,7 +240,10 @@ export default function SpotlightProfilePage() {
           <div className="cinematic-gallery">
             {leadGalleryItem && (
               <figure className="lead-gallery-card">
-                {renderGalleryMedia(leadGalleryItem, "lead-gallery-media")}
+                {renderGalleryMedia(
+                  leadGalleryItem,
+                  `lead-gallery-media ${isTransitioning ? "transitioning" : ""}`
+                )}
 
                 {(leadGalleryItem.title || leadGalleryItem.caption) && (
                   <figcaption>
@@ -246,8 +263,9 @@ export default function SpotlightProfilePage() {
                     index === activeIndex ? "active" : ""
                   }`}
                   key={`gallery-${index}`}
-                  onClick={() => setActiveIndex(index)}
+                  onClick={() => handleGallerySelect(index)}
                   aria-label={`Feature gallery image ${index + 1}`}
+                  aria-pressed={index === activeIndex}
                 >
                   <span className="thumb-number">
                     {String(index + 1).padStart(2, "0")}
@@ -595,11 +613,23 @@ const baseStyles = `
   }
 
   .lead-gallery-card {
+    position: relative;
     margin: 0;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,0.1);
     background: rgba(255,255,255,0.035);
-    box-shadow: 0 18px 60px rgba(0,0,0,0.28);
+    box-shadow: 0 30px 90px rgba(0,0,0,0.55);
+  }
+
+  .lead-gallery-card:after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at center, rgba(216,173,96,0.12), transparent 60%),
+      linear-gradient(180deg, transparent 58%, rgba(0,0,0,0.2));
+    opacity: 0.65;
   }
 
   .lead-gallery-media {
@@ -608,19 +638,17 @@ const baseStyles = `
     object-fit: cover;
     display: block;
     background: #000;
-    animation: galleryReveal 0.28s ease;
+    transform: scale(1.02);
+    transition:
+      transform 0.5s ease,
+      filter 0.5s ease,
+      opacity 0.35s ease;
   }
 
-  @keyframes galleryReveal {
-    from {
-      opacity: 0.68;
-      transform: scale(0.992);
-    }
-
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+  .lead-gallery-media.transitioning {
+    transform: scale(1.06);
+    filter: brightness(1.1) contrast(1.04);
+    opacity: 0.86;
   }
 
   .supporting-gallery {
@@ -637,30 +665,44 @@ const baseStyles = `
     overflow: hidden;
     text-align: left;
     cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
     color: inherit;
-    box-shadow: 0 18px 60px rgba(0,0,0,0.28);
-    opacity: 0.72;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    opacity: 0.6;
     transition:
-      opacity 0.25s ease,
-      transform 0.25s ease,
-      border-color 0.25s ease,
-      box-shadow 0.25s ease;
+      opacity 0.35s ease,
+      transform 0.35s ease,
+      border-color 0.35s ease,
+      box-shadow 0.35s ease;
   }
 
   .supporting-card:hover {
     opacity: 1;
-    transform: translateY(-2px);
-    border-color: rgba(216,173,96,0.48);
+    transform: translateY(-4px) scale(1.02);
+    border-color: rgba(216,173,96,0.5);
+    box-shadow:
+      0 20px 60px rgba(0,0,0,0.4),
+      0 0 30px rgba(216,173,96,0.15);
   }
 
   .supporting-card.active {
     opacity: 1;
+    transform: scale(1.03);
     border-color: #d8ad60;
     box-shadow:
-      0 0 0 1px rgba(216,173,96,0.42),
-      0 22px 70px rgba(0,0,0,0.46);
+      0 0 0 1px rgba(216,173,96,0.5),
+      0 25px 70px rgba(0,0,0,0.5),
+      0 0 40px rgba(216,173,96,0.2);
+  }
+
+  .supporting-card.active:before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(216,173,96,0.4);
+    pointer-events: none;
+    z-index: 3;
   }
 
   .supporting-card.active:after {
@@ -668,12 +710,13 @@ const baseStyles = `
     position: absolute;
     top: 12px;
     right: 12px;
-    padding: 7px 10px;
-    background: rgba(0,0,0,0.72);
-    border: 1px solid rgba(216,173,96,0.58);
+    z-index: 4;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(216,173,96,0.7);
     color: #f6d796;
     font-size: 10px;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     font-weight: 800;
   }
@@ -682,10 +725,10 @@ const baseStyles = `
     position: absolute;
     top: 12px;
     left: 12px;
-    z-index: 2;
-    padding: 7px 9px;
-    background: rgba(0,0,0,0.58);
-    border: 1px solid rgba(255,255,255,0.14);
+    z-index: 4;
+    padding: 6px 10px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid rgba(255,255,255,0.2);
     color: #e1c280;
     font-size: 10px;
     letter-spacing: 0.14em;
@@ -698,6 +741,17 @@ const baseStyles = `
     object-fit: cover;
     display: block;
     background: #000;
+    transition: transform 0.4s ease, filter 0.4s ease;
+  }
+
+  .supporting-card:hover .supporting-media {
+    transform: scale(1.04);
+    filter: brightness(1.05);
+  }
+
+  .supporting-card.active .supporting-media {
+    transform: scale(1.03);
+    filter: brightness(1.08) contrast(1.04);
   }
 
   .thumb-caption,
@@ -720,6 +774,11 @@ const baseStyles = `
     font-size: 14px;
     line-height: 1.65;
     margin: 0;
+  }
+
+  figcaption {
+    position: relative;
+    z-index: 5;
   }
 
   .card-grid {
@@ -833,6 +892,10 @@ const baseStyles = `
     .supporting-media {
       height: auto;
       max-height: 620px;
+    }
+
+    .supporting-card.active {
+      transform: none;
     }
   }
 `;
