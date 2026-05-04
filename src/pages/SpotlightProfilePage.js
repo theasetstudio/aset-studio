@@ -92,6 +92,17 @@ export default function SpotlightProfilePage() {
     }, 120);
   };
 
+  const getStatusClass = (status = "") => {
+    const normalized = status.toLowerCase();
+
+    if (normalized.includes("development")) return "film-status development";
+    if (normalized.includes("pre")) return "film-status preproduction";
+    if (normalized.includes("production")) return "film-status production";
+    if (normalized.includes("released")) return "film-status released";
+
+    return "film-status";
+  };
+
   const renderCollection = (title, items, emptyText) => {
     const safeItems = asArray(items);
 
@@ -118,6 +129,42 @@ export default function SpotlightProfilePage() {
       </section>
     );
   };
+
+  const renderFilmography = () => (
+    <section className="section">
+      <p className="section-kicker">Aset Archive</p>
+      <h2 className="section-title">Filmography</h2>
+
+      {filmography.length > 0 ? (
+        <div className="filmography-grid">
+          {filmography.map((item, index) => (
+            <article className="filmography-card" key={`filmography-${index}`}>
+              <div className="filmography-topline">
+                {(item.title || item.name) && (
+                  <h3>{item.title || item.name}</h3>
+                )}
+
+                {item.status && (
+                  <span className={getStatusClass(item.status)}>
+                    {item.status}
+                  </span>
+                )}
+              </div>
+
+              {item.year && <p className="meta">{item.year}</p>}
+              {item.role && <p className="film-role">{item.role}</p>}
+              {item.description && (
+                <p className="film-description">{item.description}</p>
+              )}
+              {item.caption && <p className="film-description">{item.caption}</p>}
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="empty">No filmography listed yet.</p>
+      )}
+    </section>
+  );
 
   const renderGalleryMedia = (item, className = "") => {
     if (!item || !item.url) return null;
@@ -381,7 +428,7 @@ export default function SpotlightProfilePage() {
         awards,
         "No honors or recognition listed yet."
       )}
-      {renderCollection("Filmography", filmography, "No filmography listed yet.")}
+      {renderFilmography()}
       {renderCollection("Discography", discography, "No discography listed yet.")}
       {renderCollection("Bibliography", bibliography, "No bibliography listed yet.")}
 
@@ -1002,30 +1049,90 @@ const baseStyles = `
     background: #f0cf8b;
   }
 
-  .card-grid {
+  .card-grid,
+  .filmography-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
     gap: 18px;
   }
 
-  .archive-card {
+  .archive-card,
+  .filmography-card {
     padding: 25px;
     border: 1px solid rgba(255,255,255,0.1);
     background:
       linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.018));
   }
 
-  .archive-card h3 {
+  .archive-card h3,
+  .filmography-card h3 {
     color: #fff1d7;
     font-size: 20px;
     margin: 0 0 8px;
+    text-transform: none;
   }
 
-  .archive-card p {
+  .archive-card p,
+  .filmography-card p {
     color: #d8cab6;
     font-size: 15px;
     line-height: 1.75;
     margin: 8px 0;
+  }
+
+  .filmography-topline {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+
+  .film-role {
+    color: #f0e2c9 !important;
+  }
+
+  .film-description {
+    color: #bfae93 !important;
+  }
+
+  .film-status {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 10px;
+    border: 1px solid rgba(255,255,255,0.22);
+    color: #d8cab6;
+    background: rgba(0,0,0,0.34);
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .film-status.development {
+    border-color: rgba(216,173,96,0.62);
+    color: #f3d18b;
+    box-shadow: 0 0 22px rgba(216,173,96,0.1);
+  }
+
+  .film-status.preproduction {
+    border-color: rgba(255,255,255,0.42);
+    color: #fff7e8;
+  }
+
+  .film-status.production {
+    border-color: rgba(216,173,96,0.82);
+    color: #ffe0a0;
+    background: rgba(216,173,96,0.08);
+  }
+
+  .film-status.released {
+    border-color: rgba(196,255,196,0.4);
+    color: #d7ffd7;
   }
 
   .meta {
@@ -1119,9 +1226,18 @@ const baseStyles = `
       transform: none;
     }
 
-    .official-presence-card {
+    .official-presence-card,
+    .filmography-topline {
       display: block;
       padding: 24px;
+    }
+
+    .filmography-topline {
+      padding: 0;
+    }
+
+    .film-status {
+      margin-top: 10px;
     }
 
     .presence-link {
