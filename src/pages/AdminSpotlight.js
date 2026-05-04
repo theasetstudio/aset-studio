@@ -21,7 +21,12 @@ export default function AdminSpotlight() {
     discography: [],
     bibliography: [],
     fan_club: {},
-    representation: {},
+    representation: {
+      official_presence: {
+        instagram_url: "",
+        label: "Verified Instagram",
+      },
+    },
     status: "draft",
     featured: false,
   };
@@ -64,7 +69,16 @@ export default function AdminSpotlight() {
     discography: Array.isArray(profile.discography) ? profile.discography : [],
     bibliography: Array.isArray(profile.bibliography) ? profile.bibliography : [],
     fan_club: profile.fan_club || {},
-    representation: profile.representation || {},
+    representation: {
+      ...(profile.representation || {}),
+      official_presence: {
+        instagram_url:
+          profile.representation?.official_presence?.instagram_url || "",
+        label:
+          profile.representation?.official_presence?.label ||
+          "Verified Instagram",
+      },
+    },
   });
 
   const handleChange = (e, mode = "create") => {
@@ -74,6 +88,21 @@ export default function AdminSpotlight() {
     setter((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const updateOfficialPresence = (field, value, mode = "create") => {
+    const setter = mode === "edit" ? setEditForm : setForm;
+
+    setter((prev) => ({
+      ...prev,
+      representation: {
+        ...(prev.representation || {}),
+        official_presence: {
+          ...(prev.representation?.official_presence || {}),
+          [field]: value,
+        },
+      },
     }));
   };
 
@@ -144,7 +173,8 @@ export default function AdminSpotlight() {
       ...prev,
       featured_video_url: uploaded.url,
       featured_video_title:
-        prev.featured_video_title || `${prev.alias || prev.name} — Featured Screening`,
+        prev.featured_video_title ||
+        `${prev.alias || prev.name} — Featured Screening`,
     }));
   };
 
@@ -179,6 +209,7 @@ export default function AdminSpotlight() {
 
     setter((prev) => {
       const nextGallery = [...(Array.isArray(prev.gallery) ? prev.gallery : [])];
+
       nextGallery[index] = {
         ...nextGallery[index],
         caption,
@@ -391,6 +422,38 @@ export default function AdminSpotlight() {
         onChange={(e) => handleChange(e, mode)}
       />
 
+      <h3 style={styles.subheading}>Verified Official Presence</h3>
+
+      <p style={styles.helpText}>
+        Add the official Instagram account for this Spotlight profile. This protects
+        artists from scam or fake accounts by giving visitors one studio-approved link.
+      </p>
+
+      <div style={styles.grid}>
+        <input
+          style={styles.input}
+          placeholder="Label example: Verified Instagram"
+          value={
+            activeForm.representation?.official_presence?.label ||
+            "Verified Instagram"
+          }
+          onChange={(e) =>
+            updateOfficialPresence("label", e.target.value, mode)
+          }
+        />
+
+        <input
+          style={styles.input}
+          placeholder="Official Instagram URL"
+          value={
+            activeForm.representation?.official_presence?.instagram_url || ""
+          }
+          onChange={(e) =>
+            updateOfficialPresence("instagram_url", e.target.value, mode)
+          }
+        />
+      </div>
+
       <h3 style={styles.subheading}>Featured Screening</h3>
 
       <input
@@ -448,7 +511,12 @@ export default function AdminSpotlight() {
           {activeForm.gallery.map((item, index) => (
             <div key={`${item.url}-${index}`} style={styles.galleryCard}>
               {item.type === "video" ? (
-                <video src={item.url} controls playsInline style={styles.galleryMedia} />
+                <video
+                  src={item.url}
+                  controls
+                  playsInline
+                  style={styles.galleryMedia}
+                />
               ) : (
                 <img
                   src={item.url}
@@ -549,6 +617,12 @@ export default function AdminSpotlight() {
                   Gallery Items:{" "}
                   {Array.isArray(profile.gallery) ? profile.gallery.length : 0}
                 </p>
+                <p style={styles.muted}>
+                  Verified Presence:{" "}
+                  {profile.representation?.official_presence?.instagram_url
+                    ? "Added"
+                    : "Not added"}
+                </p>
               </div>
 
               <div style={styles.actions}>
@@ -608,6 +682,14 @@ const styles = {
     letterSpacing: "0.12em",
     textTransform: "uppercase",
     marginTop: "26px",
+  },
+
+  helpText: {
+    color: "#b8aa96",
+    fontSize: "14px",
+    lineHeight: 1.7,
+    maxWidth: "860px",
+    margin: "0 0 14px",
   },
 
   grid: {
