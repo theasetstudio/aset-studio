@@ -73,7 +73,11 @@ export default function SpotlightProfilePage() {
   const discography = asArray(profile.discography);
   const bibliography = asArray(profile.bibliography);
   const fanClub = profile.fan_club || null;
-  const representation = profile.representation || null;
+  const representation = profile.representation || {};
+  const officialPresence = representation.official_presence || null;
+  const officialInstagramUrl = officialPresence?.instagram_url || "";
+  const officialPresenceLabel =
+    officialPresence?.label || "Verified Instagram";
   const leadGalleryItem = gallery[activeIndex] || gallery[0];
 
   const handleGallerySelect = (index) => {
@@ -132,7 +136,9 @@ export default function SpotlightProfilePage() {
     return (
       <img
         src={item.url}
-        alt={item.caption || item.title || profile.name || "Aset Spotlight gallery"}
+        alt={
+          item.caption || item.title || profile.name || "Aset Spotlight gallery"
+        }
         className={className}
       />
     );
@@ -194,7 +200,8 @@ export default function SpotlightProfilePage() {
               />
             </div>
 
-            {(profile.featured_video_title || profile.featured_video_caption) && (
+            {(profile.featured_video_title ||
+              profile.featured_video_caption) && (
               <div className="screening-meta">
                 {profile.featured_video_title && (
                   <h3>{profile.featured_video_title}</h3>
@@ -206,7 +213,8 @@ export default function SpotlightProfilePage() {
             )}
 
             <p className="screening-note">
-              Short-form spotlight presentation. Full cinematic releases live in Aset Cinema.
+              Short-form spotlight presentation. Full cinematic releases live in
+              Aset Cinema.
             </p>
           </>
         ) : (
@@ -242,14 +250,18 @@ export default function SpotlightProfilePage() {
               <figure className="lead-gallery-card">
                 {renderGalleryMedia(
                   leadGalleryItem,
-                  `lead-gallery-media ${isTransitioning ? "transitioning" : ""}`
+                  `lead-gallery-media ${
+                    isTransitioning ? "transitioning" : ""
+                  }`
                 )}
 
                 {(leadGalleryItem.title || leadGalleryItem.caption) && (
                   <figcaption>
                     <p className="meta">Selected Frame</p>
                     {leadGalleryItem.title && <h3>{leadGalleryItem.title}</h3>}
-                    {leadGalleryItem.caption && <p>{leadGalleryItem.caption}</p>}
+                    {leadGalleryItem.caption && (
+                      <p>{leadGalleryItem.caption}</p>
+                    )}
                   </figcaption>
                 )}
               </figure>
@@ -287,6 +299,33 @@ export default function SpotlightProfilePage() {
           <p className="empty">No spotlight gallery images added yet.</p>
         )}
       </section>
+
+      {officialInstagramUrl && (
+        <section className="section official-presence-section">
+          <p className="section-kicker">Verified Official Presence</p>
+          <h2 className="section-title">Official Presence</h2>
+
+          <article className="official-presence-card">
+            <div>
+              <p className="presence-badge">Studio-Approved Link</p>
+              <h3>{officialPresenceLabel}</h3>
+              <p>
+                This verified external presence helps visitors find the official
+                account and avoid scam or imitation profiles.
+              </p>
+            </div>
+
+            <a
+              href={officialInstagramUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="presence-link"
+            >
+              Enter Official Profile
+            </a>
+          </article>
+        </section>
+      )}
 
       {renderCollection(
         "Honors & Recognition",
@@ -781,6 +820,69 @@ const baseStyles = `
     z-index: 5;
   }
 
+  .official-presence-card {
+    display: flex;
+    justify-content: space-between;
+    gap: 28px;
+    align-items: center;
+    padding: 30px;
+    border: 1px solid rgba(216,173,96,0.24);
+    background:
+      radial-gradient(circle at top left, rgba(216,173,96,0.12), transparent 38%),
+      linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018));
+    box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+  }
+
+  .presence-badge {
+    display: inline-flex;
+    margin: 0 0 12px;
+    padding: 7px 11px;
+    border: 1px solid rgba(216,173,96,0.45);
+    color: #f3d18b;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 900;
+    background: rgba(0,0,0,0.34);
+  }
+
+  .official-presence-card h3 {
+    margin: 0 0 8px;
+    color: #fff1d7;
+    font-size: clamp(24px, 3vw, 38px);
+    letter-spacing: -0.03em;
+  }
+
+  .official-presence-card p {
+    color: #d8cab6;
+    font-size: 15px;
+    line-height: 1.75;
+    max-width: 760px;
+    margin: 0;
+  }
+
+  .presence-link {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 14px 18px;
+    border: 1px solid rgba(216,173,96,0.55);
+    color: #050403;
+    background: #d8ad60;
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 900;
+    box-shadow: 0 12px 30px rgba(216,173,96,0.18);
+  }
+
+  .presence-link:hover {
+    background: #f0cf8b;
+  }
+
   .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
@@ -896,6 +998,16 @@ const baseStyles = `
 
     .supporting-card.active {
       transform: none;
+    }
+
+    .official-presence-card {
+      display: block;
+      padding: 24px;
+    }
+
+    .presence-link {
+      width: 100%;
+      margin-top: 22px;
     }
   }
 `;
