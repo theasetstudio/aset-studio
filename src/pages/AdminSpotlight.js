@@ -11,6 +11,7 @@ export default function AdminSpotlight() {
     role: "",
     bio: "",
     aset_statement: "",
+    representation_statement: "",
     profile_image_url: "",
     featured_video_url: "",
     featured_video_title: "",
@@ -64,6 +65,7 @@ export default function AdminSpotlight() {
   const normalizeProfile = (profile) => ({
     ...emptyForm,
     ...profile,
+    representation_statement: profile.representation_statement || "",
     awards: Array.isArray(profile.awards) ? profile.awards : [],
     gallery: Array.isArray(profile.gallery) ? profile.gallery : [],
     filmography: Array.isArray(profile.filmography) ? profile.filmography : [],
@@ -393,6 +395,7 @@ export default function AdminSpotlight() {
       role: editForm.role,
       bio: editForm.bio,
       aset_statement: editForm.aset_statement,
+      representation_statement: editForm.representation_statement,
       profile_image_url: editForm.profile_image_url,
       featured_video_url: editForm.featured_video_url,
       featured_video_title: editForm.featured_video_title,
@@ -590,6 +593,21 @@ export default function AdminSpotlight() {
           }
         />
       </div>
+
+      <h3 style={styles.subheading}>Representation Statement</h3>
+
+      <p style={styles.helpText}>
+        Custom representation messaging shown on the public profile. Use this
+        for inquiry instructions, contact positioning, or representative notes.
+      </p>
+
+      <textarea
+        style={{ ...styles.textarea, minHeight: "140px" }}
+        name="representation_statement"
+        placeholder="Example: All professional inquiries are managed through The Aset Studio..."
+        value={activeForm.representation_statement || ""}
+        onChange={(e) => handleChange(e, mode)}
+      />
 
       <h3 style={styles.subheading}>Featured Screening</h3>
 
