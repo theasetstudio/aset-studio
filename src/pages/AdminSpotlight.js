@@ -11,7 +11,6 @@ export default function AdminSpotlight() {
     role: "",
     bio: "",
     aset_statement: "",
-    representation_statement: "",
     profile_image_url: "",
     featured_video_url: "",
     featured_video_title: "",
@@ -23,6 +22,7 @@ export default function AdminSpotlight() {
     bibliography: [],
     fan_club: {},
     representation: {
+      statement: "",
       official_presence: {
         instagram_url: "",
         youtube_url: "",
@@ -65,7 +65,6 @@ export default function AdminSpotlight() {
   const normalizeProfile = (profile) => ({
     ...emptyForm,
     ...profile,
-    representation_statement: profile.representation_statement || "",
     awards: Array.isArray(profile.awards) ? profile.awards : [],
     gallery: Array.isArray(profile.gallery) ? profile.gallery : [],
     filmography: Array.isArray(profile.filmography) ? profile.filmography : [],
@@ -76,6 +75,7 @@ export default function AdminSpotlight() {
     fan_club: profile.fan_club || {},
     representation: {
       ...(profile.representation || {}),
+      statement: profile.representation?.statement || "",
       official_presence: {
         instagram_url:
           profile.representation?.official_presence?.instagram_url || "",
@@ -110,6 +110,21 @@ export default function AdminSpotlight() {
         official_presence: {
           ...(prev.representation?.official_presence || {}),
           [field]: value,
+        },
+      },
+    }));
+  };
+
+  const updateRepresentationStatement = (value, mode = "create") => {
+    const setter = getSetter(mode);
+
+    setter((prev) => ({
+      ...prev,
+      representation: {
+        ...(prev.representation || {}),
+        statement: value,
+        official_presence: {
+          ...(prev.representation?.official_presence || {}),
         },
       },
     }));
@@ -395,7 +410,6 @@ export default function AdminSpotlight() {
       role: editForm.role,
       bio: editForm.bio,
       aset_statement: editForm.aset_statement,
-      representation_statement: editForm.representation_statement,
       profile_image_url: editForm.profile_image_url,
       featured_video_url: editForm.featured_video_url,
       featured_video_title: editForm.featured_video_title,
@@ -603,10 +617,9 @@ export default function AdminSpotlight() {
 
       <textarea
         style={{ ...styles.textarea, minHeight: "140px" }}
-        name="representation_statement"
         placeholder="Example: All professional inquiries are managed through The Aset Studio..."
-        value={activeForm.representation_statement || ""}
-        onChange={(e) => handleChange(e, mode)}
+        value={activeForm.representation?.statement || ""}
+        onChange={(e) => updateRepresentationStatement(e.target.value, mode)}
       />
 
       <h3 style={styles.subheading}>Featured Screening</h3>
