@@ -79,6 +79,7 @@ export default function SpotlightProfilePage() {
   const officialPresence = representation.official_presence || {};
   const officialInstagramUrl = officialPresence?.instagram_url || "";
   const officialYoutubeUrl = officialPresence?.youtube_url || "";
+  const representationStatement = representation?.statement || "";
   const leadGalleryItem = gallery[activeIndex] || gallery[0];
 
   const handleGallerySelect = (index) => {
@@ -118,6 +119,7 @@ export default function SpotlightProfilePage() {
                 {(item.title || item.name) && <h3>{item.title || item.name}</h3>}
                 {item.year && <p className="meta">{item.year}</p>}
                 {item.role && <p>{item.role}</p>}
+                {item.type && <p>{item.type}</p>}
                 {item.description && <p>{item.description}</p>}
                 {item.caption && <p>{item.caption}</p>}
               </article>
@@ -456,11 +458,15 @@ export default function SpotlightProfilePage() {
         )}
       </section>
 
-      <section className="section">
+      <section className="section representation-section">
         <p className="section-kicker">Professional Contact</p>
         <h2 className="section-title">Representation & Inquiries</h2>
 
-        {representation ? (
+        {representationStatement ? (
+          <article className="representation-card">
+            <p>{representationStatement}</p>
+          </article>
+        ) : representation.agent || representation.aset_studio ? (
           <div className="card-grid">
             {representation.agent && (
               <article className="archive-card">
@@ -1078,6 +1084,7 @@ const baseStyles = `
     font-size: 15px;
     line-height: 1.75;
     margin: 8px 0;
+    white-space: pre-line;
   }
 
   .filmography-topline {
@@ -1133,6 +1140,23 @@ const baseStyles = `
   .film-status.released {
     border-color: rgba(196,255,196,0.4);
     color: #d7ffd7;
+  }
+
+  .representation-card {
+    max-width: 920px;
+    padding: 30px;
+    border: 1px solid rgba(216,173,96,0.22);
+    background:
+      radial-gradient(circle at top left, rgba(216,173,96,0.1), transparent 38%),
+      linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.018));
+  }
+
+  .representation-card p {
+    color: #eadfcd;
+    font-size: 17px;
+    line-height: 1.9;
+    margin: 0;
+    white-space: pre-line;
   }
 
   .meta {
@@ -1243,6 +1267,10 @@ const baseStyles = `
     .presence-link {
       width: 100%;
       margin-top: 22px;
+    }
+
+    .representation-card {
+      padding: 24px;
     }
   }
 `;
