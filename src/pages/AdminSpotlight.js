@@ -68,7 +68,9 @@ export default function AdminSpotlight() {
     gallery: Array.isArray(profile.gallery) ? profile.gallery : [],
     filmography: Array.isArray(profile.filmography) ? profile.filmography : [],
     discography: Array.isArray(profile.discography) ? profile.discography : [],
-    bibliography: Array.isArray(profile.bibliography) ? profile.bibliography : [],
+    bibliography: Array.isArray(profile.bibliography)
+      ? profile.bibliography
+      : [],
     fan_club: profile.fan_club || {},
     representation: {
       ...(profile.representation || {}),
@@ -156,6 +158,56 @@ export default function AdminSpotlight() {
       ...prev,
       filmography: (Array.isArray(prev.filmography)
         ? prev.filmography
+        : []
+      ).filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const updateBibliographyItem = (index, field, value, mode = "create") => {
+    const setter = getSetter(mode);
+
+    setter((prev) => {
+      const nextBibliography = Array.isArray(prev.bibliography)
+        ? [...prev.bibliography]
+        : [];
+
+      nextBibliography[index] = {
+        ...(nextBibliography[index] || {}),
+        [field]: value,
+      };
+
+      return {
+        ...prev,
+        bibliography: nextBibliography,
+      };
+    });
+  };
+
+  const addBibliographyItem = (mode = "create") => {
+    const setter = getSetter(mode);
+
+    setter((prev) => ({
+      ...prev,
+      bibliography: [
+        ...(Array.isArray(prev.bibliography) ? prev.bibliography : []),
+        {
+          title: "",
+          year: "",
+          role: "",
+          type: "",
+          description: "",
+        },
+      ],
+    }));
+  };
+
+  const removeBibliographyItem = (index, mode = "create") => {
+    const setter = getSetter(mode);
+
+    setter((prev) => ({
+      ...prev,
+      bibliography: (Array.isArray(prev.bibliography)
+        ? prev.bibliography
         : []
       ).filter((_, itemIndex) => itemIndex !== index),
     }));
@@ -657,6 +709,81 @@ export default function AdminSpotlight() {
         + Add Project
       </button>
 
+      <h3 style={styles.subheading}>Bibliography</h3>
+
+      <p style={styles.helpText}>
+        Add novels, written works, source material, and literary IP. Use this for
+        foundational works like Brick by Brick.
+      </p>
+
+      {Array.isArray(activeForm.bibliography) &&
+        activeForm.bibliography.map((item, index) => (
+          <div key={`bibliography-${index}`} style={styles.filmCard}>
+            <div style={styles.grid}>
+              <input
+                style={styles.input}
+                placeholder="Title example: Brick by Brick"
+                value={item.title || ""}
+                onChange={(e) =>
+                  updateBibliographyItem(index, "title", e.target.value, mode)
+                }
+              />
+
+              <input
+                style={styles.input}
+                placeholder="Year example: 2026"
+                value={item.year || ""}
+                onChange={(e) =>
+                  updateBibliographyItem(index, "year", e.target.value, mode)
+                }
+              />
+
+              <input
+                style={styles.input}
+                placeholder="Type example: Novel / Source Material"
+                value={item.type || ""}
+                onChange={(e) =>
+                  updateBibliographyItem(index, "type", e.target.value, mode)
+                }
+              />
+
+              <input
+                style={styles.input}
+                placeholder="Role example: Creator / Writer"
+                value={item.role || ""}
+                onChange={(e) =>
+                  updateBibliographyItem(index, "role", e.target.value, mode)
+                }
+              />
+            </div>
+
+            <textarea
+              style={styles.textarea}
+              placeholder="Description example: Foundational novel for Brick by Brick: The Series..."
+              value={item.description || ""}
+              onChange={(e) =>
+                updateBibliographyItem(index, "description", e.target.value, mode)
+              }
+            />
+
+            <button
+              style={styles.dangerButton}
+              type="button"
+              onClick={() => removeBibliographyItem(index, mode)}
+            >
+              Remove Written Work
+            </button>
+          </div>
+        ))}
+
+      <button
+        style={styles.secondaryButton}
+        type="button"
+        onClick={() => addBibliographyItem(mode)}
+      >
+        + Add Written Work
+      </button>
+
       <h3 style={styles.subheading}>Gallery Images & Videos</h3>
 
       <input
@@ -786,6 +913,12 @@ export default function AdminSpotlight() {
                   Filmography Projects:{" "}
                   {Array.isArray(profile.filmography)
                     ? profile.filmography.length
+                    : 0}
+                </p>
+                <p style={styles.muted}>
+                  Written Works:{" "}
+                  {Array.isArray(profile.bibliography)
+                    ? profile.bibliography.length
                     : 0}
                 </p>
                 <p style={styles.muted}>
