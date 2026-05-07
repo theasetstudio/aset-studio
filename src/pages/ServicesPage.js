@@ -61,7 +61,8 @@ const services = [
   },
   {
     title: "Red Carpet Interviewer",
-    intro: "Cinematic interview support for events, premieres, and talent moments.",
+    intro:
+      "Cinematic interview support for events, premieres, and talent moments.",
     bullets: [
       "Live on-site interviews",
       "Talent engagement",
@@ -71,7 +72,8 @@ const services = [
   },
   {
     title: "Social Media Manager",
-    intro: "Controlled digital presence support for talent, creators, and brands.",
+    intro:
+      "Controlled digital presence support for talent, creators, and brands.",
     bullets: [
       "Content planning and scheduling",
       "Growth strategy",
@@ -82,11 +84,20 @@ const services = [
   },
 ];
 
+const contactOptions = [
+  "Call Me",
+  "Text Me",
+  "Email Me",
+  "Instagram DM",
+];
+
 export default function ServicesPage() {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    phone: "",
     instagram: "",
+    preferred_contact: "",
     service_interest: "",
     project_scope: "",
     timeline: "",
@@ -107,7 +118,12 @@ export default function ServicesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.name || !form.service_interest || !form.project_scope || !form.timeline) {
+    if (
+      !form.name ||
+      !form.service_interest ||
+      !form.project_scope ||
+      !form.timeline
+    ) {
       setStatus("Please complete all required fields.");
       return;
     }
@@ -120,7 +136,9 @@ export default function ServicesPage() {
         {
           name: form.name,
           email: form.email,
+          phone: form.phone,
           instagram: form.instagram,
+          preferred_contact: form.preferred_contact,
           service_interest: form.service_interest,
           project_scope: form.project_scope,
           budget_range: "Not collected",
@@ -145,14 +163,29 @@ export default function ServicesPage() {
       <section className="services-hero">
         <div className="services-hero-copy">
           <p className="services-kicker">SERVICES</p>
+
           <h1>The Aset Studio</h1>
+
           <h2>Private Support for Creatives & Talent</h2>
+
           <p>
-            High-touch, luxury support services for individuals within the world
-            of entertainment and the arts. Each service is designed to ensure
-            that talent, creators, and professionals are supported with
-            precision, discretion, and intention.
+            High-touch luxury support for entertainment professionals, creators,
+            talent, productions, and curated artistic projects operating within
+            the world of The Aset Studio.
           </p>
+
+          <div className="services-direct-actions">
+            <a href="tel:+12165551234" className="services-call-button">
+              Call The Studio
+            </a>
+
+            <a
+              href="mailto:theasetstudio@gmail.com"
+              className="services-email-button"
+            >
+              Email Directly
+            </a>
+          </div>
         </div>
 
         <div className="services-hero-image-wrap">
@@ -165,6 +198,7 @@ export default function ServicesPage() {
           {services.map((service) => (
             <article className="service-card" key={service.title}>
               <h2>{service.title}</h2>
+
               <p>{service.intro}</p>
 
               <ul>
@@ -175,8 +209,10 @@ export default function ServicesPage() {
 
               {service.details?.map((detail) => (
                 <p key={detail}>
-                  <strong>{detail.split(":")[0]}:</strong>
-                  {detail.includes(":") ? ` ${detail.split(":").slice(1).join(":").trim()}` : ""}
+                  <strong>{detail.split(":")[0]}:</strong>{" "}
+                  {detail.includes(":")
+                    ? detail.split(":").slice(1).join(":").trim()
+                    : ""}
                 </p>
               ))}
             </article>
@@ -186,7 +222,13 @@ export default function ServicesPage() {
         <section className="inquiry-section">
           {!submitted ? (
             <>
-              <h2>Apply for Private Access</h2>
+              <h2>Request Private Contact</h2>
+
+              <p className="inquiry-intro">
+                The Aset Studio reviews all requests privately. Approved
+                individuals and productions will be contacted directly through
+                the preferred communication method selected below.
+              </p>
 
               <form onSubmit={handleSubmit}>
                 <select
@@ -195,6 +237,7 @@ export default function ServicesPage() {
                   onChange={handleChange}
                 >
                   <option value="">Select Service</option>
+
                   {services.map((service) => (
                     <option key={service.title}>{service.title}</option>
                   ))}
@@ -207,7 +250,11 @@ export default function ServicesPage() {
                   onChange={handleChange}
                 />
 
-                <select name="timeline" value={form.timeline} onChange={handleChange}>
+                <select
+                  name="timeline"
+                  value={form.timeline}
+                  onChange={handleChange}
+                >
                   <option value="">Select Timeline</option>
                   <option>Immediate</option>
                   <option>Within 30 days</option>
@@ -230,11 +277,30 @@ export default function ServicesPage() {
                 />
 
                 <input
+                  name="phone"
+                  placeholder="Phone Number"
+                  value={form.phone}
+                  onChange={handleChange}
+                />
+
+                <input
                   name="instagram"
                   placeholder="Instagram (optional)"
                   value={form.instagram}
                   onChange={handleChange}
                 />
+
+                <select
+                  name="preferred_contact"
+                  value={form.preferred_contact}
+                  onChange={handleChange}
+                >
+                  <option value="">Preferred Contact Method</option>
+
+                  {contactOptions.map((option) => (
+                    <option key={option}>{option}</option>
+                  ))}
+                </select>
 
                 <textarea
                   name="message"
@@ -244,7 +310,7 @@ export default function ServicesPage() {
                 />
 
                 <button type="submit" disabled={loading}>
-                  {loading ? "Submitting..." : "Submit Application"}
+                  {loading ? "Submitting..." : "Submit Request"}
                 </button>
 
                 {status && <p className="form-status">{status}</p>}
@@ -252,11 +318,15 @@ export default function ServicesPage() {
             </>
           ) : (
             <div className="confirmation-state">
-              <h2>Application Received</h2>
-              <p>Your request has been entered into The Aset Studio system.</p>
+              <h2>Request Received</h2>
+
               <p>
-                Submissions are reviewed privately. Approved clients will be
-                contacted directly.
+                Your inquiry has been entered into The Aset Studio system.
+              </p>
+
+              <p>
+                Approved individuals and productions will be contacted directly
+                through the preferred communication method provided.
               </p>
             </div>
           )}
@@ -264,8 +334,11 @@ export default function ServicesPage() {
       </main>
 
       <footer className="services-footer">
-        <p>The Aset Studio — A creative world. Not just a platform.</p>
-        <p>Founder & Creative Director — Franchesca Analisa “Sapphire”</p>
+        <p>The Aset Studio — A cinematic creative ecosystem.</p>
+
+        <p>
+          Founder & Creative Director — Franchesca Analisa “Sapphire”
+        </p>
       </footer>
     </div>
   );

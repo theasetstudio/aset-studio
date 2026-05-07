@@ -358,7 +358,7 @@ export default function HomePage() {
       <section style={styles.screeningSection}>
         <div style={styles.sectionInnerNarrow}>
           <p style={styles.eyebrow}>FEATURED SCREENING</p>
-          <h2 style={styles.sectionTitle}>Who Is The Aset Studio</h2>
+          <h2 style={styles.sectionTitle}>Inside The Aset Studio</h2>
 
           <div style={styles.videoFrame}>
             {loading ? (
@@ -815,9 +815,11 @@ const styles = {
   },
 
   screeningSection: {
-    padding: "76px 22px 86px",
+    position: "relative",
+    padding: "110px 22px 120px",
     background:
-      "linear-gradient(180deg, #050505 0%, #080808 48%, #050505 100%)",
+      "radial-gradient(circle at center, rgba(198,136,55,0.14), transparent 42%), linear-gradient(180deg, #050505 0%, #080808 48%, #050505 100%)",
+    overflow: "hidden",
   },
 
   sectionInner: {
@@ -826,7 +828,9 @@ const styles = {
   },
 
   sectionInnerNarrow: {
-    maxWidth: 980,
+    position: "relative",
+    zIndex: 2,
+    maxWidth: 1120,
     margin: "0 auto",
   },
 
@@ -839,11 +843,11 @@ const styles = {
   },
 
   sectionTitle: {
-    margin: "0 0 22px",
-    fontSize: "clamp(30px, 4vw, 46px)",
-    lineHeight: 1.02,
-    letterSpacing: "-0.038em",
-    fontWeight: 850,
+    margin: "0 0 24px",
+    fontSize: "clamp(34px, 4.4vw, 58px)",
+    lineHeight: 0.98,
+    letterSpacing: "-0.05em",
+    fontWeight: 900,
   },
 
   sectionText: {
@@ -855,14 +859,15 @@ const styles = {
   },
 
   videoFrame: {
+    position: "relative",
     width: "100%",
     aspectRatio: "16 / 9",
-    borderRadius: 28,
+    borderRadius: 34,
     overflow: "hidden",
     background: "#000",
-    border: "1px solid rgba(245,241,235,0.1)",
+    border: "1px solid rgba(245,241,235,0.12)",
     boxShadow:
-      "0 60px 160px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04)",
+      "0 80px 220px rgba(0,0,0,0.92), 0 0 60px rgba(198,136,55,0.08)",
   },
 
   video: {
@@ -872,6 +877,7 @@ const styles = {
     display: "block",
     transition: "opacity 1s ease",
     background: "#000",
+    filter: "brightness(0.9) contrast(1.04)",
   },
 
   placeholder: {
