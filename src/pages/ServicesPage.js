@@ -176,10 +176,10 @@ export default function ServicesPage() {
 
           <div className="services-direct-actions">
             <a
-              href="tel:+12165551234"
+              href="tel:+12164745705"
               className="services-call-button"
             >
-              Call The Studio • (216) 555-1234
+              Call The Studio • (216) 474-5705
             </a>
 
             <a
