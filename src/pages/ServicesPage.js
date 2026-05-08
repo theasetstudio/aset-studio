@@ -169,14 +169,17 @@ export default function ServicesPage() {
           <h2>Private Support for Creatives & Talent</h2>
 
           <p>
-            High-touch luxury support for entertainment professionals, creators,
-            talent, productions, and curated artistic projects operating within
-            the world of The Aset Studio.
+            High-touch luxury support for entertainment professionals,
+            productions, talent, creators, and curated artistic projects
+            operating within the world of The Aset Studio.
           </p>
 
           <div className="services-direct-actions">
-            <a href="tel:+12165551234" className="services-call-button">
-              Call The Studio
+            <a
+              href="tel:+12165551234"
+              className="services-call-button"
+            >
+              Call The Studio • (216) 555-1234
             </a>
 
             <a
