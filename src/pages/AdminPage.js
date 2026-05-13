@@ -178,7 +178,7 @@ export default function AdminPage() {
       const { data, error } = await supabase
         .from('media_items')
         .select(
-          'id, owner_id, title, slug, description, tagline, quote, file_path, watermarked_path, category, subcategory, status, hidden, access_level, type, featured, created_at'
+          'id, owner_id, title, slug, description, tagline, quote, file_path, watermarked_path, category, subcategory, status, hidden, access_level, type, featured, homepage_featured, created_at'
         )
         .order('created_at', { ascending: false })
         .limit(24);
@@ -617,6 +617,31 @@ export default function AdminPage() {
     }
   }
 
+  async function toggleHomepageFeatured(id, currentValue) {
+    try {
+      if (!currentValue) {
+        const { error: clearError } = await supabase
+          .from('media_items')
+          .update({ homepage_featured: false })
+          .eq('homepage_featured', true);
+
+        if (clearError) throw clearError;
+      }
+
+      const { error } = await supabase
+        .from('media_items')
+        .update({ homepage_featured: !currentValue })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await fetchMediaItems();
+    } catch (error) {
+      console.error('Error updating homepage featured:', error);
+      alert(error.message || 'Failed to update homepage screening.');
+    }
+  }
+
   async function handleDeleteMedia(item) {
     const confirmed = window.confirm(
       `Delete this media item forever?\n\n${item.title || item.file_path || 'Untitled media'}`
@@ -686,6 +711,7 @@ export default function AdminPage() {
     const hidden = mediaItems.filter((item) => item.hidden).length;
     const videos = mediaItems.filter((item) => item.type === 'video').length;
     const featured = mediaItems.filter((item) => item.featured).length;
+    const homepageFeatured = mediaItems.filter((item) => item.homepage_featured).length;
 
     return {
       total: mediaItems.length,
@@ -693,6 +719,7 @@ export default function AdminPage() {
       hidden,
       videos,
       featured,
+      homepageFeatured,
     };
   }, [mediaItems]);
 
@@ -754,6 +781,11 @@ export default function AdminPage() {
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Featured Items</div>
           <div style={styles.statValue}>{mediaCounts.featured}</div>
+        </div>
+
+        <div style={styles.statCard}>
+          <div style={styles.statLabel}>Homepage Screening</div>
+          <div style={styles.statValue}>{mediaCounts.homepageFeatured}</div>
         </div>
 
         <div style={styles.statCard}>
@@ -1043,6 +1075,9 @@ export default function AdminPage() {
                   <span style={styles.metaBadge}>{item.status || '—'}</span>
                   {item.hidden ? <span style={styles.metaBadge}>Hidden</span> : null}
                   {item.featured ? <span style={styles.featuredBadge}>Featured</span> : null}
+                  {item.homepage_featured ? (
+                    <span style={styles.homepageBadge}>Homepage Screening</span>
+                  ) : null}
                 </div>
 
                 <div style={styles.mediaInfoBlock}>
@@ -1074,6 +1109,22 @@ export default function AdminPage() {
                   >
                     {item.featured ? '⭐ Featured' : '☆ Feature'}
                   </button>
+
+                  {item.type === 'video' ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleHomepageFeatured(item.id, item.homepage_featured)}
+                      style={
+                        item.homepage_featured
+                          ? styles.homepageOnButton
+                          : styles.homepageOffButton
+                      }
+                    >
+                      {item.homepage_featured
+                        ? '🎬 Homepage Screening'
+                        : 'Set Homepage Screening'}
+                    </button>
+                  ) : null}
 
                   <button
                     type="button"
@@ -1597,6 +1648,24 @@ const styles = {
     fontWeight: 700,
     cursor: 'pointer',
   },
+  homepageOnButton: {
+    padding: '12px 16px',
+    borderRadius: '12px',
+    border: '1px solid #f1d08a',
+    background: 'linear-gradient(135deg, #c58d36, #f1d08a)',
+    color: '#111111',
+    fontWeight: 800,
+    cursor: 'pointer',
+  },
+  homepageOffButton: {
+    padding: '12px 16px',
+    borderRadius: '12px',
+    border: '1px solid #5a4a2c',
+    background: '#211b12',
+    color: '#f5f5f5',
+    fontWeight: 800,
+    cursor: 'pointer',
+  },
   promptList: {
     display: 'grid',
     gap: '16px',
@@ -1644,6 +1713,16 @@ const styles = {
     fontSize: '12px',
     fontWeight: 700,
     background: '#d4af37',
+    color: '#111111',
+  },
+  homepageBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '6px 10px',
+    borderRadius: '999px',
+    fontSize: '12px',
+    fontWeight: 800,
+    background: 'linear-gradient(135deg, #c58d36, #f1d08a)',
     color: '#111111',
   },
   publishedBadge: {

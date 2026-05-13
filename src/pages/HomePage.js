@@ -82,12 +82,13 @@ export default function HomePage() {
 
     async function loadFeaturedVideo() {
       setLoading(true);
+      setReady(false);
 
       const { data } = await supabase
         .from("media_items")
         .select("*")
         .eq("type", "video")
-        .eq("featured", true)
+        .eq("homepage_featured", true)
         .eq("status", "published")
         .eq("hidden", false)
         .order("created_at", { ascending: false })
@@ -97,6 +98,8 @@ export default function HomePage() {
       if (!mounted) return;
 
       if (!data?.file_path) {
+        setVideoUrl("");
+        setPoster("");
         setLoading(false);
         return;
       }
@@ -113,6 +116,8 @@ export default function HomePage() {
           .createSignedUrl(data.watermarked_path, 3600);
 
         setPoster(signedPoster?.signedUrl || "");
+      } else {
+        setPoster("");
       }
 
       setLoading(false);
@@ -357,27 +362,72 @@ export default function HomePage() {
 
       <section style={styles.screeningSection}>
         <div style={styles.sectionInnerNarrow}>
-          <p style={styles.eyebrow}>FEATURED SCREENING</p>
-          <h2 style={styles.sectionTitle}>Inside The Aset Studio</h2>
+          <div style={styles.screeningHeader}>
+            <div>
+              <p style={styles.eyebrow}>FEATURED SCREENING</p>
 
-          <div style={styles.videoFrame}>
+              <h2 style={styles.sectionTitle}>Inside The Aset Studio</h2>
+
+              <p style={styles.screeningText}>
+                A controlled cinematic environment for original releases,
+                interviews, studio conversations, visual campaigns, and curated
+                creative presentation.
+              </p>
+            </div>
+
+            <div style={styles.screeningBadge}>
+              <span style={styles.screeningDot} />
+              PRIVATE SCREENING
+            </div>
+          </div>
+
+          <div style={styles.screeningFrame}>
+            <div style={styles.screeningOverlay} />
+
             {loading ? (
-              <div style={styles.placeholder}>Preparing screening...</div>
+              <div style={styles.placeholder}>
+                Preparing screening environment...
+              </div>
             ) : videoUrl ? (
-              <video
-                src={videoUrl}
-                poster={poster || undefined}
-                muted
-                autoPlay
-                loop
-                playsInline
-                preload="metadata"
-                onLoadedData={() => setReady(true)}
-                style={{
-                  ...styles.video,
-                  opacity: ready ? 1 : 0,
-                }}
-              />
+              <>
+                <video
+                  src={videoUrl}
+                  poster={poster || undefined}
+                  muted
+                  autoPlay
+                  loop
+                  playsInline
+                  preload="metadata"
+                  onLoadedData={() => setReady(true)}
+                  style={{
+                    ...styles.video,
+                    opacity: ready ? 1 : 0,
+                  }}
+                />
+
+                <div style={styles.screeningContent}>
+                  <p style={styles.screeningMini}>THE ASET STUDIO</p>
+
+                  <h3 style={styles.screeningTitle}>
+                    Cinematic Presentation Environment
+                  </h3>
+
+                  <p style={styles.screeningDescription}>
+                    Original worlds, visual storytelling, interviews, studio
+                    releases, and evolving cinematic identity systems.
+                  </p>
+
+                  <div style={styles.screeningActions}>
+                    <Link to="/videos" style={styles.goldBtn}>
+                      Enter Aset Cinema
+                    </Link>
+
+                    <Link to="/services" style={styles.lightBtn}>
+                      Work With The Studio
+                    </Link>
+                  </div>
+                </div>
+              </>
             ) : (
               <div style={styles.placeholder}>
                 Featured screening coming soon.
@@ -888,6 +938,105 @@ const styles = {
     justifyContent: "center",
     color: "rgba(245,241,235,0.68)",
     background: "rgba(255,255,255,0.025)",
+  },
+
+  screeningHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: 20,
+    marginBottom: 28,
+    flexWrap: "wrap",
+  },
+
+  screeningText: {
+    maxWidth: 760,
+    margin: 0,
+    fontSize: 15,
+    lineHeight: 1.78,
+    color: "rgba(245,241,235,0.72)",
+  },
+
+  screeningBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "10px 16px",
+    borderRadius: 999,
+    border: "1px solid rgba(245,241,235,0.12)",
+    background: "rgba(255,255,255,0.03)",
+    fontSize: 11,
+    letterSpacing: "0.18em",
+    textTransform: "uppercase",
+    color: "rgba(245,241,235,0.72)",
+  },
+
+  screeningDot: {
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    background: "#c58d36",
+    boxShadow: "0 0 14px rgba(197,141,54,0.9)",
+  },
+
+  screeningFrame: {
+    position: "relative",
+    width: "100%",
+    aspectRatio: "16 / 9",
+    borderRadius: 36,
+    overflow: "hidden",
+    background: "#000",
+    border: "1px solid rgba(245,241,235,0.12)",
+    boxShadow:
+      "0 80px 220px rgba(0,0,0,0.92), 0 0 80px rgba(198,136,55,0.08)",
+  },
+
+  screeningOverlay: {
+    position: "absolute",
+    inset: 0,
+    zIndex: 1,
+    background:
+      "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.32) 45%, rgba(0,0,0,0.88) 100%)",
+  },
+
+  screeningContent: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2,
+    padding: "42px",
+  },
+
+  screeningMini: {
+    margin: "0 0 12px",
+    fontSize: 10,
+    letterSpacing: "0.32em",
+    textTransform: "uppercase",
+    color: "rgba(245,241,235,0.66)",
+  },
+
+  screeningTitle: {
+    margin: "0 0 14px",
+    maxWidth: 620,
+    fontSize: "clamp(32px, 4vw, 58px)",
+    lineHeight: 0.94,
+    letterSpacing: "-0.05em",
+    fontWeight: 900,
+  },
+
+  screeningDescription: {
+    maxWidth: 620,
+    margin: "0 0 24px",
+    fontSize: 15,
+    lineHeight: 1.72,
+    color: "rgba(245,241,235,0.78)",
+  },
+
+  screeningActions: {
+    display: "flex",
+    gap: 12,
+    flexWrap: "wrap",
   },
 
   featuredSection: {
