@@ -24,6 +24,12 @@ function slugify(value) {
     .replace(/^-+|-+$/g, '');
 }
 
+function makeAutoTitle(type, index = 0) {
+  const label = type === 'video' ? 'Untitled Video' : 'Untitled Image';
+  const number = String(index + 1).padStart(2, '0');
+  return `${label} ${number} ${Date.now()}`;
+}
+
 export default function AdminPage() {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -43,6 +49,19 @@ export default function AdminPage() {
   const [mediaMessage, setMediaMessage] = useState('');
   const [mediaItems, setMediaItems] = useState([]);
 
+  const [editingMediaId, setEditingMediaId] = useState(null);
+  const [savingMediaEdit, setSavingMediaEdit] = useState(false);
+  const [editMediaTitle, setEditMediaTitle] = useState('');
+  const [editMediaSlug, setEditMediaSlug] = useState('');
+  const [editMediaDescription, setEditMediaDescription] = useState('');
+  const [editMediaTagline, setEditMediaTagline] = useState('');
+  const [editMediaQuote, setEditMediaQuote] = useState('');
+  const [editMediaCategory, setEditMediaCategory] = useState('');
+  const [editMediaSubcategory, setEditMediaSubcategory] = useState('');
+  const [editMediaAccessLevel, setEditMediaAccessLevel] = useState('public');
+  const [editMediaStatus, setEditMediaStatus] = useState('published');
+  const [editMediaHidden, setEditMediaHidden] = useState(false);
+
   const [loadingVault, setLoadingVault] = useState(true);
   const [savingVault, setSavingVault] = useState(false);
   const [vaultMessage, setVaultMessage] = useState('');
@@ -54,7 +73,7 @@ export default function AdminPage() {
   const [vaultStatus, setVaultStatus] = useState('draft');
 
   const [mediaType, setMediaType] = useState('image');
-  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaFiles, setMediaFiles] = useState([]);
   const [mediaTitle, setMediaTitle] = useState('');
   const [mediaSlug, setMediaSlug] = useState('');
   const [mediaDescription, setMediaDescription] = useState('');
@@ -93,14 +112,7 @@ export default function AdminPage() {
         error: userError,
       } = await supabase.auth.getUser();
 
-      if (userError) {
-        console.error('Error getting user:', userError);
-        setIsAdmin(false);
-        setCheckingAccess(false);
-        return;
-      }
-
-      if (!user) {
+      if (userError || !user) {
         setIsAdmin(false);
         setCheckingAccess(false);
         return;
@@ -139,13 +151,9 @@ export default function AdminPage() {
 
       if (error) throw error;
 
-      const items = data || [];
-
       const withPreviewUrls = await Promise.all(
-        items.map(async (item) => {
-          if (!item.image_url) {
-            return { ...item, preview_url: '' };
-          }
+        (data || []).map(async (item) => {
+          if (!item.image_url) return { ...item, preview_url: '' };
 
           const { data: signed, error: signedError } = await supabase.storage
             .from('media')
@@ -156,10 +164,7 @@ export default function AdminPage() {
             return { ...item, preview_url: '' };
           }
 
-          return {
-            ...item,
-            preview_url: signed?.signedUrl || '',
-          };
+          return { ...item, preview_url: signed?.signedUrl || '' };
         })
       );
 
@@ -181,17 +186,13 @@ export default function AdminPage() {
           'id, owner_id, title, slug, description, tagline, quote, file_path, watermarked_path, category, subcategory, status, hidden, access_level, type, featured, homepage_featured, created_at'
         )
         .order('created_at', { ascending: false })
-        .limit(24);
+        .limit(48);
 
       if (error) throw error;
 
-      const items = data || [];
-
       const withUrls = await Promise.all(
-        items.map(async (item) => {
-          if (!item.file_path) {
-            return { ...item, preview_url: '' };
-          }
+        (data || []).map(async (item) => {
+          if (!item.file_path) return { ...item, preview_url: '' };
 
           const { data: signed, error: signedError } = await supabase.storage
             .from('media')
@@ -202,10 +203,7 @@ export default function AdminPage() {
             return { ...item, preview_url: '' };
           }
 
-          return {
-            ...item,
-            preview_url: signed?.signedUrl || '',
-          };
+          return { ...item, preview_url: signed?.signedUrl || '' };
         })
       );
 
@@ -233,6 +231,237 @@ export default function AdminPage() {
       console.error('Error fetching vault items:', error);
     } finally {
       setLoadingVault(false);
+    }
+  }
+
+  async function handleMediaSubmit(event) {
+    event.preventDefault();
+    setMediaMessage('');
+
+    if (!mediaFiles.length) {
+      setMediaMessage(`Please choose ${mediaType === 'video' ? 'a video file' : 'one or more image files'}.`);
+      return;
+    }
+
+    const cleanTitle = mediaTitle.trim();
+    const cleanDescription = mediaDescription.trim();
+    const cleanTagline = mediaTagline.trim();
+    const cleanQuote = mediaQuote.trim();
+    const cleanSubcategory = mediaSubcategory.trim();
+    const selectedCategory =
+      mediaCategoryMode === 'new' ? newMediaCategory.trim() : mediaCategory.trim();
+
+    const autoCategory =
+      selectedCategory || (mediaType === 'video' ? 'cinematic' : 'editorial');
+
+    if (mediaType === 'video' && !VIDEO_CATEGORIES.includes(autoCategory)) {
+      setMediaMessage('Video category must be interview, hot_take, or cinematic.');
+      return;
+    }
+
+    setSavingMedia(true);
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) throw userError;
+      if (!user) throw new Error('You must be logged in to upload media.');
+
+      let uploadedCount = 0;
+
+      for (let index = 0; index < mediaFiles.length; index += 1) {
+        const file = mediaFiles[index];
+        const baseTitle =
+          cleanTitle && mediaFiles.length > 1
+            ? `${cleanTitle} ${String(index + 1).padStart(2, '0')}`
+            : cleanTitle || makeAutoTitle(mediaType, index);
+
+        const baseSlug =
+          mediaFiles.length > 1
+            ? slugify(`${mediaSlug || baseTitle}-${index + 1}-${Date.now()}`)
+            : slugify(mediaSlug || baseTitle);
+
+        const { data: existingSlug, error: slugError } = await supabase
+          .from('media_items')
+          .select('id')
+          .eq('slug', baseSlug)
+          .limit(1);
+
+        if (slugError) throw slugError;
+
+        if (existingSlug && existingSlug.length > 0) {
+          throw new Error(`Slug already exists for ${baseTitle}. Please use a different slug.`);
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const safeFileName = `${Date.now()}-${index}-${Math.random()
+          .toString(36)
+          .slice(2)}.${fileExt}`;
+        const folder = mediaType === 'video' ? 'admin-videos' : 'admin-uploads';
+        const storagePath = `${folder}/${safeFileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('media')
+          .upload(storagePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const payload = {
+          owner_id: user.id,
+          title: baseTitle,
+          slug: baseSlug,
+          description: cleanDescription || '',
+          tagline: cleanTagline || '',
+          quote: cleanQuote || '',
+          file_path: storagePath,
+          watermarked_path: null,
+          category: autoCategory,
+          subcategory: cleanSubcategory || null,
+          status: mediaStatus,
+          hidden: mediaHidden,
+          access_level: mediaAccessLevel,
+          type: mediaType,
+        };
+
+        const { error: insertError } = await supabase.from('media_items').insert([payload]);
+
+        if (insertError) {
+          await supabase.storage.from('media').remove([storagePath]);
+          throw insertError;
+        }
+
+        uploadedCount += 1;
+      }
+
+      setMediaType('image');
+      setMediaFiles([]);
+      setMediaTitle('');
+      setMediaSlug('');
+      setMediaDescription('');
+      setMediaTagline('');
+      setMediaQuote('');
+      setMediaCategory('');
+      setMediaSubcategory('');
+      setMediaCategoryMode('existing');
+      setNewMediaCategory('');
+      setMediaAccessLevel('public');
+      setMediaStatus('published');
+      setMediaHidden(false);
+
+      setMediaMessage(
+        `${uploadedCount} ${uploadedCount === 1 ? 'item' : 'items'} uploaded successfully. You can edit each title, quote, and details later.`
+      );
+
+      const fileInput = document.getElementById('admin-media-file-input');
+      if (fileInput) fileInput.value = '';
+
+      await fetchMediaItems();
+    } catch (error) {
+      console.error('Media upload failed:', error);
+      setMediaMessage(error.message || 'Media upload failed.');
+    } finally {
+      setSavingMedia(false);
+    }
+  }
+
+  function startEditingMedia(item) {
+    setEditingMediaId(item.id);
+    setEditMediaTitle(item.title || '');
+    setEditMediaSlug(item.slug || '');
+    setEditMediaDescription(item.description || '');
+    setEditMediaTagline(item.tagline || '');
+    setEditMediaQuote(item.quote || '');
+    setEditMediaCategory(item.category || '');
+    setEditMediaSubcategory(item.subcategory || '');
+    setEditMediaAccessLevel(item.access_level || 'public');
+    setEditMediaStatus(item.status || 'published');
+    setEditMediaHidden(Boolean(item.hidden));
+  }
+
+  function cancelEditingMedia() {
+    setEditingMediaId(null);
+    setEditMediaTitle('');
+    setEditMediaSlug('');
+    setEditMediaDescription('');
+    setEditMediaTagline('');
+    setEditMediaQuote('');
+    setEditMediaCategory('');
+    setEditMediaSubcategory('');
+    setEditMediaAccessLevel('public');
+    setEditMediaStatus('published');
+    setEditMediaHidden(false);
+  }
+
+  async function saveMediaEdits(item) {
+    const cleanTitle = editMediaTitle.trim() || item.title || makeAutoTitle(item.type || 'image');
+    const cleanSlug = slugify(editMediaSlug || cleanTitle);
+    const cleanCategory =
+      editMediaCategory.trim() || (item.type === 'video' ? 'cinematic' : 'editorial');
+
+    if (item.type === 'video' && !VIDEO_CATEGORIES.includes(cleanCategory)) {
+      alert('Video category must be interview, hot_take, or cinematic.');
+      return;
+    }
+
+    setSavingMediaEdit(true);
+
+    try {
+      const { data: existingSlug, error: slugError } = await supabase
+        .from('media_items')
+        .select('id')
+        .eq('slug', cleanSlug)
+        .neq('id', item.id)
+        .limit(1);
+
+      if (slugError) throw slugError;
+
+      if (existingSlug && existingSlug.length > 0) {
+        throw new Error('That slug already exists. Please use a different slug.');
+      }
+
+      const updates = {
+        title: cleanTitle,
+        slug: cleanSlug,
+        description: editMediaDescription.trim(),
+        tagline: editMediaTagline.trim(),
+        quote: editMediaQuote.trim(),
+        category: cleanCategory,
+        subcategory: editMediaSubcategory.trim() || null,
+        access_level: editMediaAccessLevel,
+        status: editMediaStatus,
+        hidden: editMediaHidden,
+      };
+
+      const { error } = await supabase
+        .from('media_items')
+        .update(updates)
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      setMediaItems((current) =>
+        current.map((media) =>
+          media.id === item.id
+            ? {
+                ...media,
+                ...updates,
+              }
+            : media
+        )
+      );
+
+      cancelEditingMedia();
+    } catch (error) {
+      console.error('Media edit failed:', error);
+      alert(error.message || 'Could not save media edits.');
+    } finally {
+      setSavingMediaEdit(false);
     }
   }
 
@@ -367,14 +596,7 @@ export default function AdminPage() {
       if (error) throw error;
 
       setPrompts((current) =>
-        current.map((item) =>
-          item.id === promptId
-            ? {
-                ...item,
-                ...updates,
-              }
-            : item
-        )
+        current.map((item) => (item.id === promptId ? { ...item, ...updates } : item))
       );
     } catch (error) {
       console.error('Prompt status update failed:', error);
@@ -397,14 +619,7 @@ export default function AdminPage() {
       if (error) throw error;
 
       setVaultItems((current) =>
-        current.map((item) =>
-          item.id === vaultId
-            ? {
-                ...item,
-                ...updates,
-              }
-            : item
-        )
+        current.map((item) => (item.id === vaultId ? { ...item, ...updates } : item))
       );
     } catch (error) {
       console.error('Vault status update failed:', error);
@@ -431,9 +646,7 @@ export default function AdminPage() {
           .from('media')
           .remove([promptToDelete.image_url]);
 
-        if (storageError) {
-          console.error('Prompt preview image delete failed:', storageError);
-        }
+        if (storageError) console.error('Prompt preview image delete failed:', storageError);
       }
 
       setPrompts((current) => current.filter((item) => item.id !== promptId));
@@ -459,145 +672,6 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Vault delete failed:', error);
       alert(error.message || 'Could not delete vault entry.');
-    }
-  }
-
-  async function handleMediaSubmit(event) {
-    event.preventDefault();
-    setMediaMessage('');
-
-    if (!mediaFile) {
-      setMediaMessage(`Please choose a ${mediaType} file.`);
-      return;
-    }
-
-    const cleanTitle = mediaTitle.trim();
-    const cleanDescription = mediaDescription.trim();
-    const cleanTagline = mediaTagline.trim();
-    const cleanQuote = mediaQuote.trim();
-    const cleanSubcategory = mediaSubcategory.trim();
-    const cleanSlug = slugify(mediaSlug || mediaTitle);
-    const finalCategory =
-      mediaCategoryMode === 'new' ? newMediaCategory.trim() : mediaCategory.trim();
-
-    if (mediaCategoryMode === 'new' && !newMediaCategory.trim()) {
-      setMediaMessage('Please enter a new category name.');
-      return;
-    }
-
-    if (!finalCategory) {
-      setMediaMessage('Please choose a category.');
-      return;
-    }
-
-    if (mediaType === 'video' && !VIDEO_CATEGORIES.includes(finalCategory)) {
-      setMediaMessage('Video category must be interview, hot_take, or cinematic.');
-      return;
-    }
-
-    if (mediaType === 'video' && !cleanSlug) {
-      setMediaMessage('Video slug is required.');
-      return;
-    }
-
-    setSavingMedia(true);
-
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        throw userError;
-      }
-
-      if (!user) {
-        throw new Error('You must be logged in to upload media.');
-      }
-
-      if (cleanSlug) {
-        const { data: existingSlug, error: slugError } = await supabase
-          .from('media_items')
-          .select('id')
-          .eq('slug', cleanSlug)
-          .limit(1);
-
-        if (slugError) throw slugError;
-
-        if (existingSlug && existingSlug.length > 0) {
-          throw new Error('That slug already exists. Please use a different slug.');
-        }
-      }
-
-      const fileExt = mediaFile.name.split('.').pop();
-      const safeFileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-      const folder = mediaType === 'video' ? 'admin-videos' : 'admin-uploads';
-      const storagePath = `${folder}/${safeFileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('media')
-        .upload(storagePath, mediaFile, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const payload = {
-        owner_id: user.id,
-        title: cleanTitle || null,
-        slug: cleanSlug || null,
-        description: cleanDescription || null,
-        tagline: cleanTagline || null,
-        quote: cleanQuote || null,
-        file_path: storagePath,
-        watermarked_path: null,
-        category: finalCategory || null,
-        subcategory: cleanSubcategory || null,
-        status: mediaStatus,
-        hidden: mediaHidden,
-        access_level: mediaAccessLevel,
-        type: mediaType,
-      };
-
-      const { error: insertError } = await supabase.from('media_items').insert([payload]);
-
-      if (insertError) {
-        await supabase.storage.from('media').remove([storagePath]);
-        throw insertError;
-      }
-
-      setMediaType('image');
-      setMediaFile(null);
-      setMediaTitle('');
-      setMediaSlug('');
-      setMediaDescription('');
-      setMediaTagline('');
-      setMediaQuote('');
-      setMediaCategory('');
-      setMediaSubcategory('');
-      setMediaCategoryMode('existing');
-      setNewMediaCategory('');
-      setMediaAccessLevel('public');
-      setMediaStatus('published');
-      setMediaHidden(false);
-
-      setMediaMessage(
-        mediaType === 'video'
-          ? 'Video uploaded successfully.'
-          : 'Image uploaded successfully.'
-      );
-
-      const fileInput = document.getElementById('admin-media-file-input');
-      if (fileInput) fileInput.value = '';
-
-      await fetchMediaItems();
-    } catch (error) {
-      console.error('Media upload failed:', error);
-      setMediaMessage(error.message || 'Media upload failed.');
-    } finally {
-      setSavingMedia(false);
     }
   }
 
@@ -654,9 +728,7 @@ export default function AdminPage() {
           .from('media')
           .remove([item.file_path]);
 
-        if (storageError) {
-          console.error('Error deleting original media file:', storageError);
-        }
+        if (storageError) console.error('Error deleting original media file:', storageError);
       }
 
       if (item.watermarked_path) {
@@ -664,9 +736,7 @@ export default function AdminPage() {
           .from('media')
           .remove([item.watermarked_path]);
 
-        if (watermarkError) {
-          console.error('Error deleting watermarked media file:', watermarkError);
-        }
+        if (watermarkError) console.error('Error deleting watermarked media file:', watermarkError);
       }
 
       const { error: dbError } = await supabase
@@ -688,22 +758,14 @@ export default function AdminPage() {
     const published = prompts.filter((item) => item.status === 'published').length;
     const draft = prompts.filter((item) => item.status !== 'published').length;
 
-    return {
-      total: prompts.length,
-      published,
-      draft,
-    };
+    return { total: prompts.length, published, draft };
   }, [prompts]);
 
   const vaultCounts = useMemo(() => {
     const published = vaultItems.filter((item) => item.status === 'published').length;
     const draft = vaultItems.filter((item) => item.status !== 'published').length;
 
-    return {
-      total: vaultItems.length,
-      published,
-      draft,
-    };
+    return { total: vaultItems.length, published, draft };
   }, [vaultItems]);
 
   const mediaCounts = useMemo(() => {
@@ -762,57 +824,46 @@ export default function AdminPage() {
           <div style={styles.statLabel}>Recent Media Loaded</div>
           <div style={styles.statValue}>{mediaCounts.total}</div>
         </div>
-
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Published Media</div>
           <div style={styles.statValue}>{mediaCounts.published}</div>
         </div>
-
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Hidden Media</div>
           <div style={styles.statValue}>{mediaCounts.hidden}</div>
         </div>
-
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Video Items</div>
           <div style={styles.statValue}>{mediaCounts.videos}</div>
         </div>
-
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Featured Items</div>
           <div style={styles.statValue}>{mediaCounts.featured}</div>
         </div>
-
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Homepage Screening</div>
           <div style={styles.statValue}>{mediaCounts.homepageFeatured}</div>
         </div>
-
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Total Prompts</div>
           <div style={styles.statValue}>{promptCounts.total}</div>
         </div>
-
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Published Prompts</div>
           <div style={styles.statValue}>{promptCounts.published}</div>
         </div>
-
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Draft Prompts</div>
           <div style={styles.statValue}>{promptCounts.draft}</div>
         </div>
-
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Vault Entries</div>
           <div style={styles.statValue}>{vaultCounts.total}</div>
         </div>
-
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Published Vault</div>
           <div style={styles.statValue}>{vaultCounts.published}</div>
         </div>
-
         <div style={styles.statCard}>
           <div style={styles.statLabel}>Draft Vault</div>
           <div style={styles.statValue}>{vaultCounts.draft}</div>
@@ -821,6 +872,9 @@ export default function AdminPage() {
 
       <section style={styles.card}>
         <h2 style={styles.sectionTitle}>Upload Media</h2>
+        <p style={styles.mutedText}>
+          Batch image upload is active. Select multiple images at once, upload them as separate media cards, then edit each title and quote later.
+        </p>
 
         <form onSubmit={handleMediaSubmit} style={styles.form}>
           <div style={styles.twoColumnGrid}>
@@ -834,7 +888,7 @@ export default function AdminPage() {
                   setMediaCategory('');
                   setNewMediaCategory('');
                   setMediaCategoryMode('existing');
-                  setMediaFile(null);
+                  setMediaFiles([]);
                   const fileInput = document.getElementById('admin-media-file-input');
                   if (fileInput) fileInput.value = '';
                 }}
@@ -846,43 +900,56 @@ export default function AdminPage() {
             </div>
 
             <div style={styles.fieldGroup}>
-              <label style={styles.label}>{mediaType === 'video' ? 'Video File' : 'Image File'}</label>
+              <label style={styles.label}>
+                {mediaType === 'video' ? 'Video File' : 'Image Files'}
+              </label>
               <input
                 id="admin-media-file-input"
                 type="file"
                 accept={mediaAcceptValue}
-                onChange={(e) => setMediaFile(e.target.files?.[0] || null)}
+                multiple={mediaType === 'image'}
+                onChange={(e) => {
+                  const selectedFiles = Array.from(e.target.files || []);
+                  setMediaFiles(mediaType === 'video' ? selectedFiles.slice(0, 1) : selectedFiles);
+                }}
                 style={styles.fileInput}
                 required
               />
+              <p style={styles.smallMutedText}>
+                {mediaFiles.length
+                  ? `${mediaFiles.length} ${mediaFiles.length === 1 ? 'file selected' : 'files selected'}`
+                  : mediaType === 'image'
+                  ? 'You can select more than one image.'
+                  : 'Videos stay single upload for stability.'}
+              </p>
             </div>
           </div>
 
           <div style={styles.fieldGroup}>
-            <label style={styles.label}>Title</label>
+            <label style={styles.label}>Shared Title Optional</label>
             <input
               type="text"
               value={mediaTitle}
               onChange={(e) => setMediaTitle(e.target.value)}
-              placeholder={mediaType === 'video' ? 'Enter video title' : 'Enter image title'}
+              placeholder="Optional. For batch uploads, each image gets a numbered title."
               style={styles.input}
             />
           </div>
 
           <div style={styles.twoColumnGrid}>
             <div style={styles.fieldGroup}>
-              <label style={styles.label}>Slug</label>
+              <label style={styles.label}>Shared Slug Optional</label>
               <input
                 type="text"
                 value={mediaSlug}
                 onChange={(e) => setMediaSlug(slugify(e.target.value))}
-                placeholder="example-video-title"
+                placeholder="optional-custom-slug"
                 style={styles.input}
               />
             </div>
 
             <div style={styles.fieldGroup}>
-              <label style={styles.label}>Category</label>
+              <label style={styles.label}>Category Optional</label>
               <select
                 value={mediaCategoryMode === 'new' ? '__new__' : mediaCategory}
                 onChange={(e) => {
@@ -899,7 +966,7 @@ export default function AdminPage() {
                 }}
                 style={styles.select}
               >
-                <option value="">Select category</option>
+                <option value="">Auto category</option>
                 {mediaCategoryOptions.map((category) => (
                   <option key={category} value={category}>
                     {category}
@@ -921,44 +988,40 @@ export default function AdminPage() {
           </div>
 
           <div style={styles.fieldGroup}>
-            <label style={styles.label}>Description</label>
+            <label style={styles.label}>Shared Description Optional</label>
             <textarea
               value={mediaDescription}
               onChange={(e) => setMediaDescription(e.target.value)}
-              placeholder={
-                mediaType === 'video'
-                  ? 'Enter video description'
-                  : 'Enter image description'
-              }
+              placeholder="Optional. You can edit each image later."
               rows={4}
               style={styles.textarea}
             />
           </div>
 
           <div style={styles.fieldGroup}>
-            <label style={styles.label}>Tagline</label>
+            <label style={styles.label}>Shared Tagline Optional</label>
             <input
               type="text"
               value={mediaTagline}
               onChange={(e) => setMediaTagline(e.target.value)}
-              placeholder="Enter short tagline"
+              placeholder="Optional short tagline"
               style={styles.input}
             />
           </div>
 
           <div style={styles.fieldGroup}>
-            <label style={styles.label}>Quote</label>
+            <label style={styles.label}>Shared Quote Optional</label>
             <textarea
               value={mediaQuote}
               onChange={(e) => setMediaQuote(e.target.value)}
-              placeholder="Enter quote"
+              placeholder="Optional shared quote. Each item can be changed later."
               rows={4}
               style={styles.textarea}
             />
           </div>
 
           <div style={styles.fieldGroup}>
-            <label style={styles.label}>Subcategory</label>
+            <label style={styles.label}>Shared Subcategory Optional</label>
             <input
               type="text"
               value={mediaSubcategory}
@@ -1012,8 +1075,8 @@ export default function AdminPage() {
               {savingMedia
                 ? 'Uploading...'
                 : mediaType === 'video'
-                ? 'Upload Video'
-                : 'Upload Image'}
+                ? 'Fast Upload Video'
+                : 'Batch Upload Images'}
             </button>
           </div>
 
@@ -1043,99 +1106,254 @@ export default function AdminPage() {
           <p style={styles.mutedText}>No media found yet.</p>
         ) : (
           <div style={styles.mediaGrid}>
-            {mediaItems.map((item) => (
-              <div key={item.id} style={styles.mediaCard}>
-                {item.preview_url ? (
-                  item.type === 'video' ? (
-                    <video
-                      src={item.preview_url}
-                      style={styles.mediaPreview}
-                      muted
-                      controls
-                      preload="metadata"
-                    />
+            {mediaItems.map((item) => {
+              const isEditing = editingMediaId === item.id;
+              const editCategoryOptions = item.type === 'video' ? VIDEO_CATEGORIES : IMAGE_CATEGORIES;
+
+              return (
+                <div key={item.id} style={styles.mediaCard}>
+                  {item.preview_url ? (
+                    item.type === 'video' ? (
+                      <video
+                        src={item.preview_url}
+                        style={styles.mediaPreview}
+                        muted
+                        controls
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img
+                        src={item.preview_url}
+                        alt={item.title || item.category || 'Media item'}
+                        style={styles.mediaPreview}
+                      />
+                    )
                   ) : (
-                    <img
-                      src={item.preview_url}
-                      alt={item.title || item.category || 'Media item'}
-                      style={styles.mediaPreview}
-                    />
-                  )
-                ) : (
-                  <div style={styles.mediaPlaceholder}>No Preview</div>
-                )}
+                    <div style={styles.mediaPlaceholder}>No Preview</div>
+                  )}
 
-                <div style={styles.metaRow}>
-                  <span style={styles.metaBadge}>{item.type || 'unknown'}</span>
-                  <span style={styles.metaBadge}>{item.category || 'Uncategorized'}</span>
-                  {item.subcategory ? (
-                    <span style={styles.metaBadge}>{item.subcategory}</span>
-                  ) : null}
-                  <span style={styles.metaBadge}>{item.access_level || '—'}</span>
-                  <span style={styles.metaBadge}>{item.status || '—'}</span>
-                  {item.hidden ? <span style={styles.metaBadge}>Hidden</span> : null}
-                  {item.featured ? <span style={styles.featuredBadge}>Featured</span> : null}
-                  {item.homepage_featured ? (
-                    <span style={styles.homepageBadge}>Homepage Screening</span>
-                  ) : null}
+                  {isEditing ? (
+                    <div style={styles.editPanel}>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Title</label>
+                        <input
+                          type="text"
+                          value={editMediaTitle}
+                          onChange={(e) => {
+                            setEditMediaTitle(e.target.value);
+                            setEditMediaSlug(slugify(e.target.value));
+                          }}
+                          style={styles.input}
+                        />
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Slug</label>
+                        <input
+                          type="text"
+                          value={editMediaSlug}
+                          onChange={(e) => setEditMediaSlug(slugify(e.target.value))}
+                          style={styles.input}
+                        />
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Description</label>
+                        <textarea
+                          value={editMediaDescription}
+                          onChange={(e) => setEditMediaDescription(e.target.value)}
+                          rows={4}
+                          style={styles.textarea}
+                        />
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Tagline</label>
+                        <input
+                          type="text"
+                          value={editMediaTagline}
+                          onChange={(e) => setEditMediaTagline(e.target.value)}
+                          style={styles.input}
+                        />
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Quote</label>
+                        <textarea
+                          value={editMediaQuote}
+                          onChange={(e) => setEditMediaQuote(e.target.value)}
+                          rows={4}
+                          style={styles.textarea}
+                        />
+                      </div>
+
+                      <div style={styles.twoColumnGrid}>
+                        <div style={styles.fieldGroup}>
+                          <label style={styles.label}>Category</label>
+                          <select
+                            value={editMediaCategory}
+                            onChange={(e) => setEditMediaCategory(e.target.value)}
+                            style={styles.select}
+                          >
+                            <option value="">Auto category</option>
+                            {editCategoryOptions.map((category) => (
+                              <option key={category} value={category}>
+                                {category}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div style={styles.fieldGroup}>
+                          <label style={styles.label}>Subcategory</label>
+                          <input
+                            type="text"
+                            value={editMediaSubcategory}
+                            onChange={(e) => setEditMediaSubcategory(e.target.value)}
+                            style={styles.input}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={styles.twoColumnGrid}>
+                        <div style={styles.fieldGroup}>
+                          <label style={styles.label}>Access Level</label>
+                          <select
+                            value={editMediaAccessLevel}
+                            onChange={(e) => setEditMediaAccessLevel(e.target.value)}
+                            style={styles.select}
+                          >
+                            <option value="public">public</option>
+                            <option value="supreme">supreme</option>
+                          </select>
+                        </div>
+
+                        <div style={styles.fieldGroup}>
+                          <label style={styles.label}>Status</label>
+                          <select
+                            value={editMediaStatus}
+                            onChange={(e) => setEditMediaStatus(e.target.value)}
+                            style={styles.select}
+                          >
+                            <option value="published">published</option>
+                            <option value="pending">pending</option>
+                            <option value="draft">draft</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Hidden</label>
+                        <select
+                          value={editMediaHidden ? 'true' : 'false'}
+                          onChange={(e) => setEditMediaHidden(e.target.value === 'true')}
+                          style={styles.select}
+                        >
+                          <option value="false">false</option>
+                          <option value="true">true</option>
+                        </select>
+                      </div>
+
+                      <div style={styles.actionRow}>
+                        <button
+                          type="button"
+                          style={styles.primaryButton}
+                          disabled={savingMediaEdit}
+                          onClick={() => saveMediaEdits(item)}
+                        >
+                          {savingMediaEdit ? 'Saving...' : 'Save Edits'}
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.secondaryButton}
+                          onClick={cancelEditingMedia}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={styles.metaRow}>
+                        <span style={styles.metaBadge}>{item.type || 'unknown'}</span>
+                        <span style={styles.metaBadge}>{item.category || 'Uncategorized'}</span>
+                        {item.subcategory ? <span style={styles.metaBadge}>{item.subcategory}</span> : null}
+                        <span style={styles.metaBadge}>{item.access_level || '—'}</span>
+                        <span style={styles.metaBadge}>{item.status || '—'}</span>
+                        {item.hidden ? <span style={styles.metaBadge}>Hidden</span> : null}
+                        {item.featured ? <span style={styles.featuredBadge}>Featured</span> : null}
+                        {item.homepage_featured ? (
+                          <span style={styles.homepageBadge}>Homepage Screening</span>
+                        ) : null}
+                      </div>
+
+                      <div style={styles.mediaInfoBlock}>
+                        {item.title ? <h3 style={styles.mediaTitle}>{item.title}</h3> : null}
+                        {item.slug ? <p style={styles.mediaSlug}>/{item.slug}</p> : null}
+                        {item.description ? <p style={styles.mediaDescription}>{item.description}</p> : null}
+                        {item.tagline ? <p style={styles.mediaTagline}>{item.tagline}</p> : null}
+                        {item.quote ? <p style={styles.mediaQuote}>“{item.quote}”</p> : null}
+                      </div>
+
+                      <div style={styles.metaTextBlock}>
+                        <div>
+                          <strong>Owner:</strong> {item.owner_id || '—'}
+                        </div>
+                        <div>
+                          <strong>Path:</strong> {item.file_path || '—'}
+                        </div>
+                        <div>
+                          <strong>Created:</strong>{' '}
+                          {item.created_at ? new Date(item.created_at).toLocaleString() : '—'}
+                        </div>
+                      </div>
+
+                      <div style={styles.actionRow}>
+                        <button
+                          type="button"
+                          style={styles.secondaryButton}
+                          onClick={() => startEditingMedia(item)}
+                        >
+                          Edit Details
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => toggleFeatured(item.id, item.featured)}
+                          style={item.featured ? styles.featuredOnButton : styles.featuredOffButton}
+                        >
+                          {item.featured ? '⭐ Featured' : '☆ Feature'}
+                        </button>
+
+                        {item.type === 'video' ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleHomepageFeatured(item.id, item.homepage_featured)}
+                            style={
+                              item.homepage_featured
+                                ? styles.homepageOnButton
+                                : styles.homepageOffButton
+                            }
+                          >
+                            {item.homepage_featured
+                              ? '🎬 Homepage Screening'
+                              : 'Set Homepage Screening'}
+                          </button>
+                        ) : null}
+
+                        <button
+                          type="button"
+                          style={styles.dangerButton}
+                          onClick={() => handleDeleteMedia(item)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
-
-                <div style={styles.mediaInfoBlock}>
-                  {item.title ? <h3 style={styles.mediaTitle}>{item.title}</h3> : null}
-                  {item.slug ? <p style={styles.mediaSlug}>/{item.slug}</p> : null}
-                  {item.description ? <p style={styles.mediaDescription}>{item.description}</p> : null}
-                  {item.tagline ? <p style={styles.mediaTagline}>{item.tagline}</p> : null}
-                  {item.quote ? <p style={styles.mediaQuote}>“{item.quote}”</p> : null}
-                </div>
-
-                <div style={styles.metaTextBlock}>
-                  <div>
-                    <strong>Owner:</strong> {item.owner_id || '—'}
-                  </div>
-                  <div>
-                    <strong>Path:</strong> {item.file_path || '—'}
-                  </div>
-                  <div>
-                    <strong>Created:</strong>{' '}
-                    {item.created_at ? new Date(item.created_at).toLocaleString() : '—'}
-                  </div>
-                </div>
-
-                <div style={styles.actionRow}>
-                  <button
-                    type="button"
-                    onClick={() => toggleFeatured(item.id, item.featured)}
-                    style={item.featured ? styles.featuredOnButton : styles.featuredOffButton}
-                  >
-                    {item.featured ? '⭐ Featured' : '☆ Feature'}
-                  </button>
-
-                  {item.type === 'video' ? (
-                    <button
-                      type="button"
-                      onClick={() => toggleHomepageFeatured(item.id, item.homepage_featured)}
-                      style={
-                        item.homepage_featured
-                          ? styles.homepageOnButton
-                          : styles.homepageOffButton
-                      }
-                    >
-                      {item.homepage_featured
-                        ? '🎬 Homepage Screening'
-                        : 'Set Homepage Screening'}
-                    </button>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    style={styles.dangerButton}
-                    onClick={() => handleDeleteMedia(item)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
@@ -1243,9 +1461,7 @@ export default function AdminPage() {
                     <div>
                       <h3 style={styles.promptTitle}>{item.title}</h3>
                       <div style={styles.metaRow}>
-                        <span style={styles.metaBadge}>
-                          {item.category || 'Uncategorized'}
-                        </span>
+                        <span style={styles.metaBadge}>{item.category || 'Uncategorized'}</span>
                         <span
                           style={{
                             ...styles.metaBadge,
@@ -1258,9 +1474,7 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {item.excerpt ? (
-                    <p style={styles.mediaDescription}>{item.excerpt}</p>
-                  ) : null}
+                  {item.excerpt ? <p style={styles.mediaDescription}>{item.excerpt}</p> : null}
 
                   <p style={styles.promptText}>{item.content}</p>
 
@@ -1409,9 +1623,7 @@ export default function AdminPage() {
                     <div>
                       <h3 style={styles.promptTitle}>{prompt.title}</h3>
                       <div style={styles.metaRow}>
-                        <span style={styles.metaBadge}>
-                          {prompt.category || 'Uncategorized'}
-                        </span>
+                        <span style={styles.metaBadge}>{prompt.category || 'Uncategorized'}</span>
                         <span
                           style={{
                             ...styles.metaBadge,
@@ -1426,11 +1638,7 @@ export default function AdminPage() {
 
                   {prompt.preview_url ? (
                     <div style={styles.previewWrap}>
-                      <img
-                        src={prompt.preview_url}
-                        alt={prompt.title}
-                        style={styles.previewImage}
-                      />
+                      <img src={prompt.preview_url} alt={prompt.title} style={styles.previewImage} />
                     </div>
                   ) : null}
 
@@ -1827,8 +2035,20 @@ const styles = {
     lineHeight: 1.6,
     fontStyle: 'italic',
   },
+  editPanel: {
+    display: 'grid',
+    gap: '14px',
+    marginTop: '12px',
+    paddingTop: '14px',
+    borderTop: '1px solid #2f2f3d',
+  },
   mutedText: {
     color: '#b8b8c7',
+  },
+  smallMutedText: {
+    color: '#8e8ea3',
+    fontSize: '13px',
+    margin: 0,
   },
   successText: {
     color: '#9fe3b0',

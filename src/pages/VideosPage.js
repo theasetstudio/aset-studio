@@ -2,14 +2,49 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
-const VIDEO_CATEGORIES = [
-  { key: "all", label: "All" },
-  { key: "cinematic", label: "Cinematic" },
-  { key: "interview", label: "Interviews" },
-  { key: "film", label: "Films" },
-  { key: "music_video", label: "Music Videos" },
-  { key: "studio_release", label: "Studio Releases" },
-  { key: "red_carpet", label: "Red Carpet" },
+const RELEASE_LANES = [
+  {
+    key: "cinematic",
+    eyebrow: "FEATURED CINEMA",
+    title: "Cinematic Releases",
+    empty: "Cinematic releases are being prepared.",
+  },
+  {
+    key: "interview",
+    eyebrow: "PRIVATE CONVERSATIONS",
+    title: "Interviews",
+    empty: "Interview screenings are being prepared.",
+  },
+  {
+    key: "hot_take",
+    eyebrow: "COMMENTARY ROOM",
+    title: "Hot Takes",
+    empty: "Hot Takes are being prepared.",
+  },
+  {
+    key: "film",
+    eyebrow: "ASET ORIGINALS",
+    title: "Films",
+    empty: "Film releases are being prepared.",
+  },
+  {
+    key: "music_video",
+    eyebrow: "PERFORMANCE VISUALS",
+    title: "Music Videos",
+    empty: "Music video releases are being prepared.",
+  },
+  {
+    key: "studio_release",
+    eyebrow: "STUDIO RELEASES",
+    title: "Studio Releases",
+    empty: "Studio releases are being prepared.",
+  },
+  {
+    key: "red_carpet",
+    eyebrow: "EVENT COVERAGE",
+    title: "Red Carpet",
+    empty: "Red carpet moments are being prepared.",
+  },
 ];
 
 function clean(value) {
@@ -46,7 +81,6 @@ export default function VideosPage() {
   const [videos, setVideos] = useState([]);
   const [signedUrls, setSignedUrls] = useState({});
   const [posterUrls, setPosterUrls] = useState({});
-  const [activeCategory, setActiveCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [hoveredFeature, setHoveredFeature] = useState(false);
@@ -100,6 +134,7 @@ export default function VideosPage() {
         safeVideos.map(async (video) => {
           const videoPath = video.watermarked_path || video.file_path;
           const signedUrl = await getSignedUrl(videoPath);
+
           return [video.id, signedUrl];
         })
       );
@@ -108,6 +143,7 @@ export default function VideosPage() {
         safeVideos.map(async (video) => {
           const posterPath = getPosterPath(video);
           const posterUrl = await getSignedUrl(posterPath);
+
           return [video.id, posterUrl];
         })
       );
@@ -127,41 +163,213 @@ export default function VideosPage() {
     };
   }, []);
 
-  const featuredVideo = videos[0] || null;
+  const featuredVideo =
+    videos.find((video) => video.homepage_featured) ||
+    videos.find((video) => video.featured) ||
+    videos[0] ||
+    null;
 
-  const filteredVideos = useMemo(() => {
+  const categorizedVideos = useMemo(() => {
     const remaining = featuredVideo
       ? videos.filter((video) => video.id !== featuredVideo.id)
       : videos;
 
-    if (activeCategory === "all") return remaining;
+    const groups = {
+      cinematic: [],
+      interview: [],
+      hot_take: [],
+      film: [],
+      music_video: [],
+      studio_release: [],
+      red_carpet: [],
+    };
 
-    return remaining.filter((video) => norm(video.category) === activeCategory);
-  }, [videos, featuredVideo, activeCategory]);
+    remaining.forEach((video) => {
+      const category = norm(video.category);
 
-  return (
-    <main style={styles.page}>
-      <section style={styles.hero}>
-        <div style={styles.heroCopy}>
-          <p style={styles.eyebrow}>THE ASET STUDIO PRESENTS</p>
-          <h1 style={styles.title}>Aset Cinema</h1>
-          <p style={styles.text}>
-            A curated screening room for interviews, cinematic releases, studio
-            originals, performances, and the world being built around Aset.
+      if (groups[category]) {
+        groups[category].push(video);
+      } else {
+        groups.cinematic.push(video);
+      }
+    });
+
+    return groups;
+  }, [videos, featuredVideo]);
+
+  const allVisibleVideos = useMemo(() => {
+    return featuredVideo
+      ? videos.filter((video) => video.id !== featuredVideo.id)
+      : videos;
+  }, [videos, featuredVideo]);
+
+  const activeLanes = RELEASE_LANES.map((lane) => {
+    let laneVideos = categorizedVideos[lane.key] || [];
+
+    if (laneVideos.length === 0 && lane.key === "cinematic") {
+      laneVideos = allVisibleVideos;
+    }
+
+    return {
+      ...lane,
+      videos: laneVideos,
+    };
+  });
+
+  const previewVideos = allVisibleVideos.slice(0, 12);
+
+  function renderMiniPreview(video) {
+    const previewUrl = posterUrls[video.id] || signedUrls[video.id] || "";
+
+    return (
+      <Link key={video.id} to={getVideoPath(video)} style={styles.miniThumb}>
+        {previewUrl ? (
+          posterUrls[video.id] ? (
+            <img
+              src={previewUrl}
+              alt={video.title || "Cinema preview"}
+              style={styles.miniThumbMedia}
+            />
+          ) : (
+            <video
+              src={previewUrl}
+              muted
+              playsInline
+              preload="metadata"
+              style={styles.miniThumbMedia}
+            />
+          )
+        ) : (
+          <div style={styles.miniFallback} />
+        )}
+      </Link>
+    );
+  }
+
+  function renderLanePreview(lane) {
+    const laneVideos = lane.videos.slice(0, 4);
+    const hasVideos = laneVideos.length > 0;
+
+    return (
+      <div key={lane.key} style={styles.releaseRoom}>
+        <div>
+          <p style={styles.roomEyebrow}>{lane.eyebrow}</p>
+          <h3 style={styles.roomTitle}>{lane.title}</h3>
+
+          <p style={styles.roomCount}>
+            {hasVideos
+              ? `${lane.videos.length} screening${
+                  lane.videos.length === 1 ? "" : "s"
+                }`
+              : lane.empty}
           </p>
         </div>
 
-        {featuredVideo && (
+        <div style={styles.roomPreviewStrip}>
+          {hasVideos ? (
+            laneVideos.map((video) => renderMiniPreview(video))
+          ) : (
+            <>
+              <div style={styles.emptyMiniThumb} />
+              <div style={styles.emptyMiniThumb} />
+              <div style={styles.emptyMiniThumb} />
+              <div style={styles.emptyMiniThumb} />
+            </>
+          )}
+        </div>
+
+        {hasVideos ? (
+          <Link to={getVideoPath(laneVideos[0])} style={styles.roomArrow}>
+            ›
+          </Link>
+        ) : (
+          <span style={styles.roomArrowMuted}>›</span>
+        )}
+      </div>
+    );
+  }
+
+  function renderVideoCard(video) {
+    const isHovered = hoveredCard === video.id;
+
+    return (
+      <Link
+        key={video.id}
+        to={getVideoPath(video)}
+        style={{
+          ...styles.card,
+          ...(isHovered ? styles.cardHover : {}),
+        }}
+        onMouseEnter={() => setHoveredCard(video.id)}
+        onMouseLeave={() => setHoveredCard(null)}
+      >
+        <div style={styles.cardMedia}>
+          {posterUrls[video.id] && (
+            <img
+              src={posterUrls[video.id]}
+              alt={video.title || "Aset Cinema poster"}
+              style={styles.posterImage}
+            />
+          )}
+
+          {signedUrls[video.id] ? (
+            <video
+              src={signedUrls[video.id]}
+              poster={posterUrls[video.id] || undefined}
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              style={{
+                ...styles.cardVideo,
+                ...(isHovered ? styles.cardVideoHover : {}),
+              }}
+              onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
+              onMouseLeave={(e) => {
+                e.currentTarget.pause();
+                e.currentTarget.currentTime = 0;
+              }}
+            />
+          ) : (
+            <div style={styles.mediaFallback}>Preview unavailable</div>
+          )}
+
+          <div style={styles.overlay} />
+
+          <span style={styles.badge}>{getCategoryLabel(video.category)}</span>
+        </div>
+
+        <div style={styles.cardBody}>
+          <h3 style={styles.cardTitle}>
+            {video.title || "Untitled Screening"}
+          </h3>
+
+          <p style={styles.cardText}>
+            {video.description || "Details coming soon."}
+          </p>
+
+          <span style={styles.cardCta}>Enter Screening</span>
+        </div>
+      </Link>
+    );
+  }
+
+  return (
+    <main style={styles.page}>
+      <section style={styles.portraitHero}>
+        <div style={styles.heroSidePanel} />
+
+        {featuredVideo ? (
           <Link
             to={getVideoPath(featuredVideo)}
             style={{
-              ...styles.featureCard,
-              ...(hoveredFeature ? styles.featureCardHover : {}),
+              ...styles.featurePortrait,
+              ...(hoveredFeature ? styles.featurePortraitHover : {}),
             }}
             onMouseEnter={() => setHoveredFeature(true)}
             onMouseLeave={() => setHoveredFeature(false)}
           >
-            <div style={styles.featureMedia}>
+            <div style={styles.featurePortraitMedia}>
               {posterUrls[featuredVideo.id] && (
                 <img
                   src={posterUrls[featuredVideo.id]}
@@ -179,8 +387,8 @@ export default function VideosPage() {
                   playsInline
                   preload="metadata"
                   style={{
-                    ...styles.featureVideo,
-                    ...(hoveredFeature ? styles.featureVideoHover : {}),
+                    ...styles.featurePortraitVideo,
+                    ...(hoveredFeature ? styles.featurePortraitVideoHover : {}),
                   }}
                   onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
                   onMouseLeave={(e) => {
@@ -192,126 +400,102 @@ export default function VideosPage() {
                 <div style={styles.mediaFallback}>Preview loading...</div>
               )}
 
-              <div style={styles.overlay} />
+              <div style={styles.portraitOverlay} />
             </div>
 
-            <div style={styles.featureBody}>
+            <div style={styles.featurePortraitBody}>
               <p style={styles.goldText}>FEATURED SCREENING</p>
-              <h2 style={styles.featureTitle}>
+
+              <h1 style={styles.portraitTitle}>
                 {featuredVideo.title || "Featured Presentation"}
-              </h2>
+              </h1>
+
+              <p style={styles.portraitText}>
+                {featuredVideo.description ||
+                  "A featured screening from inside The Aset Studio."}
+              </p>
+
               <span style={styles.cta}>Enter Screening</span>
             </div>
           </Link>
+        ) : (
+          <div style={styles.featurePortrait}>
+            <div style={styles.mediaFallback}>Preparing featured screening...</div>
+          </div>
         )}
+
+        <div style={styles.heroSidePanel} />
       </section>
 
-      <section style={styles.filters}>
-        {VIDEO_CATEGORIES.map((category) => (
-          <button
-            key={category.key}
-            type="button"
-            onClick={() => setActiveCategory(category.key)}
-            style={{
-              ...styles.filterButton,
-              ...(activeCategory === category.key
-                ? styles.filterButtonActive
-                : {}),
-            }}
-          >
-            {category.label}
-          </button>
-        ))}
-      </section>
+      <section style={styles.studioGrid}>
+        <div style={styles.introCard}>
+          <p style={styles.eyebrow}>THE ASET STUDIO PRESENTS</p>
 
-      <section style={styles.content}>
-        <div style={styles.sectionHeader}>
-          <div>
-            <p style={styles.eyebrow}>NOW SCREENING</p>
-            <h2 style={styles.sectionTitle}>
-              {activeCategory === "all"
-                ? "Curated Cinema"
-                : VIDEO_CATEGORIES.find((item) => item.key === activeCategory)
-                    ?.label || "Aset Cinema"}
-            </h2>
+          <h2 style={styles.introTitle}>Aset Cinema</h2>
+
+          <p style={styles.text}>
+            A curated screening room for interviews, cinematic releases, studio
+            originals, performances, red carpet moments, and the world being
+            built around Aset.
+          </p>
+
+          <div style={styles.heroPills}>
+            <span style={styles.heroPill}>Interviews</span>
+            <span style={styles.heroPill}>Studio Originals</span>
+            <span style={styles.heroPill}>Private Screenings</span>
+          </div>
+        </div>
+
+        <div style={styles.roomsCard}>
+          <div style={styles.roomsHeader}>
+            <div>
+              <p style={styles.goldText}>NOW SCREENING</p>
+
+              <h2 style={styles.roomsTitle}>Cinema Release Rooms</h2>
+
+              <p style={styles.roomsText}>
+                Explore release lanes across the Aset Studio screening
+                environment.
+              </p>
+            </div>
+
+            <Link to="/" style={styles.returnLink}>
+              Return to Studio →
+            </Link>
           </div>
 
-          <Link to="/" style={styles.returnLink}>
-            Return to Studio →
-          </Link>
+          {loading ? (
+            <div style={styles.stateCard}>Preparing Aset Cinema...</div>
+          ) : (
+            <div style={styles.roomStack}>
+              {activeLanes.map((lane) => renderLanePreview(lane))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section style={styles.previewSection}>
+        <div style={styles.previewHeader}>
+          <div>
+            <p style={styles.eyebrow}>CURATED SCREENINGS</p>
+            <h2 style={styles.sectionTitle}>Recent Cinema</h2>
+          </div>
+
+          <span style={styles.previewNote}>
+            {previewVideos.length} available screening
+            {previewVideos.length === 1 ? "" : "s"}
+          </span>
         </div>
 
         {loading ? (
-          <div style={styles.stateCard}>Preparing Aset Cinema...</div>
-        ) : filteredVideos.length === 0 ? (
+          <div style={styles.stateCard}>Preparing recent screenings...</div>
+        ) : previewVideos.length === 0 ? (
           <div style={styles.stateCard}>
-            This room is being prepared. New screenings will appear here.
+            Additional screenings are being prepared.
           </div>
         ) : (
-          <div style={styles.grid}>
-            {filteredVideos.map((video) => (
-              <Link
-                key={video.id}
-                to={getVideoPath(video)}
-                style={{
-                  ...styles.card,
-                  ...(hoveredCard === video.id ? styles.cardHover : {}),
-                }}
-                onMouseEnter={() => setHoveredCard(video.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                <div style={styles.cardMedia}>
-                  {posterUrls[video.id] && (
-                    <img
-                      src={posterUrls[video.id]}
-                      alt={video.title || "Aset Cinema poster"}
-                      style={styles.posterImage}
-                    />
-                  )}
-
-                  {signedUrls[video.id] ? (
-                    <video
-                      src={signedUrls[video.id]}
-                      poster={posterUrls[video.id] || undefined}
-                      muted
-                      loop
-                      playsInline
-                      preload="metadata"
-                      style={{
-                        ...styles.cardVideo,
-                        ...(hoveredCard === video.id
-                          ? styles.cardVideoHover
-                          : {}),
-                      }}
-                      onMouseEnter={(e) =>
-                        e.currentTarget.play().catch(() => {})
-                      }
-                      onMouseLeave={(e) => {
-                        e.currentTarget.pause();
-                        e.currentTarget.currentTime = 0;
-                      }}
-                    />
-                  ) : (
-                    <div style={styles.mediaFallback}>Preview unavailable</div>
-                  )}
-
-                  <div style={styles.overlay} />
-                  <span style={styles.badge}>
-                    {getCategoryLabel(video.category)}
-                  </span>
-                </div>
-
-                <div style={styles.cardBody}>
-                  <h3 style={styles.cardTitle}>
-                    {video.title || "Untitled Screening"}
-                  </h3>
-                  <p style={styles.cardText}>
-                    {video.description || "Details coming soon."}
-                  </p>
-                  <span style={styles.cardCta}>Enter Screening</span>
-                </div>
-              </Link>
-            ))}
+          <div style={styles.releaseRow}>
+            {previewVideos.map((video) => renderVideoCard(video))}
           </div>
         )}
       </section>
@@ -323,87 +507,55 @@ const styles = {
   page: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at 70% 0%, rgba(198,136,55,0.16), transparent 34%), radial-gradient(circle at 18% 18%, rgba(245,241,235,0.045), transparent 28%), linear-gradient(180deg, #050505 0%, #090806 48%, #050505 100%)",
+      "radial-gradient(circle at 50% 0%, rgba(198,136,55,0.14), transparent 30%), radial-gradient(circle at 18% 20%, rgba(245,241,235,0.04), transparent 28%), linear-gradient(180deg, #050505 0%, #090806 48%, #050505 100%)",
     color: "#f5f1eb",
-    paddingTop: 78,
+    padding: "88px 24px 82px",
   },
 
-  hero: {
-    maxWidth: 1280,
-    margin: "0 auto",
-    padding: "42px 24px 28px",
+  portraitHero: {
+    maxWidth: 1120,
+    margin: "0 auto 34px",
     display: "grid",
-    gridTemplateColumns: "minmax(280px, 0.52fr) minmax(0, 1.48fr)",
+    gridTemplateColumns: "minmax(150px, 0.74fr) minmax(260px, 340px) minmax(150px, 0.74fr)",
     gap: 24,
     alignItems: "stretch",
   },
 
-  heroCopy: {
-    borderRadius: 30,
-    padding: "30px 28px",
+  heroSidePanel: {
+    minHeight: 560,
+    borderRadius: 28,
+    border: "1px solid rgba(245,241,235,0.075)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.014))",
-    border: "1px solid rgba(245,241,235,0.09)",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-    minHeight: 420,
-    boxShadow: "0 30px 90px rgba(0,0,0,0.32)",
+      "linear-gradient(180deg, rgba(255,255,255,0.028), rgba(255,255,255,0.008)), radial-gradient(circle at center, rgba(198,136,55,0.07), transparent 62%)",
+    boxShadow: "0 34px 100px rgba(0,0,0,0.46)",
   },
 
-  eyebrow: {
-    margin: "0 0 9px",
-    fontSize: 10,
-    letterSpacing: "0.28em",
-    textTransform: "uppercase",
-    color: "rgba(245,241,235,0.52)",
-  },
-
-  title: {
-    margin: "0 0 15px",
-    fontSize: "clamp(46px, 5vw, 76px)",
-    lineHeight: 0.88,
-    letterSpacing: "-0.06em",
-    fontWeight: 900,
-  },
-
-  text: {
-    margin: 0,
-    maxWidth: 520,
-    fontSize: 14,
-    lineHeight: 1.7,
-    color: "rgba(245,241,235,0.74)",
-  },
-
-  featureCard: {
+  featurePortrait: {
     position: "relative",
-    display: "grid",
-    gridTemplateRows: "1fr auto",
-    minHeight: 420,
-    borderRadius: 30,
+    minHeight: 560,
+    borderRadius: 28,
     overflow: "hidden",
     background: "#000",
-    border: "1px solid rgba(245,241,235,0.1)",
+    border: "1px solid rgba(245,241,235,0.16)",
     textDecoration: "none",
     color: "#f5f1eb",
     boxShadow:
-      "0 50px 140px rgba(0,0,0,0.82), 0 0 40px rgba(197,141,54,0.08)",
+      "0 46px 130px rgba(0,0,0,0.82), 0 0 72px rgba(198,136,55,0.14)",
     transition:
       "transform 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease",
   },
 
-  featureCardHover: {
+  featurePortraitHover: {
     transform: "translateY(-6px)",
-    borderColor: "rgba(245,241,235,0.18)",
+    borderColor: "rgba(245,241,235,0.26)",
     boxShadow:
-      "0 62px 160px rgba(0,0,0,0.92), 0 0 56px rgba(197,141,54,0.12)",
+      "0 60px 160px rgba(0,0,0,0.92), 0 0 86px rgba(198,136,55,0.18)",
   },
 
-  featureMedia: {
-    position: "relative",
-    minHeight: 320,
+  featurePortraitMedia: {
+    position: "absolute",
+    inset: 0,
     background: "#000",
-    overflow: "hidden",
   },
 
   posterImage: {
@@ -416,33 +568,37 @@ const styles = {
     filter: "brightness(0.72) contrast(1.08)",
   },
 
-  featureVideo: {
+  featurePortraitVideo: {
     position: "relative",
     zIndex: 1,
     width: "100%",
     height: "100%",
     objectFit: "cover",
     display: "block",
-    opacity: 0.38,
-    filter: "brightness(0.6) contrast(1.04)",
+    opacity: 0.46,
+    filter: "brightness(0.7) contrast(1.04)",
     transition: "opacity 0.35s ease",
   },
 
-  featureVideoHover: {
-    opacity: 0.62,
+  featurePortraitVideoHover: {
+    opacity: 0.64,
   },
 
-  overlay: {
+  portraitOverlay: {
     position: "absolute",
     inset: 0,
     zIndex: 2,
     background:
-      "linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.82)), linear-gradient(135deg, rgba(255,255,255,0.04), transparent 40%)",
+      "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.16) 40%, rgba(0,0,0,0.9) 100%)",
   },
 
-  featureBody: {
-    padding: "20px 24px 24px",
-    background: "linear-gradient(180deg, rgba(10,10,10,0.95), #000)",
+  featurePortraitBody: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 3,
+    padding: "30px",
   },
 
   goldText: {
@@ -453,11 +609,22 @@ const styles = {
     textTransform: "uppercase",
   },
 
-  featureTitle: {
-    margin: "0 0 14px",
-    fontSize: "clamp(28px, 3.4vw, 46px)",
-    lineHeight: 0.96,
-    letterSpacing: "-0.045em",
+  portraitTitle: {
+    margin: "0 0 12px",
+    fontSize: "clamp(31px, 3.7vw, 50px)",
+    lineHeight: 0.92,
+    letterSpacing: "-0.06em",
+    fontWeight: 900,
+  },
+
+  portraitText: {
+    margin: "0 0 20px",
+    maxWidth: 320,
+    color: "rgba(245,241,235,0.72)",
+    fontSize: 12,
+    lineHeight: 1.62,
+    textTransform: "uppercase",
+    letterSpacing: "0.055em",
   },
 
   cta: {
@@ -467,88 +634,259 @@ const styles = {
     borderRadius: 999,
     fontWeight: 900,
     display: "inline-flex",
+    alignItems: "center",
     fontSize: 12,
   },
 
-  filters: {
-    maxWidth: 1280,
-    margin: "0 auto",
-    padding: "10px 24px 26px",
+  studioGrid: {
+    maxWidth: 1120,
+    margin: "0 auto 48px",
+    display: "grid",
+    gridTemplateColumns: "minmax(240px, 0.62fr) minmax(0, 1.62fr)",
+    gap: 24,
+    alignItems: "stretch",
+  },
+
+  introCard: {
+    borderRadius: 28,
+    padding: "30px",
+    minHeight: 360,
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.012))",
+    border: "1px solid rgba(245,241,235,0.085)",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-end",
+    boxShadow: "0 30px 90px rgba(0,0,0,0.38)",
+  },
+
+  eyebrow: {
+    margin: "0 0 9px",
+    fontSize: 10,
+    letterSpacing: "0.28em",
+    textTransform: "uppercase",
+    color: "rgba(245,241,235,0.52)",
+  },
+
+  introTitle: {
+    margin: "0 0 16px",
+    fontSize: "clamp(44px, 4.7vw, 66px)",
+    lineHeight: 0.86,
+    letterSpacing: "-0.065em",
+    fontWeight: 900,
+  },
+
+  text: {
+    margin: 0,
+    maxWidth: 520,
+    fontSize: 14,
+    lineHeight: 1.7,
+    color: "rgba(245,241,235,0.74)",
+  },
+
+  heroPills: {
     display: "flex",
     flexWrap: "wrap",
-    gap: 9,
+    gap: 8,
+    marginTop: 24,
   },
 
-  filterButton: {
+  heroPill: {
+    padding: "8px 11px",
+    borderRadius: 999,
     border: "1px solid rgba(245,241,235,0.11)",
     background: "rgba(255,255,255,0.025)",
-    color: "rgba(245,241,235,0.7)",
-    borderRadius: 999,
-    padding: "9px 13px",
-    cursor: "pointer",
-    fontWeight: 800,
-    letterSpacing: "0.04em",
-    textTransform: "uppercase",
+    color: "rgba(245,241,235,0.72)",
     fontSize: 10,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    fontWeight: 800,
   },
 
-  filterButtonActive: {
-    background: "#f5f1eb",
-    color: "#111",
+  roomsCard: {
+    borderRadius: 28,
+    padding: "30px",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.038), rgba(255,255,255,0.012))",
+    border: "1px solid rgba(245,241,235,0.085)",
+    boxShadow: "0 30px 90px rgba(0,0,0,0.38)",
   },
 
-  content: {
-    maxWidth: 1280,
+  roomsHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 18,
+    marginBottom: 20,
+  },
+
+  roomsTitle: {
+    margin: "0 0 9px",
+    fontSize: "clamp(30px, 3.2vw, 44px)",
+    lineHeight: 0.95,
+    letterSpacing: "-0.055em",
+  },
+
+  roomsText: {
+    margin: 0,
+    color: "rgba(245,241,235,0.66)",
+    fontSize: 14,
+    lineHeight: 1.6,
+  },
+
+  returnLink: {
+    color: "#d7b56d",
+    textDecoration: "none",
+    fontSize: 13,
+    whiteSpace: "nowrap",
+  },
+
+  roomStack: {
+    display: "grid",
+    gap: 10,
+  },
+
+  releaseRoom: {
+    display: "grid",
+    gridTemplateColumns: "minmax(150px, 0.52fr) minmax(250px, 1fr) auto",
+    gap: 15,
+    alignItems: "center",
+    padding: "12px",
+    borderRadius: 16,
+    border: "1px solid rgba(245,241,235,0.07)",
+    background: "rgba(255,255,255,0.017)",
+    textDecoration: "none",
+    color: "#f5f1eb",
+  },
+
+  roomEyebrow: {
+    margin: "0 0 5px",
+    color: "rgba(245,241,235,0.42)",
+    fontSize: 9,
+    letterSpacing: "0.2em",
+    textTransform: "uppercase",
+  },
+
+  roomTitle: {
+    margin: "0 0 4px",
+    fontSize: 19,
+    lineHeight: 1.05,
+    letterSpacing: "-0.03em",
+  },
+
+  roomCount: {
+    margin: 0,
+    color: "#c58d36",
+    fontSize: 12,
+  },
+
+  roomPreviewStrip: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gap: 7,
+  },
+
+  miniThumb: {
+    position: "relative",
+    aspectRatio: "16 / 9",
+    borderRadius: 8,
+    overflow: "hidden",
+    background: "#000",
+    border: "1px solid rgba(245,241,235,0.06)",
+  },
+
+  miniThumbMedia: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "block",
+    filter: "brightness(0.8) contrast(1.05)",
+  },
+
+  miniFallback: {
+    width: "100%",
+    height: "100%",
+    background: "rgba(255,255,255,0.03)",
+  },
+
+  emptyMiniThumb: {
+    aspectRatio: "16 / 9",
+    borderRadius: 8,
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012))",
+    border: "1px solid rgba(245,241,235,0.045)",
+  },
+
+  roomArrow: {
+    color: "#d7b56d",
+    textDecoration: "none",
+    fontSize: 34,
+    lineHeight: 1,
+  },
+
+  roomArrowMuted: {
+    color: "rgba(245,241,235,0.18)",
+    fontSize: 34,
+    lineHeight: 1,
+  },
+
+  previewSection: {
+    maxWidth: 1120,
     margin: "0 auto",
-    padding: "12px 24px 96px",
   },
 
-  sectionHeader: {
+  previewHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-end",
     gap: 20,
+    marginBottom: 18,
     flexWrap: "wrap",
-    marginBottom: 24,
   },
 
   sectionTitle: {
     margin: 0,
-    fontSize: "clamp(32px, 4.2vw, 54px)",
+    fontSize: "clamp(32px, 4vw, 50px)",
     lineHeight: 0.95,
     letterSpacing: "-0.05em",
   },
 
-  returnLink: {
-    color: "rgba(245,241,235,0.7)",
-    textDecoration: "none",
-    fontSize: 13,
+  previewNote: {
+    color: "rgba(245,241,235,0.52)",
+    fontSize: 12,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
   },
 
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-    gap: 22,
+  releaseRow: {
+    display: "flex",
+    gap: 16,
+    overflowX: "auto",
+    paddingBottom: 10,
+    scrollSnapType: "x proximity",
   },
 
   card: {
+    minWidth: 270,
+    maxWidth: 270,
+    scrollSnapAlign: "start",
     display: "block",
     overflow: "hidden",
-    borderRadius: 24,
+    borderRadius: 22,
     textDecoration: "none",
     color: "#f5f1eb",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))",
+      "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.012))",
     border: "1px solid rgba(245,241,235,0.08)",
-    boxShadow: "0 26px 70px rgba(0,0,0,0.38)",
+    boxShadow: "0 24px 62px rgba(0,0,0,0.34)",
     transition:
       "transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease",
   },
 
   cardHover: {
-    transform: "translateY(-6px)",
+    transform: "translateY(-5px)",
     borderColor: "rgba(245,241,235,0.16)",
-    boxShadow: "0 34px 90px rgba(0,0,0,0.52)",
+    boxShadow: "0 30px 80px rgba(0,0,0,0.5)",
   },
 
   cardMedia: {
@@ -573,10 +911,18 @@ const styles = {
     opacity: 0.52,
   },
 
+  overlay: {
+    position: "absolute",
+    inset: 0,
+    zIndex: 2,
+    background:
+      "linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.82)), linear-gradient(135deg, rgba(255,255,255,0.04), transparent 40%)",
+  },
+
   badge: {
     position: "absolute",
-    left: 13,
-    bottom: 13,
+    left: 12,
+    bottom: 12,
     zIndex: 3,
     padding: "7px 10px",
     borderRadius: 999,
@@ -589,20 +935,20 @@ const styles = {
   },
 
   cardBody: {
-    padding: "17px 18px 20px",
+    padding: "16px 17px 18px",
   },
 
   cardTitle: {
-    margin: "0 0 9px",
-    fontSize: 20,
+    margin: "0 0 8px",
+    fontSize: 19,
     lineHeight: 1.08,
     letterSpacing: "-0.025em",
   },
 
   cardText: {
-    margin: "0 0 13px",
+    margin: "0 0 12px",
     fontSize: 13,
-    lineHeight: 1.55,
+    lineHeight: 1.52,
     color: "rgba(245,241,235,0.64)",
   },
 
@@ -623,8 +969,8 @@ const styles = {
   },
 
   stateCard: {
-    borderRadius: 24,
-    padding: "34px 24px",
+    borderRadius: 22,
+    padding: "30px 22px",
     textAlign: "center",
     color: "rgba(245,241,235,0.68)",
     border: "1px solid rgba(245,241,235,0.08)",

@@ -27,6 +27,7 @@ import FeaturedPage from "./pages/FeaturedPage";
 import DebugAuthPage from "./pages/DebugAuthPage";
 import VideosPage from "./pages/VideosPage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
+import BrickByBrickPage from "./pages/BrickByBrickPage";
 import ExpressionVaultPage from "./pages/ExpressionVaultPage";
 import AsetSpotlightPage from "./pages/AsetSpotlightPage";
 import SpotlightProfilePage from "./pages/SpotlightProfilePage";
@@ -108,8 +109,10 @@ function App() {
         <Route path="/aset-spotlight" element={<AsetSpotlightPage />} />
         <Route path="/aset-spotlight/:slug" element={<SpotlightProfilePage />} />
         <Route path="/debug-auth" element={<DebugAuthPage />} />
+
         <Route path="/videos" element={<VideosPage />} />
         <Route path="/video/:slug" element={<VideoPlayerPage />} />
+        <Route path="/brick-by-brick" element={<BrickByBrickPage />} />
 
         <Route path="/studio/expression-vault" element={<ExpressionVaultPage />} />
 
