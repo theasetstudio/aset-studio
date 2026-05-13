@@ -13,7 +13,15 @@ const IMAGE_CATEGORIES = [
   'storybook land',
 ];
 
-const VIDEO_CATEGORIES = ['interview', 'hot_take', 'cinematic'];
+const VIDEO_CATEGORIES = [
+  'cinematic',
+  'interview',
+  'hot_take',
+  'film',
+  'music_video',
+  'studio_release',
+  'red_carpet',
+];
 
 function slugify(value) {
   return String(value || '')
@@ -255,7 +263,9 @@ export default function AdminPage() {
       selectedCategory || (mediaType === 'video' ? 'cinematic' : 'editorial');
 
     if (mediaType === 'video' && !VIDEO_CATEGORIES.includes(autoCategory)) {
-      setMediaMessage('Video category must be interview, hot_take, or cinematic.');
+      setMediaMessage(
+        'Video category must be cinematic, interview, hot_take, film, music_video, studio_release, or red_carpet.'
+      );
       return;
     }
 
@@ -405,7 +415,9 @@ export default function AdminPage() {
       editMediaCategory.trim() || (item.type === 'video' ? 'cinematic' : 'editorial');
 
     if (item.type === 'video' && !VIDEO_CATEGORIES.includes(cleanCategory)) {
-      alert('Video category must be interview, hot_take, or cinematic.');
+      alert(
+        'Video category must be cinematic, interview, hot_take, film, music_video, studio_release, or red_carpet.'
+      );
       return;
     }
 
