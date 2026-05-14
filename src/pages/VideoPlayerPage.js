@@ -6,24 +6,43 @@ import "./VideoPlayerPage.css";
 const categoryLabels = {
   film: "Feature Presentation",
   films: "Feature Presentation",
+  music_video: "Visual Release",
   "music video": "Visual Release",
-  "music videos": "Visual Release",
   interview: "Private Conversation",
   interviews: "Private Conversation",
+  hot_take: "Commentary Room",
+  "hot take": "Commentary Room",
+  studio_release: "Aset Studio Original",
   "studio release": "Aset Studio Original",
   "aset original": "Aset Studio Original",
+  red_carpet: "Red Carpet Moment",
   "red carpet": "Red Carpet Moment",
   event: "Red Carpet Moment",
+  cinematic: "Aset Cinema Presentation",
 };
 
 function getPresentationLabel(video) {
   const rawCategory = (video?.category || "").toLowerCase().trim();
 
   if (categoryLabels[rawCategory]) return categoryLabels[rawCategory];
-  if (video?.is_aset_original) return "Aset Studio Original";
-  if (video?.studio_name) return `Presented by ${video.studio_name}`;
+
+  if (video?.is_aset_original) {
+    return "Aset Studio Original";
+  }
+
+  if (video?.studio_name) {
+    return `Presented by ${video.studio_name}`;
+  }
 
   return "Aset Cinema Presentation";
+}
+
+function formatCategory(category) {
+  if (!category) return "Aset Cinema";
+
+  return category
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function getPosterPath(video) {
@@ -86,13 +105,6 @@ export default function VideoPlayerPage() {
     async function loadVideoPage() {
       setLoading(true);
       setNotFound(false);
-      setVideo(null);
-      setVideoUrl("");
-      setPosterUrl("");
-      setRelated([]);
-      setMoreFromCinema([]);
-      setRelatedPosters({});
-      setCinemaPosters({});
 
       const { data, error } = await supabase
         .from("media_items")
@@ -129,11 +141,10 @@ export default function VideoPlayerPage() {
         return;
       }
 
-      const videoFilePath = videoData.watermarked_path || videoData.file_path;
+      const videoFilePath =
+        videoData.watermarked_path || videoData.file_path;
 
       if (!videoFilePath) {
-        console.error("Video file path missing:", videoData);
-
         if (isMounted) {
           setNotFound(true);
           setLoading(false);
@@ -143,7 +154,9 @@ export default function VideoPlayerPage() {
       }
 
       const signedVideoUrl = await getSignedUrl(videoFilePath);
-      const signedPosterUrl = await getSignedUrl(getPosterPath(videoData));
+      const signedPosterUrl = await getSignedUrl(
+        getPosterPath(videoData)
+      );
 
       const { data: relatedData } = await supabase
         .from("media_items")
@@ -166,8 +179,13 @@ export default function VideoPlayerPage() {
         .neq("slug", slug)
         .limit(10);
 
-      const nextRelatedPosters = await createPosterMap(relatedData || []);
-      const nextCinemaPosters = await createPosterMap(cinemaData || []);
+      const nextRelatedPosters = await createPosterMap(
+        relatedData || []
+      );
+
+      const nextCinemaPosters = await createPosterMap(
+        cinemaData || []
+      );
 
       if (isMounted) {
         setVideo(videoData);
@@ -192,7 +210,11 @@ export default function VideoPlayerPage() {
     const poster = posterMap[item.id];
 
     return (
-      <Link key={item.id} to={`/video/${item.slug}`} className="video-card-link">
+      <Link
+        key={item.id}
+        to={`/video/${item.slug}`}
+        className="video-card-link"
+      >
         {poster && (
           <img
             src={poster}
@@ -203,7 +225,8 @@ export default function VideoPlayerPage() {
 
         <div className="video-card-shade" />
 
-        <span>{item.category || "Aset Cinema"}</span>
+        <span>{formatCategory(item.category)}</span>
+
         <strong>{item.title}</strong>
       </Link>
     );
@@ -241,7 +264,9 @@ export default function VideoPlayerPage() {
             ← Back to Aset Cinema
           </Link>
 
-          <p className="video-page-label">Aset Cinema</p>
+          <p className="video-page-label">
+            Aset Cinema Screening Room
+          </p>
         </div>
 
         <div className="video-stage">
@@ -276,14 +301,34 @@ export default function VideoPlayerPage() {
         </div>
 
         <div className="video-details">
-          <p className="video-kicker">{getPresentationLabel(video)}</p>
+          <p className="video-kicker">
+            {getPresentationLabel(video)}
+          </p>
 
           <h1>{video.title}</h1>
 
-          {video.category && <p className="video-category">{video.category}</p>}
+          {video.category && (
+            <p className="video-category">
+              {formatCategory(video.category)}
+            </p>
+          )}
+
+          {video.tagline && (
+            <p className="video-description">
+              {video.tagline}
+            </p>
+          )}
+
+          {video.quote && (
+            <blockquote className="video-quote">
+              “{video.quote}”
+            </blockquote>
+          )}
 
           {video.description && (
-            <p className="video-description">{video.description}</p>
+            <p className="video-description">
+              {video.description}
+            </p>
           )}
         </div>
       </section>
@@ -291,12 +336,17 @@ export default function VideoPlayerPage() {
       {related.length > 0 && (
         <section className="video-section">
           <div className="video-section-header">
-            <p>Curated by category</p>
-            <h2>Continue Watching</h2>
+            <p>Continue Inside This World</p>
+
+            <h2>
+              More {formatCategory(video.category)}
+            </h2>
           </div>
 
           <div className="video-row">
-            {related.map((item) => renderCinemaCard(item, relatedPosters))}
+            {related.map((item) =>
+              renderCinemaCard(item, relatedPosters)
+            )}
           </div>
         </section>
       )}
@@ -304,8 +354,9 @@ export default function VideoPlayerPage() {
       {moreFromCinema.length > 0 && (
         <section className="video-section">
           <div className="video-section-header">
-            <p>The archive continues</p>
-            <h2>More from Aset Cinema</h2>
+            <p>The Archive Expands</p>
+
+            <h2>More From Aset Cinema</h2>
           </div>
 
           <div className="video-row">
