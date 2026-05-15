@@ -25,14 +25,8 @@ function getPresentationLabel(video) {
   const rawCategory = (video?.category || "").toLowerCase().trim();
 
   if (categoryLabels[rawCategory]) return categoryLabels[rawCategory];
-
-  if (video?.is_aset_original) {
-    return "Aset Studio Original";
-  }
-
-  if (video?.studio_name) {
-    return `Presented by ${video.studio_name}`;
-  }
+  if (video?.is_aset_original) return "Aset Studio Original";
+  if (video?.studio_name) return `Presented by ${video.studio_name}`;
 
   return "Aset Cinema Presentation";
 }
@@ -59,6 +53,10 @@ function isFullUrl(value) {
   return /^https?:\/\//i.test(value || "");
 }
 
+function requiresSupremeAccess(video) {
+  return String(video?.access_level || "").toLowerCase() === "supreme";
+}
+
 export default function VideoPlayerPage() {
   const { slug } = useParams();
 
@@ -71,6 +69,7 @@ export default function VideoPlayerPage() {
   const [cinemaPosters, setCinemaPosters] = useState({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -105,6 +104,14 @@ export default function VideoPlayerPage() {
     async function loadVideoPage() {
       setLoading(true);
       setNotFound(false);
+      setIsLocked(false);
+      setVideo(null);
+      setVideoUrl("");
+      setPosterUrl("");
+      setRelated([]);
+      setMoreFromCinema([]);
+      setRelatedPosters({});
+      setCinemaPosters({});
 
       const { data, error } = await supabase
         .from("media_items")
@@ -141,8 +148,8 @@ export default function VideoPlayerPage() {
         return;
       }
 
-      const videoFilePath =
-        videoData.watermarked_path || videoData.file_path;
+      const locked = requiresSupremeAccess(videoData);
+      const videoFilePath = videoData.watermarked_path || videoData.file_path;
 
       if (!videoFilePath) {
         if (isMounted) {
@@ -153,10 +160,8 @@ export default function VideoPlayerPage() {
         return;
       }
 
-      const signedVideoUrl = await getSignedUrl(videoFilePath);
-      const signedPosterUrl = await getSignedUrl(
-        getPosterPath(videoData)
-      );
+      const signedVideoUrl = locked ? "" : await getSignedUrl(videoFilePath);
+      const signedPosterUrl = await getSignedUrl(getPosterPath(videoData));
 
       const { data: relatedData } = await supabase
         .from("media_items")
@@ -179,18 +184,14 @@ export default function VideoPlayerPage() {
         .neq("slug", slug)
         .limit(10);
 
-      const nextRelatedPosters = await createPosterMap(
-        relatedData || []
-      );
-
-      const nextCinemaPosters = await createPosterMap(
-        cinemaData || []
-      );
+      const nextRelatedPosters = await createPosterMap(relatedData || []);
+      const nextCinemaPosters = await createPosterMap(cinemaData || []);
 
       if (isMounted) {
         setVideo(videoData);
         setVideoUrl(signedVideoUrl);
         setPosterUrl(signedPosterUrl);
+        setIsLocked(locked);
         setRelated(relatedData || []);
         setMoreFromCinema(cinemaData || []);
         setRelatedPosters(nextRelatedPosters);
@@ -226,7 +227,6 @@ export default function VideoPlayerPage() {
         <div className="video-card-shade" />
 
         <span>{formatCategory(item.category)}</span>
-
         <strong>{item.title}</strong>
       </Link>
     );
@@ -264,14 +264,67 @@ export default function VideoPlayerPage() {
             ← Back to Aset Cinema
           </Link>
 
-          <p className="video-page-label">
-            Aset Cinema Screening Room
-          </p>
+          <p className="video-page-label">Aset Cinema Screening Room</p>
         </div>
 
         <div className="video-stage">
           <div className="video-frame">
-            {videoUrl ? (
+            {isLocked ? (
+              <div className="video-state-panel embedded">
+                <p
+                  style={{
+                    color: "#d7b56d",
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    fontSize: "0.72rem",
+                    marginBottom: "14px",
+                  }}
+                >
+                  Supreme Access Screening
+                </p>
+
+                <h2
+                  style={{
+                    margin: "0 0 18px",
+                    fontSize: "clamp(2rem, 4vw, 3.8rem)",
+                    lineHeight: "0.9",
+                    letterSpacing: "-0.06em",
+                  }}
+                >
+                  This Screening Is Locked
+                </h2>
+
+                <p
+                  style={{
+                    maxWidth: "540px",
+                    color: "rgba(255,255,255,0.72)",
+                    lineHeight: "1.8",
+                    marginBottom: "24px",
+                  }}
+                >
+                  This cinematic presentation is currently reserved for Supreme
+                  Access members inside The Aset Studio.
+                </p>
+
+                <Link
+                  to="/supreme-access"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #c58d36, #f1d08a)",
+                    border: "none",
+                    color: "#111",
+                    padding: "14px 22px",
+                    borderRadius: "999px",
+                    fontWeight: 900,
+                    cursor: "pointer",
+                    letterSpacing: "0.04em",
+                    textDecoration: "none",
+                  }}
+                >
+                  Request Supreme Access
+                </Link>
+              </div>
+            ) : videoUrl ? (
               <video
                 className="main-video"
                 src={videoUrl}
@@ -302,33 +355,25 @@ export default function VideoPlayerPage() {
 
         <div className="video-details">
           <p className="video-kicker">
-            {getPresentationLabel(video)}
+            {isLocked ? "Supreme Access Screening" : getPresentationLabel(video)}
           </p>
 
           <h1>{video.title}</h1>
 
           {video.category && (
-            <p className="video-category">
-              {formatCategory(video.category)}
-            </p>
+            <p className="video-category">{formatCategory(video.category)}</p>
           )}
 
           {video.tagline && (
-            <p className="video-description">
-              {video.tagline}
-            </p>
+            <p className="video-description">{video.tagline}</p>
           )}
 
           {video.quote && (
-            <blockquote className="video-quote">
-              “{video.quote}”
-            </blockquote>
+            <blockquote className="video-quote">“{video.quote}”</blockquote>
           )}
 
           {video.description && (
-            <p className="video-description">
-              {video.description}
-            </p>
+            <p className="video-description">{video.description}</p>
           )}
         </div>
       </section>
@@ -337,16 +382,11 @@ export default function VideoPlayerPage() {
         <section className="video-section">
           <div className="video-section-header">
             <p>Continue Inside This World</p>
-
-            <h2>
-              More {formatCategory(video.category)}
-            </h2>
+            <h2>More {formatCategory(video.category)}</h2>
           </div>
 
           <div className="video-row">
-            {related.map((item) =>
-              renderCinemaCard(item, relatedPosters)
-            )}
+            {related.map((item) => renderCinemaCard(item, relatedPosters))}
           </div>
         </section>
       )}
@@ -355,7 +395,6 @@ export default function VideoPlayerPage() {
         <section className="video-section">
           <div className="video-section-header">
             <p>The Archive Expands</p>
-
             <h2>More From Aset Cinema</h2>
           </div>
 
