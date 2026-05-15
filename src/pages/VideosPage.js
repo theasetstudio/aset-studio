@@ -77,6 +77,10 @@ function isFullUrl(value) {
   return /^https?:\/\//i.test(value || "");
 }
 
+function isSupremeAccess(video) {
+  return norm(video?.access_level) === "supreme";
+}
+
 export default function VideosPage() {
   const [videos, setVideos] = useState([]);
   const [signedUrls, setSignedUrls] = useState({});
@@ -220,15 +224,26 @@ export default function VideosPage() {
 
   function renderMiniPreview(video) {
     const previewUrl = posterUrls[video.id] || signedUrls[video.id] || "";
+    const locked = isSupremeAccess(video);
 
     return (
-      <Link key={video.id} to={getVideoPath(video)} style={styles.miniThumb}>
+      <Link
+        key={video.id}
+        to={getVideoPath(video)}
+        style={{
+          ...styles.miniThumb,
+          ...(locked ? styles.lockedMiniThumb : {}),
+        }}
+      >
         {previewUrl ? (
           posterUrls[video.id] ? (
             <img
               src={previewUrl}
               alt={video.title || "Cinema preview"}
-              style={styles.miniThumbMedia}
+              style={{
+                ...styles.miniThumbMedia,
+                ...(locked ? styles.lockedMedia : {}),
+              }}
             />
           ) : (
             <video
@@ -236,12 +251,17 @@ export default function VideosPage() {
               muted
               playsInline
               preload="metadata"
-              style={styles.miniThumbMedia}
+              style={{
+                ...styles.miniThumbMedia,
+                ...(locked ? styles.lockedMedia : {}),
+              }}
             />
           )
         ) : (
           <div style={styles.miniFallback} />
         )}
+
+        {locked ? <span style={styles.miniLockBadge}>LOCKED</span> : null}
       </Link>
     );
   }
@@ -291,6 +311,7 @@ export default function VideosPage() {
 
   function renderVideoCard(video) {
     const isHovered = hoveredCard === video.id;
+    const locked = isSupremeAccess(video);
 
     return (
       <Link
@@ -298,6 +319,7 @@ export default function VideosPage() {
         to={getVideoPath(video)}
         style={{
           ...styles.card,
+          ...(locked ? styles.lockedCard : {}),
           ...(isHovered ? styles.cardHover : {}),
         }}
         onMouseEnter={() => setHoveredCard(video.id)}
@@ -308,7 +330,10 @@ export default function VideosPage() {
             <img
               src={posterUrls[video.id]}
               alt={video.title || "Aset Cinema poster"}
-              style={styles.posterImage}
+              style={{
+                ...styles.posterImage,
+                ...(locked ? styles.lockedMedia : {}),
+              }}
             />
           )}
 
@@ -322,9 +347,12 @@ export default function VideosPage() {
               preload="metadata"
               style={{
                 ...styles.cardVideo,
-                ...(isHovered ? styles.cardVideoHover : {}),
+                ...(locked ? styles.lockedMedia : {}),
+                ...(isHovered && !locked ? styles.cardVideoHover : {}),
               }}
-              onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
+              onMouseEnter={(e) => {
+                if (!locked) e.currentTarget.play().catch(() => {});
+              }}
               onMouseLeave={(e) => {
                 e.currentTarget.pause();
                 e.currentTarget.currentTime = 0;
@@ -337,6 +365,13 @@ export default function VideosPage() {
           <div style={styles.overlay} />
 
           <span style={styles.badge}>{getCategoryLabel(video.category)}</span>
+
+          {locked ? (
+            <div style={styles.lockOverlay}>
+              <span style={styles.lockIcon}>◆</span>
+              <span style={styles.lockText}>Supreme Access</span>
+            </div>
+          ) : null}
         </div>
 
         <div style={styles.cardBody}>
@@ -345,14 +380,20 @@ export default function VideosPage() {
           </h3>
 
           <p style={styles.cardText}>
-            {video.description || "Details coming soon."}
+            {locked
+              ? "Private screening reserved for Supreme Access."
+              : video.description || "Details coming soon."}
           </p>
 
-          <span style={styles.cardCta}>Enter Screening</span>
+          <span style={locked ? styles.lockedCta : styles.cardCta}>
+            {locked ? "Unlock Screening" : "Enter Screening"}
+          </span>
         </div>
       </Link>
     );
   }
+
+  const featuredLocked = isSupremeAccess(featuredVideo);
 
   return (
     <main style={styles.page}>
@@ -364,6 +405,7 @@ export default function VideosPage() {
             to={getVideoPath(featuredVideo)}
             style={{
               ...styles.featurePortrait,
+              ...(featuredLocked ? styles.lockedFeaturePortrait : {}),
               ...(hoveredFeature ? styles.featurePortraitHover : {}),
             }}
             onMouseEnter={() => setHoveredFeature(true)}
@@ -374,7 +416,10 @@ export default function VideosPage() {
                 <img
                   src={posterUrls[featuredVideo.id]}
                   alt={featuredVideo.title || "Featured screening"}
-                  style={styles.posterImage}
+                  style={{
+                    ...styles.posterImage,
+                    ...(featuredLocked ? styles.lockedFeatureMedia : {}),
+                  }}
                 />
               )}
 
@@ -388,9 +433,14 @@ export default function VideosPage() {
                   preload="metadata"
                   style={{
                     ...styles.featurePortraitVideo,
-                    ...(hoveredFeature ? styles.featurePortraitVideoHover : {}),
+                    ...(featuredLocked ? styles.lockedFeatureMedia : {}),
+                    ...(hoveredFeature && !featuredLocked
+                      ? styles.featurePortraitVideoHover
+                      : {}),
                   }}
-                  onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
+                  onMouseEnter={(e) => {
+                    if (!featuredLocked) e.currentTarget.play().catch(() => {});
+                  }}
                   onMouseLeave={(e) => {
                     e.currentTarget.pause();
                     e.currentTarget.currentTime = 0;
@@ -401,21 +451,34 @@ export default function VideosPage() {
               )}
 
               <div style={styles.portraitOverlay} />
+
+              {featuredLocked ? (
+                <div style={styles.featureLockOverlay}>
+                  <span style={styles.featureLockIcon}>◆</span>
+                  <span style={styles.featureLockText}>Supreme Access Screening</span>
+                </div>
+              ) : null}
             </div>
 
             <div style={styles.featurePortraitBody}>
-              <p style={styles.goldText}>FEATURED SCREENING</p>
+              <p style={styles.goldText}>
+                {featuredLocked ? "SUPREME ACCESS" : "FEATURED SCREENING"}
+              </p>
 
               <h1 style={styles.portraitTitle}>
                 {featuredVideo.title || "Featured Presentation"}
               </h1>
 
               <p style={styles.portraitText}>
-                {featuredVideo.description ||
-                  "A featured screening from inside The Aset Studio."}
+                {featuredLocked
+                  ? "A private cinematic screening reserved for Supreme Access."
+                  : featuredVideo.description ||
+                    "A featured screening from inside The Aset Studio."}
               </p>
 
-              <span style={styles.cta}>Enter Screening</span>
+              <span style={featuredLocked ? styles.lockedCtaLarge : styles.cta}>
+                {featuredLocked ? "Unlock Screening" : "Enter Screening"}
+              </span>
             </div>
           </Link>
         ) : (
@@ -443,6 +506,7 @@ export default function VideosPage() {
             <span style={styles.heroPill}>Interviews</span>
             <span style={styles.heroPill}>Studio Originals</span>
             <span style={styles.heroPill}>Private Screenings</span>
+            <span style={styles.heroPillGold}>Supreme Access</span>
           </div>
         </div>
 
@@ -516,7 +580,8 @@ const styles = {
     maxWidth: 1120,
     margin: "0 auto 34px",
     display: "grid",
-    gridTemplateColumns: "minmax(150px, 0.74fr) minmax(260px, 340px) minmax(150px, 0.74fr)",
+    gridTemplateColumns:
+      "minmax(150px, 0.74fr) minmax(260px, 340px) minmax(150px, 0.74fr)",
     gap: 24,
     alignItems: "stretch",
   },
@@ -545,6 +610,12 @@ const styles = {
       "transform 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease",
   },
 
+  lockedFeaturePortrait: {
+    border: "1px solid rgba(241,208,138,0.32)",
+    boxShadow:
+      "0 46px 130px rgba(0,0,0,0.86), 0 0 88px rgba(198,136,55,0.2)",
+  },
+
   featurePortraitHover: {
     transform: "translateY(-6px)",
     borderColor: "rgba(245,241,235,0.26)",
@@ -566,6 +637,16 @@ const styles = {
     objectFit: "cover",
     display: "block",
     filter: "brightness(0.72) contrast(1.08)",
+  },
+
+  lockedMedia: {
+    filter: "brightness(0.38) blur(3px) contrast(1.08)",
+    transform: "scale(1.03)",
+  },
+
+  lockedFeatureMedia: {
+    filter: "brightness(0.36) blur(4px) contrast(1.08)",
+    transform: "scale(1.04)",
   },
 
   featurePortraitVideo: {
@@ -592,12 +673,45 @@ const styles = {
       "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.16) 40%, rgba(0,0,0,0.9) 100%)",
   },
 
+  featureLockOverlay: {
+    position: "absolute",
+    inset: 0,
+    zIndex: 3,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    color: "#f1d08a",
+    textAlign: "center",
+    pointerEvents: "none",
+  },
+
+  featureLockIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: "50%",
+    border: "1px solid rgba(241,208,138,0.5)",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(0,0,0,0.52)",
+    boxShadow: "0 0 34px rgba(198,136,55,0.28)",
+  },
+
+  featureLockText: {
+    fontSize: 11,
+    letterSpacing: "0.2em",
+    textTransform: "uppercase",
+    fontWeight: 900,
+  },
+
   featurePortraitBody: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 3,
+    zIndex: 4,
     padding: "30px",
   },
 
@@ -636,6 +750,18 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     fontSize: 12,
+  },
+
+  lockedCtaLarge: {
+    color: "#111",
+    background: "linear-gradient(135deg, #d7b56d, #fff1b8)",
+    padding: "11px 16px",
+    borderRadius: 999,
+    fontWeight: 900,
+    display: "inline-flex",
+    alignItems: "center",
+    fontSize: 12,
+    boxShadow: "0 0 26px rgba(215,181,109,0.22)",
   },
 
   studioGrid: {
@@ -701,6 +827,18 @@ const styles = {
     letterSpacing: "0.1em",
     textTransform: "uppercase",
     fontWeight: 800,
+  },
+
+  heroPillGold: {
+    padding: "8px 11px",
+    borderRadius: 999,
+    border: "1px solid rgba(241,208,138,0.22)",
+    background: "rgba(198,136,55,0.12)",
+    color: "#f1d08a",
+    fontSize: 10,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    fontWeight: 900,
   },
 
   roomsCard: {
@@ -795,12 +933,30 @@ const styles = {
     border: "1px solid rgba(245,241,235,0.06)",
   },
 
+  lockedMiniThumb: {
+    border: "1px solid rgba(241,208,138,0.2)",
+  },
+
   miniThumbMedia: {
     width: "100%",
     height: "100%",
     objectFit: "cover",
     display: "block",
     filter: "brightness(0.8) contrast(1.05)",
+  },
+
+  miniLockBadge: {
+    position: "absolute",
+    inset: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#f1d08a",
+    fontSize: 8,
+    letterSpacing: "0.14em",
+    fontWeight: 900,
+    textTransform: "uppercase",
+    background: "rgba(0,0,0,0.36)",
   },
 
   miniFallback: {
@@ -883,6 +1039,12 @@ const styles = {
       "transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease",
   },
 
+  lockedCard: {
+    border: "1px solid rgba(241,208,138,0.2)",
+    boxShadow:
+      "0 24px 62px rgba(0,0,0,0.38), 0 0 28px rgba(198,136,55,0.08)",
+  },
+
   cardHover: {
     transform: "translateY(-5px)",
     borderColor: "rgba(245,241,235,0.16)",
@@ -934,6 +1096,39 @@ const styles = {
     textTransform: "uppercase",
   },
 
+  lockOverlay: {
+    position: "absolute",
+    inset: 0,
+    zIndex: 4,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    background: "rgba(0,0,0,0.26)",
+    color: "#f1d08a",
+    textAlign: "center",
+  },
+
+  lockIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: "50%",
+    border: "1px solid rgba(241,208,138,0.5)",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(0,0,0,0.5)",
+    boxShadow: "0 0 24px rgba(198,136,55,0.24)",
+  },
+
+  lockText: {
+    fontSize: 9,
+    letterSpacing: "0.18em",
+    textTransform: "uppercase",
+    fontWeight: 900,
+  },
+
   cardBody: {
     padding: "16px 17px 18px",
   },
@@ -956,6 +1151,12 @@ const styles = {
     fontSize: 12,
     fontWeight: 850,
     color: "#d7b56d",
+  },
+
+  lockedCta: {
+    fontSize: 12,
+    fontWeight: 900,
+    color: "#f1d08a",
   },
 
   mediaFallback: {
