@@ -36,6 +36,8 @@ export default function AdminSpotlight() {
   const [profiles, setProfiles] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editForm, setEditForm] = useState(null);
+  const [bulkFilmographyCreate, setBulkFilmographyCreate] = useState("");
+  const [bulkFilmographyEdit, setBulkFilmographyEdit] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -90,6 +92,18 @@ export default function AdminSpotlight() {
 
   const getSetter = (mode) => (mode === "edit" ? setEditForm : setForm);
 
+  const getBulkFilmographyValue = (mode) =>
+    mode === "edit" ? bulkFilmographyEdit : bulkFilmographyCreate;
+
+  const setBulkFilmographyValue = (mode, value) => {
+    if (mode === "edit") {
+      setBulkFilmographyEdit(value);
+      return;
+    }
+
+    setBulkFilmographyCreate(value);
+  };
+
   const handleChange = (e, mode = "create") => {
     const { name, value, type, checked } = e.target;
     const setter = getSetter(mode);
@@ -127,6 +141,100 @@ export default function AdminSpotlight() {
           ...(prev.representation?.official_presence || {}),
         },
       },
+    }));
+  };
+
+  const parseFilmographyLine = (line) => {
+    const cleanLine = line.trim();
+
+    if (!cleanLine) return null;
+
+    const parts = cleanLine
+      .split("|")
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (parts.length >= 3) {
+      return {
+        year: parts[0] || "",
+        title: parts[1] || "",
+        status: parts[2] || "",
+        role: parts[3] || "",
+        description: parts[4] || "",
+      };
+    }
+
+    const yearMatch = cleanLine.match(/\b(19|20)\d{2}\b/);
+    const year = yearMatch ? yearMatch[0] : "";
+    const title = year ? cleanLine.replace(year, "").trim() : cleanLine;
+
+    return {
+      year,
+      title,
+      status: "",
+      role: "",
+      description: "",
+    };
+  };
+
+  const sortFilmographyNewestFirst = (items) =>
+    [...items].sort((a, b) => {
+      const yearA = parseInt(String(a.year || "").match(/\d{4}/)?.[0] || "0", 10);
+      const yearB = parseInt(String(b.year || "").match(/\d{4}/)?.[0] || "0", 10);
+
+      return yearB - yearA;
+    });
+
+  const importBulkFilmography = (mode = "create") => {
+    const rawText = getBulkFilmographyValue(mode);
+
+    if (!rawText.trim()) {
+      alert("Paste filmography credits first.");
+      return;
+    }
+
+    const parsedItems = rawText
+      .split("\n")
+      .map(parseFilmographyLine)
+      .filter(Boolean)
+      .filter((item) => item.title || item.year);
+
+    if (parsedItems.length === 0) {
+      alert("No valid filmography credits found.");
+      return;
+    }
+
+    const setter = getSetter(mode);
+
+    setter((prev) => {
+      const currentItems = Array.isArray(prev.filmography)
+        ? prev.filmography
+        : [];
+
+      return {
+        ...prev,
+        filmography: sortFilmographyNewestFirst([
+          ...currentItems,
+          ...parsedItems,
+        ]),
+      };
+    });
+
+    setBulkFilmographyValue(mode, "");
+  };
+
+  const clearFilmography = (mode = "create") => {
+    const confirmClear = window.confirm(
+      "Clear all filmography items from this profile form?"
+    );
+
+    if (!confirmClear) return;
+
+    const setter = getSetter(mode);
+
+    setter((prev) => ({
+      ...prev,
+      filmography: [],
     }));
   };
 
@@ -380,17 +488,20 @@ export default function AdminSpotlight() {
     }
 
     setForm(emptyForm);
+    setBulkFilmographyCreate("");
     setSaving(false);
     fetchProfiles();
   };
 
   const startEdit = (profile) => {
     setEditForm(normalizeProfile(profile));
+    setBulkFilmographyEdit("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const cancelEdit = () => {
     setEditForm(null);
+    setBulkFilmographyEdit("");
   };
 
   const saveEdit = async () => {
@@ -438,6 +549,7 @@ export default function AdminSpotlight() {
     }
 
     setEditForm(null);
+    setBulkFilmographyEdit("");
     setSaving(false);
     fetchProfiles();
   };
@@ -473,7 +585,7 @@ export default function AdminSpotlight() {
         <input
           style={styles.input}
           name="slug"
-          placeholder="Slug example: franchesca"
+          placeholder="Slug example: richard-lawson"
           value={activeForm.slug}
           onChange={(e) => handleChange(e, mode)}
         />
@@ -540,7 +652,7 @@ export default function AdminSpotlight() {
       <textarea
         style={styles.textarea}
         name="aset_statement"
-        placeholder="A defining cinematic presence in authorship, visual storytelling, and controlled creative environments."
+        placeholder="A career spanning more than five decades, Richard Lawson’s body of work moves through film, television, stage presence, cultural classics, and contemporary Black cinema."
         value={activeForm.aset_statement}
         onChange={(e) => handleChange(e, mode)}
       />
@@ -551,7 +663,6 @@ export default function AdminSpotlight() {
         This is the full cinematic profile shown on the public Spotlight page.
         Write this as a complete entertainment biography including origin,
         experience, creative identity, current projects, and future direction.
-        This appears inside the “Read Full Profile” section.
       </p>
 
       <textarea
@@ -664,12 +775,47 @@ export default function AdminSpotlight() {
         />
       )}
 
+      <h3 style={styles.subheading}>Bulk Filmography Import</h3>
+
+      <p style={styles.helpText}>
+        Paste one credit per line. Best format: Year | Title | Type or Status |
+        Role | Optional Description. Example: 1982 | Poltergeist | Film | Ryan.
+      </p>
+
+      <textarea
+        style={{ ...styles.textarea, minHeight: "180px" }}
+        placeholder={`2025 | Beauty in Black | Series | Norman
+2024 | Tyler Perry’s Divorce in the Black | Film | Clarence
+2022 | The Ms. Pat Show | Series | Major
+1982 | Poltergeist | Film | Ryan
+1974 | Sugar Hill | Film | Valentine`}
+        value={getBulkFilmographyValue(mode)}
+        onChange={(e) => setBulkFilmographyValue(mode, e.target.value)}
+      />
+
+      <div style={styles.buttonRow}>
+        <button
+          style={styles.secondaryButton}
+          type="button"
+          onClick={() => importBulkFilmography(mode)}
+        >
+          Import Filmography
+        </button>
+
+        <button
+          style={styles.dangerButton}
+          type="button"
+          onClick={() => clearFilmography(mode)}
+        >
+          Clear Filmography
+        </button>
+      </div>
+
       <h3 style={styles.subheading}>Filmography</h3>
 
       <p style={styles.helpText}>
-        Add official, upcoming, or in-development screen projects. Use this for
-        films, series, studio-origin features, and productions like Brick by
-        Brick or Port Carlisle.
+        Add official, upcoming, or in-development screen projects. For long
+        careers, use the bulk importer above, then clean individual cards here.
       </p>
 
       {Array.isArray(activeForm.filmography) &&
@@ -678,7 +824,7 @@ export default function AdminSpotlight() {
             <div style={styles.grid}>
               <input
                 style={styles.input}
-                placeholder="Title example: Brick by Brick: The Series"
+                placeholder="Title example: Poltergeist"
                 value={item.title || ""}
                 onChange={(e) =>
                   updateFilmographyItem(index, "title", e.target.value, mode)
@@ -687,7 +833,7 @@ export default function AdminSpotlight() {
 
               <input
                 style={styles.input}
-                placeholder="Year example: 2026"
+                placeholder="Year example: 1982"
                 value={item.year || ""}
                 onChange={(e) =>
                   updateFilmographyItem(index, "year", e.target.value, mode)
@@ -696,7 +842,7 @@ export default function AdminSpotlight() {
 
               <input
                 style={styles.input}
-                placeholder="Status example: In Development"
+                placeholder="Type / Status example: Film"
                 value={item.status || ""}
                 onChange={(e) =>
                   updateFilmographyItem(index, "status", e.target.value, mode)
@@ -705,7 +851,7 @@ export default function AdminSpotlight() {
 
               <input
                 style={styles.input}
-                placeholder="Role example: Creator / Writer / Lead"
+                placeholder="Role example: Ryan"
                 value={item.role || ""}
                 onChange={(e) =>
                   updateFilmographyItem(index, "role", e.target.value, mode)
@@ -715,7 +861,7 @@ export default function AdminSpotlight() {
 
             <textarea
               style={styles.textarea}
-              placeholder="Description example: Original soap opera and novel in development..."
+              placeholder="Optional description..."
               value={item.description || ""}
               onChange={(e) =>
                 updateFilmographyItem(index, "description", e.target.value, mode)
@@ -727,7 +873,7 @@ export default function AdminSpotlight() {
               type="button"
               onClick={() => removeFilmographyItem(index, mode)}
             >
-              Remove Project
+              Remove Credit
             </button>
           </div>
         ))}
@@ -737,7 +883,7 @@ export default function AdminSpotlight() {
         type="button"
         onClick={() => addFilmographyItem(mode)}
       >
-        + Add Project
+        + Add Credit
       </button>
 
       <h3 style={styles.subheading}>Bibliography</h3>
@@ -941,7 +1087,7 @@ export default function AdminSpotlight() {
                   {Array.isArray(profile.gallery) ? profile.gallery.length : 0}
                 </p>
                 <p style={styles.muted}>
-                  Filmography Projects:{" "}
+                  Filmography Credits:{" "}
                   {Array.isArray(profile.filmography)
                     ? profile.filmography.length
                     : 0}
@@ -1079,6 +1225,7 @@ const styles = {
     display: "flex",
     gap: "12px",
     flexWrap: "wrap",
+    marginBottom: "16px",
   },
 
   button: {

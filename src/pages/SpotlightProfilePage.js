@@ -2,6 +2,39 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
+const richardLawsonHonors = [
+  {
+    title: "Purple Heart",
+    year: "Military Honor",
+    description:
+      "Awarded for injuries sustained during military service during the Vietnam War.",
+  },
+  {
+    title: "Drama Critics Recognition",
+    year: "Theater Recognition",
+    description:
+      "Recognized for acclaimed theatrical performances including Ma Rainey’s Black Bottom and Streamers.",
+  },
+  {
+    title: "NAACP Theater Recognition",
+    year: "Cultural Recognition",
+    description:
+      "Recognized within the Black theater community for contributions to performance, stage work, and cultural storytelling.",
+  },
+  {
+    title: "Woodie King Jr. Lifetime Achievement Honor",
+    year: "2023",
+    description:
+      "Honored by The St. Louis Black Rep for enduring impact on Black theater, entertainment, and legacy-driven storytelling.",
+  },
+  {
+    title: "Decades of Black Cinematic Excellence",
+    year: "Legacy Recognition",
+    description:
+      "Recognized for a long-standing body of work across film, television, theater, mentorship, and Black cinematic storytelling.",
+  },
+];
+
 export default function SpotlightProfilePage() {
   const { slug } = useParams();
 
@@ -69,7 +102,16 @@ export default function SpotlightProfilePage() {
     );
   }
 
-  const awards = asArray(profile.awards);
+  const profileIdentity = `${slug || ""} ${profile.slug || ""} ${
+    profile.name || ""
+  } ${profile.alias || ""}`.toLowerCase();
+
+  const isRichardLawson =
+    profileIdentity.includes("richard") ||
+    profileIdentity.includes("lawson");
+
+  const awards = isRichardLawson ? richardLawsonHonors : asArray(profile.awards);
+
   const gallery = asArray(profile.gallery);
   const filmography = asArray(profile.filmography);
   const discography = asArray(profile.discography);
@@ -142,9 +184,7 @@ export default function SpotlightProfilePage() {
           {filmography.map((item, index) => (
             <article className="filmography-card" key={`filmography-${index}`}>
               <div className="filmography-topline">
-                {(item.title || item.name) && (
-                  <h3>{item.title || item.name}</h3>
-                )}
+                {(item.title || item.name) && <h3>{item.title || item.name}</h3>}
 
                 {item.status && (
                   <span className={getStatusClass(item.status)}>
@@ -331,9 +371,7 @@ export default function SpotlightProfilePage() {
                   <figcaption>
                     <p className="meta">Selected Frame</p>
                     {leadGalleryItem.title && <h3>{leadGalleryItem.title}</h3>}
-                    {leadGalleryItem.caption && (
-                      <p>{leadGalleryItem.caption}</p>
-                    )}
+                    {leadGalleryItem.caption && <p>{leadGalleryItem.caption}</p>}
                   </figcaption>
                 )}
               </figure>
@@ -430,6 +468,7 @@ export default function SpotlightProfilePage() {
         awards,
         "No honors or recognition listed yet."
       )}
+
       {renderFilmography()}
       {renderCollection("Discography", discography, "No discography listed yet.")}
       {renderCollection("Bibliography", bibliography, "No bibliography listed yet.")}
@@ -548,16 +587,6 @@ const baseStyles = `
     border: 1px solid rgba(222, 179, 95, 0.24);
     background: rgba(255,255,255,0.035);
     box-shadow: 0 34px 100px rgba(0,0,0,0.62);
-  }
-
-  .portrait-shell:after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(180deg, transparent 42%, rgba(0,0,0,0.64)),
-      linear-gradient(90deg, rgba(215,168,79,0.12), transparent 38%);
-    pointer-events: none;
   }
 
   .hero-image {
@@ -694,11 +723,6 @@ const baseStyles = `
     font-weight: 900;
   }
 
-  .bio-toggle:hover {
-    background: rgba(216,173,96,0.1);
-    color: #ffe0a0;
-  }
-
   .bio-full {
     animation: bioFadeIn 0.42s ease;
     padding: 26px;
@@ -802,14 +826,6 @@ const baseStyles = `
     line-height: 1.8;
   }
 
-  .bio {
-    color: #eadfcd;
-    font-size: 18px;
-    line-height: 1.95;
-    max-width: 980px;
-    margin: 0;
-  }
-
   .cinematic-gallery {
     display: grid;
     grid-template-columns: minmax(280px, 1.2fr) minmax(260px, 0.8fr);
@@ -824,17 +840,6 @@ const baseStyles = `
     border: 1px solid rgba(255,255,255,0.1);
     background: rgba(255,255,255,0.035);
     box-shadow: 0 30px 90px rgba(0,0,0,0.55);
-  }
-
-  .lead-gallery-card:after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(circle at center, rgba(216,173,96,0.12), transparent 60%),
-      linear-gradient(180deg, transparent 58%, rgba(0,0,0,0.2));
-    opacity: 0.65;
   }
 
   .lead-gallery-media {
@@ -886,44 +891,12 @@ const baseStyles = `
     opacity: 1;
     transform: translateY(-4px) scale(1.02);
     border-color: rgba(216,173,96,0.5);
-    box-shadow:
-      0 20px 60px rgba(0,0,0,0.4),
-      0 0 30px rgba(216,173,96,0.15);
   }
 
   .supporting-card.active {
     opacity: 1;
     transform: scale(1.03);
     border-color: #d8ad60;
-    box-shadow:
-      0 0 0 1px rgba(216,173,96,0.5),
-      0 25px 70px rgba(0,0,0,0.5),
-      0 0 40px rgba(216,173,96,0.2);
-  }
-
-  .supporting-card.active:before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border: 1px solid rgba(216,173,96,0.4);
-    pointer-events: none;
-    z-index: 3;
-  }
-
-  .supporting-card.active:after {
-    content: "Selected";
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 4;
-    padding: 8px 12px;
-    background: rgba(0,0,0,0.85);
-    border: 1px solid rgba(216,173,96,0.7);
-    color: #f6d796;
-    font-size: 10px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    font-weight: 800;
   }
 
   .thumb-number {
@@ -946,17 +919,6 @@ const baseStyles = `
     object-fit: cover;
     display: block;
     background: #000;
-    transition: transform 0.4s ease, filter 0.4s ease;
-  }
-
-  .supporting-card:hover .supporting-media {
-    transform: scale(1.04);
-    filter: brightness(1.05);
-  }
-
-  .supporting-card.active .supporting-media {
-    transform: scale(1.03);
-    filter: brightness(1.08) contrast(1.04);
   }
 
   .thumb-caption,
@@ -981,15 +943,22 @@ const baseStyles = `
     margin: 0;
   }
 
-  figcaption {
-    position: relative;
-    z-index: 5;
+  .presence-grid,
+  .card-grid,
+  .filmography-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+    gap: 18px;
   }
 
-  .presence-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 18px;
+  .official-presence-card,
+  .archive-card,
+  .filmography-card,
+  .representation-card {
+    padding: 25px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background:
+      linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.018));
   }
 
   .official-presence-card {
@@ -997,12 +966,7 @@ const baseStyles = `
     justify-content: space-between;
     gap: 28px;
     align-items: center;
-    padding: 30px;
-    border: 1px solid rgba(216,173,96,0.24);
-    background:
-      radial-gradient(circle at top left, rgba(216,173,96,0.12), transparent 38%),
-      linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018));
-    box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+    border-color: rgba(216,173,96,0.24);
   }
 
   .presence-badge {
@@ -1018,19 +982,23 @@ const baseStyles = `
     background: rgba(0,0,0,0.34);
   }
 
-  .official-presence-card h3 {
-    margin: 0 0 8px;
+  .official-presence-card h3,
+  .archive-card h3,
+  .filmography-card h3 {
     color: #fff1d7;
-    font-size: clamp(24px, 3vw, 38px);
-    letter-spacing: -0.03em;
+    font-size: 20px;
+    margin: 0 0 8px;
   }
 
-  .official-presence-card p {
+  .official-presence-card p,
+  .archive-card p,
+  .filmography-card p,
+  .representation-card p {
     color: #d8cab6;
     font-size: 15px;
     line-height: 1.75;
-    max-width: 760px;
-    margin: 0;
+    margin: 8px 0;
+    white-space: pre-line;
   }
 
   .presence-link {
@@ -1048,43 +1016,6 @@ const baseStyles = `
     letter-spacing: 0.14em;
     text-transform: uppercase;
     font-weight: 900;
-    box-shadow: 0 12px 30px rgba(216,173,96,0.18);
-  }
-
-  .presence-link:hover {
-    background: #f0cf8b;
-  }
-
-  .card-grid,
-  .filmography-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
-    gap: 18px;
-  }
-
-  .archive-card,
-  .filmography-card {
-    padding: 25px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background:
-      linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.018));
-  }
-
-  .archive-card h3,
-  .filmography-card h3 {
-    color: #fff1d7;
-    font-size: 20px;
-    margin: 0 0 8px;
-    text-transform: none;
-  }
-
-  .archive-card p,
-  .filmography-card p {
-    color: #d8cab6;
-    font-size: 15px;
-    line-height: 1.75;
-    margin: 8px 0;
-    white-space: pre-line;
   }
 
   .filmography-topline {
@@ -1105,15 +1036,11 @@ const baseStyles = `
 
   .film-status {
     flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     padding: 7px 10px;
     border: 1px solid rgba(255,255,255,0.22);
     color: #d8cab6;
     background: rgba(0,0,0,0.34);
     font-size: 10px;
-    line-height: 1;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     font-weight: 900;
@@ -1123,7 +1050,6 @@ const baseStyles = `
   .film-status.development {
     border-color: rgba(216,173,96,0.62);
     color: #f3d18b;
-    box-shadow: 0 0 22px rgba(216,173,96,0.1);
   }
 
   .film-status.preproduction {
@@ -1142,23 +1068,6 @@ const baseStyles = `
     color: #d7ffd7;
   }
 
-  .representation-card {
-    max-width: 920px;
-    padding: 30px;
-    border: 1px solid rgba(216,173,96,0.22);
-    background:
-      radial-gradient(circle at top left, rgba(216,173,96,0.1), transparent 38%),
-      linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.018));
-  }
-
-  .representation-card p {
-    color: #eadfcd;
-    font-size: 17px;
-    line-height: 1.9;
-    margin: 0;
-    white-space: pre-line;
-  }
-
   .meta {
     color: #c99b4f !important;
     font-size: 12px !important;
@@ -1167,15 +1076,11 @@ const baseStyles = `
     font-weight: 800;
   }
 
-  .gold-link {
+  .gold-link,
+  .back-link {
     color: #d8ad60;
     text-decoration: none;
     font-weight: 800;
-  }
-
-  .gold-link:hover,
-  .back-link:hover {
-    color: #ffe0a0;
   }
 
   .footer {
@@ -1184,9 +1089,6 @@ const baseStyles = `
   }
 
   .back-link {
-    color: #d8ad60;
-    text-decoration: none;
-    font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     font-size: 12px;
@@ -1219,12 +1121,10 @@ const baseStyles = `
       gap: 30px;
     }
 
-    .gallery-heading {
+    .gallery-heading,
+    .official-presence-card,
+    .filmography-topline {
       display: block;
-    }
-
-    .gallery-instruction {
-      margin: -12px 0 28px;
     }
 
     .portrait-shell {
@@ -1246,31 +1146,9 @@ const baseStyles = `
       max-height: 620px;
     }
 
-    .supporting-card.active {
-      transform: none;
-    }
-
-    .official-presence-card,
-    .filmography-topline {
-      display: block;
-      padding: 24px;
-    }
-
-    .filmography-topline {
-      padding: 0;
-    }
-
-    .film-status {
-      margin-top: 10px;
-    }
-
     .presence-link {
       width: 100%;
       margin-top: 22px;
-    }
-
-    .representation-card {
-      padding: 24px;
     }
   }
 `;
