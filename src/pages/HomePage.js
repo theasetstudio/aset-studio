@@ -55,19 +55,6 @@ export default function HomePage() {
         "Red Carpet",
       ],
     },
-    {
-      eyebrow: "SIRENS REALM",
-      title: "The mythic current beneath Aset.",
-      text:
-        "Sirens Realm carries the symbolic and spiritual layer of the studio: stones, signs, moods, protection, intuition, beauty, shadow, and transformation.",
-      panelEyebrow: "MYTHIC WORLD",
-      panelTitle: "Sirens Realm",
-      panelText: "A deeper layer of ritual, archetype, mystery, and power.",
-      path: "/sirens-realm",
-      button: "Enter Sirens Realm",
-      variant: "light",
-      elevated: true,
-    },
   ];
 
   useEffect(() => {
@@ -287,7 +274,6 @@ export default function HomePage() {
             style={{
               ...styles.worldSection,
               ...(world.featured ? styles.featuredWorldSection : {}),
-              ...(world.elevated ? styles.sirensWorldSection : {}),
             }}
           >
             <div
@@ -295,9 +281,6 @@ export default function HomePage() {
                 ...styles.worldInner,
                 ...(world.featured && !isMobile && !isTablet
                   ? styles.featuredWorldInner
-                  : {}),
-                ...(world.elevated && !isMobile && !isTablet
-                  ? styles.sirensWorldInner
                   : {}),
                 gridTemplateColumns:
                   isMobile || isTablet
@@ -316,7 +299,6 @@ export default function HomePage() {
               <div
                 style={{
                   ...styles.worldCopy,
-                  ...(world.elevated ? styles.sirensWorldCopy : {}),
                   direction: "ltr",
                 }}
               >
@@ -347,7 +329,6 @@ export default function HomePage() {
               <div
                 style={{
                   ...styles.worldPanel,
-                  ...(world.elevated ? styles.sirensWorldPanel : {}),
                   direction: "ltr",
                 }}
               >
@@ -536,9 +517,6 @@ export default function HomePage() {
             </Link>
             <Link to="/aset-spotlight" style={styles.portalCard}>
               Aset Spotlight
-            </Link>
-            <Link to="/sirens-realm" style={styles.portalCard}>
-              Sirens Realm
             </Link>
             <Link to="/creators" style={styles.portalCard}>
               Creators
