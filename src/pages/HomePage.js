@@ -55,6 +55,19 @@ export default function HomePage() {
         "Red Carpet",
       ],
     },
+    {
+  eyebrow: "BRICK BY BRICK",
+  title: "Dynasties are not inherited. They are taken.",
+  text:
+    "A cinematic soap opera world of old-money families, secret alliances, dangerous romance, organized power, and the calculated rise of Crown inside an empire that is not as clean as it seems.",
+  panelEyebrow: "ASET STUDIO ORIGINAL",
+  panelTitle: "Brick by Brick",
+  panelText:
+    "A prestige dramatic universe where loyalty is currency, betrayal is inevitable, and power changes the people who survive long enough to hold it.",
+  path: "/brick-by-brick",
+  button: "Enter Brick by Brick",
+  variant: "gold",
+},
   ];
 
   useEffect(() => {
@@ -521,6 +534,9 @@ export default function HomePage() {
             <Link to="/creators" style={styles.portalCard}>
               Creators
             </Link>
+            <Link to="/brick-by-brick" style={styles.portalCard}>
+              Brick by Brick
+            </Link>
             <Link to="/services" style={styles.portalCard}>
               Services
             </Link>
@@ -731,13 +747,6 @@ const styles = {
       "radial-gradient(circle at center, rgba(214,168,79,0.18), transparent 60%)",
   },
 
-  sirensWorldSection: {
-    padding: "48px 22px 72px",
-    marginTop: "-18px",
-    background:
-      "radial-gradient(circle at 50% 22%, rgba(198,136,55,0.18), transparent 58%), linear-gradient(180deg, rgba(53,29,13,0.26), rgba(5,5,5,0.98))",
-  },
-
   worldInner: {
     maxWidth: 1180,
     margin: "0 auto",
@@ -752,11 +761,6 @@ const styles = {
     transform: "scale(1.02)",
   },
 
-  sirensWorldInner: {
-    maxWidth: 1120,
-    transform: "translateY(-18px)",
-  },
-
   worldCopy: {
     borderRadius: 20,
     padding: "38px",
@@ -764,14 +768,6 @@ const styles = {
       "linear-gradient(180deg, rgba(255,255,255,0.043), rgba(255,255,255,0.016))",
     border: "1px solid rgba(245,241,235,0.085)",
     boxShadow: "0 26px 80px rgba(0,0,0,0.38)",
-  },
-
-  sirensWorldCopy: {
-    background:
-      "linear-gradient(180deg, rgba(95,51,22,0.32), rgba(255,255,255,0.018))",
-    border: "1px solid rgba(214,168,79,0.18)",
-    boxShadow:
-      "0 30px 90px rgba(0,0,0,0.52), 0 0 70px rgba(198,136,55,0.08)",
   },
 
   worldTitle: {
@@ -812,13 +808,6 @@ const styles = {
     justifyContent: "flex-end",
     minHeight: 300,
     boxShadow: "0 26px 80px rgba(0,0,0,0.38)",
-  },
-
-  sirensWorldPanel: {
-    minHeight: 260,
-    background:
-      "linear-gradient(160deg, rgba(198,136,55,0.22), rgba(65,29,14,0.26) 48%, rgba(0,0,0,0.34))",
-    border: "1px solid rgba(214,168,79,0.2)",
   },
 
   panelEyebrow: {
@@ -884,28 +873,6 @@ const styles = {
     fontSize: 15,
     lineHeight: 1.78,
     color: "rgba(245,241,235,0.72)",
-  },
-
-  videoFrame: {
-    position: "relative",
-    width: "100%",
-    aspectRatio: "16 / 9",
-    borderRadius: 34,
-    overflow: "hidden",
-    background: "#000",
-    border: "1px solid rgba(245,241,235,0.12)",
-    boxShadow:
-      "0 80px 220px rgba(0,0,0,0.92), 0 0 60px rgba(198,136,55,0.08)",
-  },
-
-  video: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    display: "block",
-    transition: "opacity 1s ease",
-    background: "#000",
-    filter: "brightness(0.9) contrast(1.04)",
   },
 
   placeholder: {
@@ -975,6 +942,16 @@ const styles = {
     zIndex: 1,
     background:
       "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.32) 45%, rgba(0,0,0,0.88) 100%)",
+  },
+
+  video: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "block",
+    transition: "opacity 1s ease",
+    background: "#000",
+    filter: "brightness(0.9) contrast(1.04)",
   },
 
   screeningContent: {

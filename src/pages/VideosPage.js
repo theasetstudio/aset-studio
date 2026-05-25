@@ -3,8 +3,6 @@ import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./VideosPage.css";
 
-const RICHARD_LAWSON_IMAGE = "/images/rlawson.png";
-
 export default function VideosPage() {
   const [videos, setVideos] = useState([]);
   const [featuredVideo, setFeaturedVideo] = useState(null);
@@ -30,18 +28,6 @@ export default function VideosPage() {
     return data?.signedUrl || null;
   }
 
-  function isRichardLawsonVideo(video) {
-    const text = `${video?.slug || ""} ${video?.title || ""} ${
-      video?.description || ""
-    } ${video?.category || ""}`.toLowerCase();
-
-    return (
-      text.includes("richard") ||
-      text.includes("lawson") ||
-      text.includes("from dreams to reality")
-    );
-  }
-
   async function loadVideos() {
     setLoading(true);
 
@@ -54,12 +40,16 @@ export default function VideosPage() {
 
     if (error) {
       console.error("Video Fetch Error:", error);
+      setVideos([]);
+      setFeaturedVideo(null);
       setLoading(false);
       return;
     }
 
+    const visibleVideos = (data || []).filter((video) => !video.hidden);
+
     const formattedVideos = await Promise.all(
-      (data || []).map(async (video) => {
+      visibleVideos.map(async (video) => {
         const posterPath =
           video.poster_path ||
           video.thumbnail_path ||
@@ -67,26 +57,17 @@ export default function VideosPage() {
           null;
 
         const posterUrl = await getSignedUrl(posterPath);
-        const isRichard = isRichardLawsonVideo(video);
 
         return {
           ...video,
-          displayTitle: isRichard
-            ? "Richard Lawson Cinematic Interview"
-            : video.title,
-          displayCategory: isRichard
-            ? "Cinematic Interview"
-            : video.category,
-          posterUrl: isRichard ? RICHARD_LAWSON_IMAGE : posterUrl,
+          displayTitle: video.title,
+          displayCategory: video.category,
+          posterUrl,
         };
       })
     );
 
-    const richardFeature = formattedVideos.find((video) =>
-      isRichardLawsonVideo(video)
-    );
-
-    setFeaturedVideo(richardFeature || formattedVideos[0]);
+    setFeaturedVideo(formattedVideos[0] || null);
     setVideos(formattedVideos);
     setLoading(false);
   }
@@ -109,42 +90,31 @@ export default function VideosPage() {
     return terms.some((term) => text.includes(term));
   }
 
-  const richardLawsonInterview = videos.find((video) =>
-    isRichardLawsonVideo(video)
-  );
-
-  const nonRichardVideos = videos.filter(
-    (video) => !isRichardLawsonVideo(video)
-  );
-
-  const cinematicReleases = nonRichardVideos.filter((video) =>
+  const cinematicReleases = videos.filter((video) =>
     matches(video, ["cinematic", "release", "screening", "portrait"])
   );
 
   const interviews = uniqueVideos(
-    [
-      richardLawsonInterview,
-      ...nonRichardVideos.filter((video) =>
-        matches(video, ["interview", "conversation", "private"])
-      ),
-    ].filter(Boolean)
+    videos.filter((video) =>
+      matches(video, ["interview", "conversation", "private"])
+    )
   );
 
-  const hotTakes = nonRichardVideos.filter((video) =>
+  const hotTakes = videos.filter((video) =>
     matches(video, ["hot", "take", "commentary", "reaction"])
   );
 
-  const films = nonRichardVideos.filter((video) =>
+  const films = videos.filter((video) =>
     matches(video, ["film", "movie", "original"])
   );
 
-  const musicVideos = nonRichardVideos.filter((video) =>
+  const musicVideos = videos.filter((video) =>
     matches(video, ["music", "performance", "visual"])
   );
 
-  const studioReleases = nonRichardVideos;
+  const studioReleases = videos;
 
-  const redCarpet = nonRichardVideos.filter((video) =>
+  const redCarpet = videos.filter((video) =>
     matches(video, ["red carpet", "event", "premiere", "coverage"])
   );
 
@@ -158,7 +128,7 @@ export default function VideosPage() {
     {
       title: "Interviews",
       subtitle: "PRIVATE CONVERSATIONS",
-      message: "Richard Lawson cinematic interview slot.",
+      message: "Interview features are being prepared.",
       items: interviews,
     },
     {
@@ -200,7 +170,7 @@ export default function VideosPage() {
       return previewItems.map((video) => (
         <Link
           key={video.id}
-          to={`/video/${video.slug}`}
+          to={video.slug ? `/video/${video.slug}` : "/videos"}
           className="release-mini-card"
         >
           {video.posterUrl ? (
@@ -231,9 +201,7 @@ export default function VideosPage() {
           <span>{room.message}</span>
         </div>
 
-        <div className="release-room-preview">
-          {renderMiniCards(room.items)}
-        </div>
+        <div className="release-room-preview">{renderMiniCards(room.items)}</div>
 
         <div className="release-room-arrow">›</div>
       </section>
@@ -255,11 +223,8 @@ export default function VideosPage() {
           </p>
 
           <div className="cinema-buttons">
-            <Link
-              to="/video/richard-lawson-cinematic-interview"
-              className="cinema-main-button"
-            >
-              Richard Lawson Interview
+            <Link to="/videos" className="cinema-main-button">
+              Enter Aset Cinema
             </Link>
 
             <Link to="/videos" className="cinema-secondary-button">
@@ -276,21 +241,21 @@ export default function VideosPage() {
           {featuredVideo && (
             <section className="featured-cinema-card">
               <div className="featured-cinema-content">
-                <p>FEATURED CINEMATIC INTERVIEW</p>
+                <p>FEATURED SCREENING</p>
 
                 <h2>
-                  {isRichardLawsonVideo(featuredVideo)
-                    ? "Richard Lawson Cinematic Interview"
-                    : featuredVideo.displayTitle || featuredVideo.title}
+                  {featuredVideo.displayTitle ||
+                    featuredVideo.title ||
+                    "Aset Cinema Feature"}
                 </h2>
 
                 <span>
-                  A private cinematic interview slot prepared for Richard
-                  Lawson inside The Aset Studio screening environment.
+                  A curated cinematic presentation inside The Aset Studio
+                  screening environment.
                 </span>
 
                 <Link
-                  to={`/video/${featuredVideo.slug}`}
+                  to={featuredVideo.slug ? `/video/${featuredVideo.slug}` : "/videos"}
                   className="featured-watch-link"
                 >
                   Watch Screening
@@ -304,13 +269,11 @@ export default function VideosPage() {
                     alt={
                       featuredVideo.displayTitle ||
                       featuredVideo.title ||
-                      "Richard Lawson"
+                      "Aset Cinema"
                     }
                   />
                 ) : (
-                  <div className="featured-cinema-fallback">
-                    Richard Lawson
-                  </div>
+                  <div className="featured-cinema-fallback">Aset Cinema</div>
                 )}
               </div>
             </section>

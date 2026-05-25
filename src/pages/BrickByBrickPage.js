@@ -1,194 +1,130 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { supabase } from "../supabaseClient";
 
 export default function BrickByBrickPage() {
-  const themes = [
-    "Power",
-    "Inheritance",
-    "Loyalty",
-    "Control",
-    "Legacy",
-    "Betrayal",
-  ];
+  const [posterUrl, setPosterUrl] = useState("");
 
-  const chapters = [
-    {
-      title: "The Empire",
-      text:
-        "An institution built over decades begins to fracture beneath the pressure of loyalty, succession, and hidden ambition.",
-    },
-    {
-      title: "The Family",
-      text:
-        "Behind wealth and polished public image exists a private world governed by silence, obligation, and bloodline politics.",
-    },
-    {
-      title: "The Counsel",
-      text:
-        "Advisors, strategists, and protectors move carefully around power while deciding who deserves proximity to the throne.",
-    },
-    {
-      title: "The Crown",
-      text:
-        "Leadership inside the empire is never inherited peacefully. Every seat of authority comes with a cost.",
-    },
-  ];
+  useEffect(() => {
+    loadPoster();
+  }, []);
 
-  const systems = [
-    {
-      label: "STUDIO ARCHIVE",
-      title: "Originals Pipeline",
-      text:
-        "Internal media systems for posters, cinematic stills, visual campaigns, teaser assets, and future release materials are currently being structured inside the studio environment.",
-    },
-    {
-      label: "PRODUCTION SYSTEM",
-      title: "Release Control",
-      text:
-        "The Brick by Brick rollout is designed as a controlled cinematic release structure rather than an open-content ecosystem.",
-    },
-    {
-      label: "DEVELOPMENT STATUS",
-      title: "Private Build Phase",
-      text:
-        "Additional systems, world assets, visual language, and production materials remain in active internal development.",
-    },
-  ];
+  async function loadPoster() {
+    const { data, error } = await supabase.storage
+      .from("media")
+      .createSignedUrl(
+        "brick-by-brick/posters/brick-by-brick-world-bible-poster.png",
+        3600
+      );
+
+    if (!error && data?.signedUrl) {
+      setPosterUrl(data.signedUrl);
+    }
+  }
 
   return (
     <main style={styles.page}>
       <section style={styles.hero}>
-        <p style={styles.kicker}>THE ASET STUDIO ORIGINALS</p>
+        <div style={styles.overlay} />
 
-        <h1 style={styles.title}>Brick by Brick</h1>
+        <div style={styles.content}>
+          <p style={styles.kicker}>The Aset Studio Original Series</p>
 
-        <p style={styles.subtitle}>
-          A cinematic prestige drama centered around power, family legacy,
-          ambition, control, loyalty, wealth, and the quiet collapse hidden
-          beneath polished public empires.
-        </p>
+          <h1 style={styles.title}>Brick by Brick</h1>
 
-        <div style={styles.actions}>
-          <Link to="/" style={styles.goldButton}>
-            Return to Studio
-          </Link>
+          <p style={styles.subtitle}>
+            Dynasties are not inherited. They are taken.
+          </p>
 
-          <Link to="/videos" style={styles.lightButton}>
-            Enter Aset Cinema
-          </Link>
+          <div style={styles.buttonRow}>
+            <a href="#world" style={styles.primaryButton}>
+              Enter the World
+            </a>
+
+            <a href="#characters" style={styles.secondaryButton}>
+              Meet the Characters
+            </a>
+          </div>
         </div>
       </section>
 
-      <section style={styles.introSection}>
-        <div style={styles.copyBlock}>
-          <p style={styles.kicker}>SERIES WORLD</p>
+      <section style={styles.posterSection}>
+        {posterUrl ? (
+          <img
+            src={posterUrl}
+            alt="Brick by Brick Character and World Bible"
+            style={styles.posterImage}
+          />
+        ) : (
+          <div style={styles.posterPlaceholder}>
+            Loading Brick by Brick poster...
+          </div>
+        )}
+      </section>
 
-          <h2 style={styles.sectionTitle}>
-            An empire constructed behind closed doors.
-          </h2>
+      <section id="world" style={styles.section}>
+        <p style={styles.sectionKicker}>Series World</p>
 
-          <p style={styles.bodyText}>
-            Brick by Brick explores the architecture of influence inside a
-            powerful family institution where loyalty is currency, public image
-            is carefully controlled, and every decision quietly reshapes the
-            future of the empire.
-          </p>
+        <h2 style={styles.sectionTitle}>
+          The World of Brick by Brick
+        </h2>
 
-          <p style={styles.bodyText}>
-            The series blends cinematic drama, luxury atmosphere, family power
-            dynamics, and psychological tension inside a world where control is
-            rarely surrendered willingly.
-          </p>
-        </div>
+        <p style={styles.bodyText}>
+          A cinematic soap opera world of old-money families, organized
+          power, luxury businesses, dangerous romance, betrayal,
+          political influence, and the calculated rise of Crown inside a
+          dynasty built on loyalty, secrecy, and control.
+        </p>
+      </section>
 
-        <div style={styles.statementCard}>
-          <p style={styles.cardKicker}>CURRENT STATUS</p>
+      <section style={styles.gridSection}>
+        <div style={styles.card}>
+          <p style={styles.cardKicker}>Format</p>
 
-          <h3 style={styles.cardTitle}>Original Series In Development</h3>
+          <h3 style={styles.cardTitle}>Long-Form Soap Opera</h3>
 
           <p style={styles.cardText}>
-            Story structure, cinematic presentation, visual language, and world
-            expansion are currently being developed inside The Aset Studio.
+            Built for ongoing storytelling, family conflict, power shifts,
+            betrayals, romance, and evolving character arcs without being
+            trapped inside short-season limits.
+          </p>
+        </div>
+
+        <div style={styles.card}>
+          <p style={styles.cardKicker}>Tone</p>
+
+          <h3 style={styles.cardTitle}>Prestige Drama</h3>
+
+          <p style={styles.cardText}>
+            Dark, elegant, emotional, wealthy, dangerous, and cinematic. A world
+            where boardrooms, bedrooms, estates, clubs, and family tables become
+            battlefields.
+          </p>
+        </div>
+
+        <div style={styles.card}>
+          <p style={styles.cardKicker}>Studio Layer</p>
+
+          <h3 style={styles.cardTitle}>Aset Cinema Original</h3>
+
+          <p style={styles.cardText}>
+            Designed as a story universe that expands through cinematic scenes,
+            visual campaigns, interviews, trailers, lore systems, and prestige
+            dramatic storytelling.
           </p>
         </div>
       </section>
 
-      <section style={styles.section}>
-        <div style={styles.sectionHeader}>
-          <p style={styles.kicker}>CORE THEMES</p>
+      <section id="characters" style={styles.section}>
+        <p style={styles.sectionKicker}>Character Bible</p>
 
-          <h2 style={styles.sectionTitle}>
-            The foundation beneath the story.
-          </h2>
-        </div>
+        <h2 style={styles.sectionTitle}>The Power Players</h2>
 
-        <div style={styles.themeGrid}>
-          {themes.map((theme) => (
-            <div key={theme} style={styles.themeCard}>
-              {theme}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section style={styles.section}>
-        <div style={styles.sectionHeader}>
-          <p style={styles.kicker}>WORLD STRUCTURE</p>
-
-          <h2 style={styles.sectionTitle}>
-            Inside the architecture of the empire.
-          </h2>
-        </div>
-
-        <div style={styles.grid}>
-          {chapters.map((chapter) => (
-            <article key={chapter.title} style={styles.tile}>
-              <p style={styles.cardKicker}>SERIES ELEMENT</p>
-
-              <h3 style={styles.cardTitle}>{chapter.title}</h3>
-
-              <p style={styles.cardText}>{chapter.text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section style={styles.section}>
-        <div style={styles.sectionHeader}>
-          <p style={styles.kicker}>INTERNAL STUDIO SYSTEMS</p>
-
-          <h2 style={styles.sectionTitle}>
-            Development infrastructure inside The Aset Studio.
-          </h2>
-        </div>
-
-        <div style={styles.grid}>
-          {systems.map((system) => (
-            <article key={system.title} style={styles.tile}>
-              <p style={styles.cardKicker}>{system.label}</p>
-
-              <h3 style={styles.cardTitle}>{system.title}</h3>
-
-              <p style={styles.cardText}>{system.text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section style={styles.finalSection}>
-        <div style={styles.finalPanel}>
-          <p style={styles.kicker}>ASET STUDIO ORIGINAL IP</p>
-
-          <h2 style={styles.sectionTitle}>
-            Character dossiers remain sealed.
-          </h2>
-
-          <p style={styles.bodyText}>
-            Additional story layers, visual campaigns, cinematic materials,
-            interviews, and official releases will emerge as the world of Brick
-            by Brick continues to evolve inside The Aset Studio ecosystem.
-          </p>
-        </div>
+        <p style={styles.bodyText}>
+          The official Brick by Brick character world is being built through the
+          studio admin system. Profiles, family roles, portraits, alliances,
+          betrayals, and story positions will appear here as the universe
+          expands.
+        </p>
       </section>
     </main>
   );
@@ -197,198 +133,170 @@ export default function BrickByBrickPage() {
 const styles = {
   page: {
     minHeight: "100vh",
-    background:
-      "radial-gradient(circle at 50% 0%, rgba(198,136,55,0.18), transparent 36%), linear-gradient(180deg, #050505 0%, #090806 48%, #050505 100%)",
-    color: "#f5f1eb",
-    padding: "118px 22px 90px",
+    background: "#050507",
+    color: "#f7f0e5",
   },
 
   hero: {
-    maxWidth: 1120,
-    margin: "0 auto 70px",
-    padding: "62px 34px",
-    borderRadius: 34,
-    border: "1px solid rgba(245,241,235,0.1)",
+    position: "relative",
+    minHeight: "78vh",
+    display: "flex",
+    alignItems: "center",
+    padding: "120px 8vw 80px",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.052), rgba(255,255,255,0.018))",
-    boxShadow:
-      "0 60px 160px rgba(0,0,0,0.75), 0 0 60px rgba(198,136,55,0.08)",
+      "radial-gradient(circle at top left, rgba(212,175,55,0.2), transparent 30%), linear-gradient(135deg, #070707 0%, #15100b 45%, #050507 100%)",
+    overflow: "hidden",
+  },
+
+  overlay: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.82))",
+  },
+
+  content: {
+    position: "relative",
+    maxWidth: "860px",
+    zIndex: 2,
   },
 
   kicker: {
-    margin: "0 0 12px",
-    fontSize: 11,
-    letterSpacing: "0.3em",
+    margin: "0 0 18px",
+    color: "#d4af37",
     textTransform: "uppercase",
-    color: "rgba(245,241,235,0.52)",
+    letterSpacing: "0.22em",
+    fontSize: "12px",
+    fontWeight: 800,
   },
 
   title: {
-    margin: "0 0 18px",
-    fontSize: "clamp(52px, 8vw, 110px)",
-    lineHeight: 0.86,
-    letterSpacing: "-0.075em",
-    fontWeight: 950,
+    margin: 0,
+    fontSize: "clamp(58px, 10vw, 128px)",
+    lineHeight: 0.9,
+    letterSpacing: "-0.06em",
+    fontWeight: 900,
   },
 
   subtitle: {
-    maxWidth: 780,
-    margin: "0 0 30px",
-    fontSize: 17,
-    lineHeight: 1.75,
-    color: "rgba(245,241,235,0.76)",
+    maxWidth: "720px",
+    margin: "28px 0 0",
+    color: "#dfd5c3",
+    fontSize: "clamp(20px, 2vw, 28px)",
+    lineHeight: 1.4,
+    fontWeight: 600,
   },
 
-  actions: {
+  buttonRow: {
     display: "flex",
-    gap: 12,
+    gap: "14px",
     flexWrap: "wrap",
+    marginTop: "34px",
   },
 
-  goldButton: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "13px 22px",
-    borderRadius: 999,
-    background: "linear-gradient(135deg, #c58d36, #f1d08a)",
+  primaryButton: {
+    padding: "14px 20px",
+    borderRadius: "999px",
+    background: "linear-gradient(135deg, #d4af37, #f2daa0)",
     color: "#111",
     textDecoration: "none",
     fontWeight: 900,
   },
 
-  lightButton: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "13px 22px",
-    borderRadius: 999,
-    background: "#f5f1eb",
-    color: "#111",
+  secondaryButton: {
+    padding: "14px 20px",
+    borderRadius: "999px",
+    border: "1px solid rgba(255,255,255,0.22)",
+    color: "#fff",
     textDecoration: "none",
-    fontWeight: 900,
+    fontWeight: 800,
+    background: "rgba(255,255,255,0.06)",
   },
 
-  introSection: {
-    maxWidth: 1120,
-    margin: "0 auto 58px",
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1.35fr) minmax(280px, 0.65fr)",
-    gap: 22,
-  },
-
-  copyBlock: {
-    borderRadius: 26,
-    padding: 34,
-    border: "1px solid rgba(245,241,235,0.09)",
-    background: "rgba(255,255,255,0.028)",
-  },
-
-  statementCard: {
-    borderRadius: 26,
-    padding: 30,
-    border: "1px solid rgba(198,136,55,0.18)",
-    background:
-      "linear-gradient(160deg, rgba(198,136,55,0.18), rgba(255,255,255,0.025))",
+  posterSection: {
+    padding: "20px 8vw 40px",
     display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-    minHeight: 260,
+    justifyContent: "center",
+  },
+
+  posterImage: {
+    width: "100%",
+    maxWidth: "920px",
+    borderRadius: "26px",
+    border: "1px solid rgba(212,175,55,0.2)",
+    boxShadow: "0 40px 120px rgba(0,0,0,0.65)",
+  },
+
+  posterPlaceholder: {
+    width: "100%",
+    maxWidth: "920px",
+    minHeight: "500px",
+    borderRadius: "24px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#111",
+    color: "#aaa",
   },
 
   section: {
-    maxWidth: 1120,
-    margin: "0 auto 58px",
+    padding: "82px 8vw",
+    borderTop: "1px solid rgba(255,255,255,0.08)",
   },
 
-  finalSection: {
-    maxWidth: 1120,
-    margin: "0 auto",
-  },
-
-  finalPanel: {
-    borderRadius: 30,
-    padding: 42,
-    border: "1px solid rgba(245,241,235,0.08)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012))",
-    boxShadow: "0 30px 90px rgba(0,0,0,0.38)",
-  },
-
-  sectionHeader: {
-    marginBottom: 22,
+  sectionKicker: {
+    margin: "0 0 12px",
+    color: "#d4af37",
+    textTransform: "uppercase",
+    letterSpacing: "0.18em",
+    fontSize: "12px",
+    fontWeight: 800,
   },
 
   sectionTitle: {
-    margin: 0,
-    fontSize: "clamp(30px, 4vw, 54px)",
-    lineHeight: 0.96,
-    letterSpacing: "-0.052em",
-    fontWeight: 900,
+    margin: "0 0 20px",
+    fontSize: "clamp(34px, 5vw, 72px)",
+    letterSpacing: "-0.04em",
   },
 
   bodyText: {
-    maxWidth: 760,
-    margin: "0 0 18px",
-    fontSize: 15,
-    lineHeight: 1.78,
-    color: "rgba(245,241,235,0.72)",
+    maxWidth: "880px",
+    color: "#d8d0c2",
+    fontSize: "18px",
+    lineHeight: 1.75,
   },
 
-  themeGrid: {
+  gridSection: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-    gap: 14,
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "18px",
+    padding: "0 8vw 82px",
   },
 
-  themeCard: {
-    padding: "28px 18px",
-    borderRadius: 20,
-    border: "1px solid rgba(245,241,235,0.08)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.014))",
-    textAlign: "center",
-    fontSize: 20,
-    fontWeight: 800,
-    letterSpacing: "-0.03em",
-    boxShadow: "0 24px 70px rgba(0,0,0,0.3)",
-  },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 16,
-  },
-
-  tile: {
-    minHeight: 220,
-    borderRadius: 24,
-    padding: 24,
-    border: "1px solid rgba(245,241,235,0.08)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.014))",
-    boxShadow: "0 26px 80px rgba(0,0,0,0.34)",
+  card: {
+    padding: "26px",
+    borderRadius: "22px",
+    border: "1px solid rgba(212,175,55,0.18)",
+    background: "rgba(255,255,255,0.045)",
   },
 
   cardKicker: {
     margin: "0 0 10px",
-    fontSize: 10,
-    letterSpacing: "0.24em",
+    color: "#d4af37",
     textTransform: "uppercase",
-    color: "#c58d36",
+    letterSpacing: "0.15em",
+    fontSize: "11px",
+    fontWeight: 800,
   },
 
   cardTitle: {
-    margin: "0 0 10px",
-    fontSize: 26,
-    lineHeight: 1,
-    letterSpacing: "-0.04em",
+    margin: "0 0 12px",
+    fontSize: "24px",
   },
 
   cardText: {
     margin: 0,
-    fontSize: 14,
-    lineHeight: 1.6,
-    color: "rgba(245,241,235,0.66)",
+    color: "#cfc6b9",
+    lineHeight: 1.65,
   },
 };
