@@ -31,6 +31,21 @@ export default function BrickAdminPage() {
   const [hidden, setHidden] = useState(false);
   const [imageFile, setImageFile] = useState(null);
 
+  const [activityItems, setActivityItems] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(true);
+  const [savingActivity, setSavingActivity] = useState(false);
+  const [activityMessage, setActivityMessage] = useState('');
+
+  const [platform, setPlatform] = useState('Blaze');
+  const [activityLabel, setActivityLabel] = useState('');
+  const [activityTitle, setActivityTitle] = useState('');
+  const [activityBody, setActivityBody] = useState('');
+  const [messageOne, setMessageOne] = useState('');
+  const [messageTwo, setMessageTwo] = useState('');
+  const [activityCaption, setActivityCaption] = useState('');
+  const [activityStatus, setActivityStatus] = useState('draft');
+  const [activityFeatured, setActivityFeatured] = useState(false);
+
   useEffect(() => {
     checkAdminAccess();
   }, []);
@@ -38,6 +53,7 @@ export default function BrickAdminPage() {
   useEffect(() => {
     if (isAdmin) {
       fetchCharacters();
+      fetchWorldActivity();
     }
   }, [isAdmin]);
 
@@ -112,6 +128,25 @@ export default function BrickAdminPage() {
       console.error('Error fetching Brick characters:', error);
     } finally {
       setLoadingCharacters(false);
+    }
+  }
+
+  async function fetchWorldActivity() {
+    setLoadingActivity(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('brick_world_activity')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setActivityItems(data || []);
+    } catch (error) {
+      console.error('Error fetching Brick world activity:', error);
+    } finally {
+      setLoadingActivity(false);
     }
   }
 
@@ -193,6 +228,56 @@ export default function BrickAdminPage() {
     }
   }
 
+  async function handleActivitySubmit(event) {
+    event.preventDefault();
+    setActivityMessage('');
+
+    if (!activityTitle.trim()) {
+      setActivityMessage('Activity title is required.');
+      return;
+    }
+
+    setSavingActivity(true);
+
+    try {
+      const payload = {
+        platform,
+        label: activityLabel.trim() || null,
+        title: activityTitle.trim(),
+        body: activityBody.trim() || null,
+        message_one: messageOne.trim() || null,
+        message_two: messageTwo.trim() || null,
+        caption: activityCaption.trim() || null,
+        status: activityStatus,
+        featured: activityFeatured,
+      };
+
+      const { error } = await supabase
+        .from('brick_world_activity')
+        .insert([payload]);
+
+      if (error) throw error;
+
+      setPlatform('Blaze');
+      setActivityLabel('');
+      setActivityTitle('');
+      setActivityBody('');
+      setMessageOne('');
+      setMessageTwo('');
+      setActivityCaption('');
+      setActivityStatus('draft');
+      setActivityFeatured(false);
+
+      setActivityMessage('World activity added successfully.');
+      await fetchWorldActivity();
+    } catch (error) {
+      console.error('World activity save failed:', error);
+      setActivityMessage(error.message || 'World activity save failed.');
+    } finally {
+      setSavingActivity(false);
+    }
+  }
+
   async function updateCharacter(id, updates) {
     try {
       const { error } = await supabase
@@ -206,6 +291,22 @@ export default function BrickAdminPage() {
     } catch (error) {
       console.error('Character update failed:', error);
       alert(error.message || 'Could not update character.');
+    }
+  }
+
+  async function updateActivity(id, updates) {
+    try {
+      const { error } = await supabase
+        .from('brick_world_activity')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await fetchWorldActivity();
+    } catch (error) {
+      console.error('World activity update failed:', error);
+      alert(error.message || 'Could not update world activity.');
     }
   }
 
@@ -233,6 +334,25 @@ export default function BrickAdminPage() {
     } catch (error) {
       console.error('Character delete failed:', error);
       alert(error.message || 'Could not delete character.');
+    }
+  }
+
+  async function deleteActivity(item) {
+    const confirmed = window.confirm(`Delete ${item.title}?`);
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from('brick_world_activity')
+        .delete()
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      await fetchWorldActivity();
+    } catch (error) {
+      console.error('World activity delete failed:', error);
+      alert(error.message || 'Could not delete world activity.');
     }
   }
 
@@ -264,7 +384,7 @@ export default function BrickAdminPage() {
         <p style={styles.kicker}>The Aset Studio Original Series</p>
         <h1 style={styles.pageTitle}>Brick by Brick Admin</h1>
         <p style={styles.mutedText}>
-          Build the character bible, manage the Bellaire world, and prepare the series channel with controlled studio precision.
+          Build the character bible, manage the world activity, and prepare the series channel with controlled studio precision.
         </p>
       </div>
 
@@ -425,6 +545,215 @@ export default function BrickAdminPage() {
             </p>
           ) : null}
         </form>
+      </section>
+
+      <section style={styles.card}>
+        <h2 style={styles.sectionTitle}>Add World Activity</h2>
+
+        <form onSubmit={handleActivitySubmit} style={styles.form}>
+          <div style={styles.threeColumnGrid}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Platform</label>
+              <select
+                value={platform}
+                onChange={(e) => setPlatform(e.target.value)}
+                style={styles.select}
+              >
+                <option value="Pulse">Pulse</option>
+                <option value="Nova">Nova</option>
+                <option value="Surge">Surge</option>
+                <option value="Blaze">Blaze</option>
+                <option value="Receipts">Receipts</option>
+              </select>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Status</label>
+              <select
+                value={activityStatus}
+                onChange={(e) => setActivityStatus(e.target.value)}
+                style={styles.select}
+              >
+                <option value="draft">draft</option>
+                <option value="published">published</option>
+              </select>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Featured</label>
+              <select
+                value={activityFeatured ? 'true' : 'false'}
+                onChange={(e) => setActivityFeatured(e.target.value === 'true')}
+                style={styles.select}
+              >
+                <option value="false">false</option>
+                <option value="true">true</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={styles.twoColumnGrid}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Label</label>
+              <input
+                type="text"
+                value={activityLabel}
+                onChange={(e) => setActivityLabel(e.target.value)}
+                placeholder="Example: BLAZE EXCLUSIVE"
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Title</label>
+              <input
+                type="text"
+                value={activityTitle}
+                onChange={(e) => setActivityTitle(e.target.value)}
+                placeholder="Example: Family Attorney Seen Leaving East Tower"
+                style={styles.input}
+                required
+              />
+            </div>
+          </div>
+
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>Body / Description</label>
+            <textarea
+              value={activityBody}
+              onChange={(e) => setActivityBody(e.target.value)}
+              placeholder="Short caption, article summary, post body, or world update."
+              rows={4}
+              style={styles.textarea}
+            />
+          </div>
+
+          <div style={styles.twoColumnGrid}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Text Message 1</label>
+              <textarea
+                value={messageOne}
+                onChange={(e) => setMessageOne(e.target.value)}
+                placeholder="Optional leaked message bubble."
+                rows={3}
+                style={styles.textarea}
+              />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Text Message 2</label>
+              <textarea
+                value={messageTwo}
+                onChange={(e) => setMessageTwo(e.target.value)}
+                placeholder="Optional reply bubble."
+                rows={3}
+                style={styles.textarea}
+              />
+            </div>
+          </div>
+
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>Receipt Caption</label>
+            <textarea
+              value={activityCaption}
+              onChange={(e) => setActivityCaption(e.target.value)}
+              placeholder="Example: Screenshot recovered after the East Tower rumors began spreading."
+              rows={3}
+              style={styles.textarea}
+            />
+          </div>
+
+          <button type="submit" style={styles.primaryButton} disabled={savingActivity}>
+            {savingActivity ? 'Saving World Activity...' : 'Add World Activity'}
+          </button>
+
+          {activityMessage ? (
+            <p
+              style={
+                activityMessage.toLowerCase().includes('failed') ||
+                activityMessage.toLowerCase().includes('required')
+                  ? styles.errorText
+                  : styles.successText
+              }
+            >
+              {activityMessage}
+            </p>
+          ) : null}
+        </form>
+      </section>
+
+      <section style={styles.card}>
+        <h2 style={styles.sectionTitle}>World Activity</h2>
+
+        {loadingActivity ? (
+          <p style={styles.mutedText}>Loading world activity...</p>
+        ) : activityItems.length === 0 ? (
+          <p style={styles.mutedText}>No world activity yet.</p>
+        ) : (
+          <div style={styles.activityGrid}>
+            {activityItems.map((item) => (
+              <div key={item.id} style={styles.activityCard}>
+                <div style={styles.badgeRow}>
+                  <span style={styles.goldBadge}>{item.platform}</span>
+                  <span style={styles.badge}>{item.status || 'draft'}</span>
+                  {item.featured ? <span style={styles.goldBadge}>Featured</span> : null}
+                </div>
+
+                {item.label ? <p style={styles.characterMeta}>{item.label}</p> : null}
+                <h3 style={styles.characterName}>{item.title}</h3>
+                {item.body ? <p style={styles.bodyText}>{item.body}</p> : null}
+
+                {item.message_one || item.message_two ? (
+                  <div style={styles.receiptBox}>
+                    {item.message_one ? (
+                      <div style={styles.messageBubbleDark}>{item.message_one}</div>
+                    ) : null}
+
+                    {item.message_two ? (
+                      <div style={styles.messageBubbleGold}>{item.message_two}</div>
+                    ) : null}
+
+                    {item.caption ? (
+                      <p style={styles.receiptCaption}>{item.caption}</p>
+                    ) : null}
+                  </div>
+                ) : item.caption ? (
+                  <p style={styles.quote}>{item.caption}</p>
+                ) : null}
+
+                <div style={styles.actionRow}>
+                  <button
+                    type="button"
+                    style={styles.secondaryButton}
+                    onClick={() =>
+                      updateActivity(item.id, {
+                        status: item.status === 'published' ? 'draft' : 'published',
+                      })
+                    }
+                  >
+                    {item.status === 'published' ? 'Set Draft' : 'Publish'}
+                  </button>
+
+                  <button
+                    type="button"
+                    style={item.featured ? styles.goldButton : styles.secondaryButton}
+                    onClick={() => updateActivity(item.id, { featured: !item.featured })}
+                  >
+                    {item.featured ? 'Featured' : 'Feature'}
+                  </button>
+
+                  <button
+                    type="button"
+                    style={styles.dangerButton}
+                    onClick={() => deleteActivity(item)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section style={styles.card}>
@@ -658,8 +987,19 @@ const styles = {
     gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
     gap: '18px',
   },
+  activityGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: '18px',
+  },
   characterCard: {
     border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '18px',
+    background: '#0d0d13',
+    padding: '16px',
+  },
+  activityCard: {
+    border: '1px solid rgba(212, 175, 55, 0.16)',
     borderRadius: '18px',
     background: '#0d0d13',
     padding: '16px',
@@ -744,6 +1084,41 @@ const styles = {
     color: '#c7bdac',
     lineHeight: 1.6,
     fontStyle: 'italic',
+  },
+  receiptBox: {
+    marginTop: '14px',
+    padding: '14px',
+    borderRadius: '16px',
+    background: '#09090d',
+    border: '1px solid rgba(255,255,255,0.08)',
+  },
+  messageBubbleDark: {
+    maxWidth: '92%',
+    marginBottom: '10px',
+    padding: '12px 14px',
+    borderRadius: '16px 16px 16px 4px',
+    background: '#171719',
+    color: '#f7f0e5',
+    lineHeight: 1.45,
+    fontSize: '14px',
+  },
+  messageBubbleGold: {
+    maxWidth: '92%',
+    marginLeft: 'auto',
+    marginBottom: '12px',
+    padding: '12px 14px',
+    borderRadius: '16px 16px 4px 16px',
+    background: 'linear-gradient(135deg, #d4af37, #f2daa0)',
+    color: '#111',
+    lineHeight: 1.45,
+    fontSize: '14px',
+    fontWeight: 800,
+  },
+  receiptCaption: {
+    margin: 0,
+    color: '#9e9689',
+    fontSize: '12px',
+    lineHeight: 1.6,
   },
   actionRow: {
     display: 'flex',
