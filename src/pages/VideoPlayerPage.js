@@ -1,410 +1,379 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import "./VideoPlayerPage.css";
 
-const categoryLabels = {
-  film: "Feature Presentation",
-  films: "Feature Presentation",
-  music_video: "Visual Release",
-  "music video": "Visual Release",
-  interview: "Private Conversation",
-  interviews: "Private Conversation",
-  hot_take: "Commentary Room",
-  "hot take": "Commentary Room",
-  studio_release: "Aset Studio Original",
-  "studio release": "Aset Studio Original",
-  "aset original": "Aset Studio Original",
-  red_carpet: "Red Carpet Moment",
-  "red carpet": "Red Carpet Moment",
-  event: "Red Carpet Moment",
-  cinematic: "Aset Cinema Presentation",
-};
+const MEDIA_BUCKET = "media";
+const SIGNED_URL_TTL_SECONDS = 600;
 
-function getPresentationLabel(video) {
-  const rawCategory = (video?.category || "").toLowerCase().trim();
+function clean(value) {
+  return String(value || "").trim();
+}
 
-  if (categoryLabels[rawCategory]) return categoryLabels[rawCategory];
-  if (video?.is_aset_original) return "Aset Studio Original";
-  if (video?.studio_name) return `Presented by ${video.studio_name}`;
+function norm(value) {
+  return clean(value).toLowerCase();
+}
+
+function formatCategory(category) {
+  const value = clean(category || "Aset Cinema");
+  return value.replaceAll("_", " ");
+}
+
+function displayTitle(item) {
+  const title = clean(item?.title);
+  if (title) return title;
+
+  const tagline = clean(item?.tagline);
+  if (tagline) return tagline;
+
+  const quote = clean(item?.quote);
+  if (quote) return quote;
 
   return "Aset Cinema Presentation";
 }
 
-function formatCategory(category) {
-  if (!category) return "Aset Cinema";
-
-  return category
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+function normalizeItem(item) {
+  return {
+    ...item,
+    type: norm(item?.type || item?.media_type || ""),
+    status: norm(item?.status || ""),
+    hidden: Boolean(item?.hidden || item?.is_hidden),
+    category: clean(item?.category),
+    file_path: clean(item?.file_path),
+    watermarked_path: clean(item?.watermarked_path),
+  };
 }
 
-function getPosterPath(video) {
+function isVideoItem(item) {
+  const path = norm(item?.file_path);
+
   return (
-    video?.poster_url ||
-    video?.thumbnail_url ||
-    video?.image_url ||
-    video?.cover_url ||
-    ""
+    path.endsWith(".mp4") ||
+    path.endsWith(".mov") ||
+    path.endsWith(".webm")
   );
 }
 
-function isFullUrl(value) {
-  return /^https?:\/\//i.test(value || "");
-}
-
-function requiresSupremeAccess(video) {
-  return String(video?.access_level || "").toLowerCase() === "supreme";
-}
-
-export default function VideoPlayerPage() {
-  const { slug } = useParams();
-
-  const [video, setVideo] = useState(null);
-  const [videoUrl, setVideoUrl] = useState("");
-  const [posterUrl, setPosterUrl] = useState("");
-  const [related, setRelated] = useState([]);
-  const [moreFromCinema, setMoreFromCinema] = useState([]);
-  const [relatedPosters, setRelatedPosters] = useState({});
-  const [cinemaPosters, setCinemaPosters] = useState({});
+export default function VideosPage() {
+  const [videos, setVideos] = useState([]);
+  const [signedUrls, setSignedUrls] = useState({});
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    async function getSignedUrl(pathOrUrl) {
-      if (!pathOrUrl) return "";
-      if (isFullUrl(pathOrUrl)) return pathOrUrl;
+    async function createSignedUrl(path) {
+      const cleanPath = clean(path);
+      if (!cleanPath) return "";
 
       const { data, error } = await supabase.storage
-        .from("media")
-        .createSignedUrl(pathOrUrl, 60 * 60);
+        .from(MEDIA_BUCKET)
+        .createSignedUrl(cleanPath, SIGNED_URL_TTL_SECONDS);
 
-      if (error) {
-        console.error("Signed URL error:", error);
+      if (error || !data?.signedUrl) {
+        console.error("Video preview signed URL error:", error);
         return "";
       }
 
-      return data?.signedUrl || "";
+      return data.signedUrl;
     }
 
-    async function createPosterMap(items) {
-      const entries = await Promise.all(
-        (items || []).map(async (item) => {
-          const poster = await getSignedUrl(getPosterPath(item));
-          return [item.id, poster];
-        })
-      );
-
-      return Object.fromEntries(entries);
-    }
-
-    async function loadVideoPage() {
+    async function loadVideos() {
       setLoading(true);
-      setNotFound(false);
-      setIsLocked(false);
-      setVideo(null);
-      setVideoUrl("");
-      setPosterUrl("");
-      setRelated([]);
-      setMoreFromCinema([]);
-      setRelatedPosters({});
-      setCinemaPosters({});
 
-      const { data, error } = await supabase
-        .from("media_items")
-        .select("*")
-        .eq("slug", slug)
-        .eq("type", "video")
-        .in("status", ["published", "approved"]);
+      try {
+        const { data, error } = await supabase
+          .from("media_items")
+          .select(`
+            id,
+            slug,
+            title,
+            tagline,
+            quote,
+            description,
+            category,
+            type,
+            status,
+            hidden,
+            is_hidden,
+            access_level,
+            file_path,
+            watermarked_path,
+            created_at
+          `)
+          .eq("is_hidden", false)
+          .order("created_at", { ascending: false });
 
-      if (error || !data || data.length === 0) {
-        console.error("Video not found:", error);
+        if (error) throw error;
 
-        if (isMounted) {
-          setNotFound(true);
-          setLoading(false);
-        }
+        console.log("MEDIA ITEMS FOUND:", data);
 
-        return;
-      }
+        const safeVideos = (data || [])
+          .map(normalizeItem)
+          .filter((item) => !item.hidden)
+          .filter(isVideoItem);
 
-      const videoData = data[0];
+        console.log("SAFE VIDEOS:", safeVideos);
 
-      const isHidden =
-        videoData.hidden === true ||
-        videoData.is_hidden === true ||
-        videoData.published === false ||
-        videoData.is_published === false;
+        const urlEntries = await Promise.all(
+          safeVideos.map(async (video) => {
+            const path = video.watermarked_path || video.file_path || "";
+            const signedUrl = await createSignedUrl(path);
+            return [video.id, signedUrl];
+          })
+        );
 
-      if (isHidden) {
-        if (isMounted) {
-          setNotFound(true);
-          setLoading(false);
-        }
+        if (!mounted) return;
 
-        return;
-      }
+        setVideos(safeVideos);
+        setSignedUrls(Object.fromEntries(urlEntries));
+        setLoading(false);
+      } catch (error) {
+        console.error("Videos page load failed:", error);
 
-      const locked = requiresSupremeAccess(videoData);
-      const videoFilePath = videoData.watermarked_path || videoData.file_path;
+        if (!mounted) return;
 
-      if (!videoFilePath) {
-        if (isMounted) {
-          setNotFound(true);
-          setLoading(false);
-        }
-
-        return;
-      }
-
-      const signedVideoUrl = locked ? "" : await getSignedUrl(videoFilePath);
-      const signedPosterUrl = await getSignedUrl(getPosterPath(videoData));
-
-      const { data: relatedData } = await supabase
-        .from("media_items")
-        .select(
-          "id, title, slug, category, poster_url, thumbnail_url, image_url, cover_url"
-        )
-        .eq("type", "video")
-        .in("status", ["published", "approved"])
-        .eq("category", videoData.category)
-        .neq("slug", slug)
-        .limit(8);
-
-      const { data: cinemaData } = await supabase
-        .from("media_items")
-        .select(
-          "id, title, slug, category, poster_url, thumbnail_url, image_url, cover_url"
-        )
-        .eq("type", "video")
-        .in("status", ["published", "approved"])
-        .neq("slug", slug)
-        .limit(10);
-
-      const nextRelatedPosters = await createPosterMap(relatedData || []);
-      const nextCinemaPosters = await createPosterMap(cinemaData || []);
-
-      if (isMounted) {
-        setVideo(videoData);
-        setVideoUrl(signedVideoUrl);
-        setPosterUrl(signedPosterUrl);
-        setIsLocked(locked);
-        setRelated(relatedData || []);
-        setMoreFromCinema(cinemaData || []);
-        setRelatedPosters(nextRelatedPosters);
-        setCinemaPosters(nextCinemaPosters);
+        setVideos([]);
+        setSignedUrls({});
         setLoading(false);
       }
     }
 
-    loadVideoPage();
+    loadVideos();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [slug]);
-
-  function renderCinemaCard(item, posterMap) {
-    const poster = posterMap[item.id];
-
-    return (
-      <Link
-        key={item.id}
-        to={`/video/${item.slug}`}
-        className="video-card-link"
-      >
-        {poster && (
-          <img
-            src={poster}
-            alt={item.title || "Aset Cinema poster"}
-            className="video-card-poster"
-          />
-        )}
-
-        <div className="video-card-shade" />
-
-        <span>{formatCategory(item.category)}</span>
-        <strong>{item.title}</strong>
-      </Link>
-    );
-  }
-
-  if (loading) {
-    return (
-      <main className="video-player-page">
-        <section className="video-state-panel">
-          <p>Preparing Aset Cinema...</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (notFound || !video) {
-    return (
-      <main className="video-player-page">
-        <section className="video-state-panel">
-          <p>This presentation is not available.</p>
-
-          <Link to="/videos" className="video-return-link">
-            Return to Aset Cinema
-          </Link>
-        </section>
-      </main>
-    );
-  }
+  }, []);
 
   return (
-    <main className="video-player-page">
-      <section className="video-hero">
-        <div className="video-hero-top">
-          <Link to="/videos" className="video-back-link">
-            ← Back to Aset Cinema
-          </Link>
-
-          <p className="video-page-label">Aset Cinema Screening Room</p>
-        </div>
-
-        <div className="video-stage">
-          <div className="video-frame">
-            {isLocked ? (
-              <div className="video-state-panel embedded">
-                <p
-                  style={{
-                    color: "#d7b56d",
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    fontSize: "0.72rem",
-                    marginBottom: "14px",
-                  }}
-                >
-                  Supreme Access Screening
-                </p>
-
-                <h2
-                  style={{
-                    margin: "0 0 18px",
-                    fontSize: "clamp(2rem, 4vw, 3.8rem)",
-                    lineHeight: "0.9",
-                    letterSpacing: "-0.06em",
-                  }}
-                >
-                  This Screening Is Locked
-                </h2>
-
-                <p
-                  style={{
-                    maxWidth: "540px",
-                    color: "rgba(255,255,255,0.72)",
-                    lineHeight: "1.8",
-                    marginBottom: "24px",
-                  }}
-                >
-                  This cinematic presentation is currently reserved for Supreme
-                  Access members inside The Aset Studio.
-                </p>
-
-                <Link
-                  to="/supreme-access"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, #c58d36, #f1d08a)",
-                    border: "none",
-                    color: "#111",
-                    padding: "14px 22px",
-                    borderRadius: "999px",
-                    fontWeight: 900,
-                    cursor: "pointer",
-                    letterSpacing: "0.04em",
-                    textDecoration: "none",
-                  }}
-                >
-                  Request Supreme Access
-                </Link>
-              </div>
-            ) : videoUrl ? (
-              <video
-                className="main-video"
-                src={videoUrl}
-                controls
-                playsInline
-                preload="metadata"
-                poster={posterUrl || undefined}
-              />
-            ) : (
-              <div className="video-state-panel embedded">
-                <p>Video playback is unavailable.</p>
-              </div>
-            )}
-          </div>
-
-          <aside className="aset-guide-video">
-            <video
-              src="/videos/aset-cinema-guide.mp4"
-              controls
-              muted
-              playsInline
-              preload="metadata"
-            />
-
-            <p>Inside Aset Cinema</p>
-          </aside>
-        </div>
-
-        <div className="video-details">
-          <p className="video-kicker">
-            {isLocked ? "Supreme Access Screening" : getPresentationLabel(video)}
-          </p>
-
-          <h1>{video.title}</h1>
-
-          {video.category && (
-            <p className="video-category">{formatCategory(video.category)}</p>
-          )}
-
-          {video.tagline && (
-            <p className="video-description">{video.tagline}</p>
-          )}
-
-          {video.quote && (
-            <blockquote className="video-quote">“{video.quote}”</blockquote>
-          )}
-
-          {video.description && (
-            <p className="video-description">{video.description}</p>
-          )}
-        </div>
+    <main style={styles.page}>
+      <section style={styles.hero}>
+        <p style={styles.kicker}>THE ASET STUDIO</p>
+        <h1 style={styles.title}>Aset Cinema</h1>
+        <p style={styles.subtitle}>
+          A curated screening room for video releases, interviews, cinematic
+          tests, original stories, and studio presentations.
+        </p>
       </section>
 
-      {related.length > 0 && (
-        <section className="video-section">
-          <div className="video-section-header">
-            <p>Continue Inside This World</p>
-            <h2>More {formatCategory(video.category)}</h2>
-          </div>
-
-          <div className="video-row">
-            {related.map((item) => renderCinemaCard(item, relatedPosters))}
-          </div>
+      {loading ? (
+        <section style={styles.stateCard}>Loading screenings...</section>
+      ) : videos.length === 0 ? (
+        <section style={styles.stateCard}>
+          No screenings have been published yet.
         </section>
-      )}
+      ) : (
+        <section style={styles.grid}>
+          {videos.map((video) => {
+            const signedUrl = signedUrls[video.id] || "";
 
-      {moreFromCinema.length > 0 && (
-        <section className="video-section">
-          <div className="video-section-header">
-            <p>The Archive Expands</p>
-            <h2>More From Aset Cinema</h2>
-          </div>
+            return (
+              <Link
+                key={video.id}
+                to={`/media/${video.id}`}
+                style={styles.card}
+              >
+                <div style={styles.previewWrap}>
+                  {signedUrl ? (
+                    <video
+                      src={signedUrl}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      style={styles.previewVideo}
+                    />
+                  ) : (
+                    <div style={styles.previewFallback}>
+                      Preview unavailable
+                    </div>
+                  )}
 
-          <div className="video-row">
-            {moreFromCinema.map((item) =>
-              renderCinemaCard(item, cinemaPosters)
-            )}
-          </div>
+                  <div style={styles.previewOverlay} />
+
+                  <span style={styles.typeBadge}>Video</span>
+
+                  <span style={styles.categoryBadge}>
+                    {formatCategory(video.category)}
+                  </span>
+                </div>
+
+                <div style={styles.cardBody}>
+                  <h2 style={styles.cardTitle}>{displayTitle(video)}</h2>
+
+                  {video.description ? (
+                    <p style={styles.description}>{video.description}</p>
+                  ) : video.tagline ? (
+                    <p style={styles.description}>{video.tagline}</p>
+                  ) : null}
+
+                  <span style={styles.watchButton}>Open Screening</span>
+                </div>
+              </Link>
+            );
+          })}
         </section>
       )}
     </main>
   );
 }
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background:
+      "radial-gradient(circle at top, rgba(198,136,55,0.16), transparent 36%), linear-gradient(180deg, #050505 0%, #0a0908 46%, #050505 100%)",
+    color: "#f5f1eb",
+    padding: "110px 20px 80px",
+  },
+
+  hero: {
+    maxWidth: 980,
+    margin: "0 auto 42px",
+    textAlign: "center",
+  },
+
+  kicker: {
+    margin: "0 0 12px",
+    fontSize: 12,
+    letterSpacing: "0.32em",
+    textTransform: "uppercase",
+    color: "rgba(245,241,235,0.52)",
+  },
+
+  title: {
+    margin: 0,
+    fontSize: "clamp(48px, 8vw, 110px)",
+    lineHeight: 0.88,
+    letterSpacing: "-0.075em",
+    fontWeight: 900,
+  },
+
+  subtitle: {
+    maxWidth: 760,
+    margin: "20px auto 0",
+    color: "rgba(245,241,235,0.72)",
+    lineHeight: 1.8,
+    fontSize: 16,
+  },
+
+  stateCard: {
+    maxWidth: 900,
+    margin: "0 auto",
+    borderRadius: 24,
+    padding: "34px 24px",
+    textAlign: "center",
+    color: "rgba(245,241,235,0.7)",
+    border: "1px solid rgba(245,241,235,0.08)",
+    background: "rgba(255,255,255,0.025)",
+  },
+
+  grid: {
+    maxWidth: 1320,
+    margin: "0 auto",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: 22,
+  },
+
+  card: {
+    display: "block",
+    overflow: "hidden",
+    borderRadius: 28,
+    textDecoration: "none",
+    color: "#f5f1eb",
+    border: "1px solid rgba(245,241,235,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015))",
+    boxShadow: "0 26px 80px rgba(0,0,0,0.34)",
+  },
+
+  previewWrap: {
+    position: "relative",
+    aspectRatio: "16 / 10",
+    background: "#000",
+    overflow: "hidden",
+  },
+
+  previewVideo: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "block",
+    background: "#000",
+  },
+
+  previewFallback: {
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "rgba(245,241,235,0.55)",
+    background: "rgba(255,255,255,0.025)",
+  },
+
+  previewOverlay: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.64))",
+    pointerEvents: "none",
+  },
+
+  typeBadge: {
+    position: "absolute",
+    left: 16,
+    top: 16,
+    padding: "7px 11px",
+    borderRadius: 999,
+    background: "rgba(245,241,235,0.86)",
+    color: "#111",
+    fontSize: 10,
+    fontWeight: 900,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+  },
+
+  categoryBadge: {
+    position: "absolute",
+    left: 16,
+    bottom: 16,
+    padding: "8px 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(245,241,235,0.16)",
+    background: "rgba(0,0,0,0.48)",
+    color: "rgba(245,241,235,0.84)",
+    fontSize: 11,
+    letterSpacing: "0.14em",
+    textTransform: "uppercase",
+  },
+
+  cardBody: {
+    padding: 20,
+  },
+
+  cardTitle: {
+    margin: "0 0 10px",
+    fontSize: 24,
+    lineHeight: 1.05,
+    letterSpacing: "-0.04em",
+  },
+
+  description: {
+    margin: "0 0 18px",
+    color: "rgba(245,241,235,0.66)",
+    lineHeight: 1.65,
+    fontSize: 14,
+  },
+
+  watchButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "10px 14px",
+    borderRadius: 999,
+    background: "#f5f1eb",
+    color: "#111",
+    fontWeight: 850,
+    fontSize: 13,
+  },
+};

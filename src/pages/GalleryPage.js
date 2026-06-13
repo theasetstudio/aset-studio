@@ -15,6 +15,8 @@ const SIGNED_URL_TTL_SECONDS = 60 * 10;
 const HEART_FLASH_DURATION = 450;
 const DOUBLE_TAP_DELAY = 240;
 
+const VIDEO_EXTENSIONS = [".mp4", ".mov", ".webm", ".m4v"];
+
 export default function GalleryPage() {
   const navigate = useNavigate();
 
@@ -62,11 +64,9 @@ export default function GalleryPage() {
       setSession(data?.session ?? null);
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
-        setSession(nextSession);
-      }
-    );
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+    });
 
     return () => {
       mounted = false;
@@ -212,43 +212,9 @@ export default function GalleryPage() {
     };
   }, []);
 
-  function openAgeModal() {
-    setAgeModalOpen(true);
-  }
-
-  function closeAgeModal() {
-    setAgeModalOpen(false);
-  }
-
-  async function confirmAgeVerification() {
-    try {
-      localStorage.setItem("is_age_verified", "true");
-
-      if (!session?.user?.id) {
-        setAgeModalOpen(false);
-        navigate("/auth");
-        return;
-      }
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_age_verified: true })
-        .eq("id", session.user.id);
-
-      if (error) {
-        console.error("Age verification update error:", error);
-        return;
-      }
-
-      setProfile((prev) => ({
-        ...(prev || { id: session.user.id }),
-        is_age_verified: true,
-      }));
-
-      setAgeModalOpen(false);
-    } catch (e) {
-      console.error("confirmAgeVerification error:", e);
-    }
+  function isVideoPath(path) {
+    const lowerPath = String(path || "").toLowerCase();
+    return VIDEO_EXTENSIONS.some((ext) => lowerPath.endsWith(ext));
   }
 
   function normalizeItem(item) {
@@ -282,27 +248,19 @@ export default function GalleryPage() {
   }, [selectedCategory]);
 
   function getDisplayPathForItem(item) {
-    const isSupremeUser =
-      profile?.role === "supreme" || profile?.role === "admin";
+    const isSupremeUser = profile?.role === "supreme" || profile?.role === "admin";
 
     if (isSupremeUser && item.file_path) return item.file_path;
+
+    if (item.type === "video") return item.file_path;
+
     if (item.watermarked_path) return item.watermarked_path;
+
     return item.file_path;
   }
 
   async function createSignedUrlForPath(path) {
     if (!path) return null;
-
-    const lowerPath = String(path).toLowerCase();
-
-    if (
-      lowerPath.endsWith(".mp4") ||
-      lowerPath.endsWith(".mov") ||
-      lowerPath.endsWith(".webm") ||
-      lowerPath.endsWith(".m4v")
-    ) {
-      return null;
-    }
 
     const { data, error } = await supabase.storage
       .from("media")
@@ -328,7 +286,6 @@ export default function GalleryPage() {
 
         const item = normalizeItem(nextItem);
 
-        if (item.type !== "image") continue;
         if (signedUrlsByIdRef.current[item.id]) continue;
 
         const decision = getDecision(item);
@@ -342,6 +299,7 @@ export default function GalleryPage() {
 
         setSignedUrlsById((prev) => {
           if (prev[item.id]) return prev;
+
           const next = { ...prev, [item.id]: signedUrl };
           signedUrlsByIdRef.current = next;
           return next;
@@ -352,11 +310,10 @@ export default function GalleryPage() {
     }
   }
 
-  function queueSignedUrlsForImages(newItems) {
-    const imageItemsToQueue = newItems.filter((raw) => {
+  function queueSignedUrlsForMedia(newItems) {
+    const itemsToQueue = newItems.filter((raw) => {
       const item = normalizeItem(raw);
 
-      if (item.type !== "image") return false;
       if (signedUrlsByIdRef.current[item.id]) return false;
 
       const decision = getDecision(item);
@@ -365,23 +322,15 @@ export default function GalleryPage() {
       const path = getDisplayPathForItem(item);
       if (!path) return false;
 
-      const lowerPath = String(path).toLowerCase();
+      if (item.type === "video") return true;
+      if (item.type === "image" && !isVideoPath(path)) return true;
 
-      if (
-        lowerPath.endsWith(".mp4") ||
-        lowerPath.endsWith(".mov") ||
-        lowerPath.endsWith(".webm") ||
-        lowerPath.endsWith(".m4v")
-      ) {
-        return false;
-      }
-
-      return true;
+      return false;
     });
 
-    if (imageItemsToQueue.length === 0) return;
+    if (itemsToQueue.length === 0) return;
 
-    signedUrlQueueRef.current.push(...imageItemsToQueue);
+    signedUrlQueueRef.current.push(...itemsToQueue);
     void processSignedUrlQueue();
   }
 
@@ -466,11 +415,50 @@ export default function GalleryPage() {
         pageRef.current = page + 1;
       }
 
-      queueSignedUrlsForImages(batch);
+      queueSignedUrlsForMedia(batch);
     } finally {
       fetchingRef.current = false;
       setLoading(false);
       setLoadingMore(false);
+    }
+  }
+
+  function openAgeModal() {
+    setAgeModalOpen(true);
+  }
+
+  function closeAgeModal() {
+    setAgeModalOpen(false);
+  }
+
+  async function confirmAgeVerification() {
+    try {
+      localStorage.setItem("is_age_verified", "true");
+
+      if (!session?.user?.id) {
+        setAgeModalOpen(false);
+        navigate("/auth");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_age_verified: true })
+        .eq("id", session.user.id);
+
+      if (error) {
+        console.error("Age verification update error:", error);
+        return;
+      }
+
+      setProfile((prev) => ({
+        ...(prev || { id: session.user.id }),
+        is_age_verified: true,
+      }));
+
+      setAgeModalOpen(false);
+    } catch (e) {
+      console.error("confirmAgeVerification error:", e);
     }
   }
 
@@ -492,6 +480,7 @@ export default function GalleryPage() {
         delete next[mediaId];
         return next;
       });
+
       delete heartFlashTimersRef.current[mediaId];
     }, HEART_FLASH_DURATION);
   }
@@ -504,9 +493,7 @@ export default function GalleryPage() {
       return;
     }
 
-    if (favoritePendingRef.current.has(mediaId)) {
-      return;
-    }
+    if (favoritePendingRef.current.has(mediaId)) return;
 
     favoritePendingRef.current.add(mediaId);
 
@@ -604,17 +591,10 @@ export default function GalleryPage() {
     }, DOUBLE_TAP_DELAY);
   }
 
-  function handleOpenCreatorProfile(item) {
-    const uploaderId = item?.uploader?.id || item?.uploader_id || item?.owner_id;
-
-    if (!uploaderId) return;
-
-    navigate(`/creator/${uploaderId}`);
-  }
-
-  function handleImageError(item) {
+  function handleMediaError(item) {
     setSignedUrlsById((prev) => {
       if (!prev[item.id]) return prev;
+
       const next = { ...prev };
       delete next[item.id];
       signedUrlsByIdRef.current = next;
@@ -623,21 +603,9 @@ export default function GalleryPage() {
 
     const decision = getDecision(item);
     if (!decision?.allowed) return;
-    if (item.type !== "image") return;
 
     const path = getDisplayPathForItem(item);
     if (!path) return;
-
-    const lowerPath = String(path).toLowerCase();
-
-    if (
-      lowerPath.endsWith(".mp4") ||
-      lowerPath.endsWith(".mov") ||
-      lowerPath.endsWith(".webm") ||
-      lowerPath.endsWith(".m4v")
-    ) {
-      return;
-    }
 
     signedUrlQueueRef.current.push(item);
     void processSignedUrlQueue();
@@ -656,7 +624,8 @@ export default function GalleryPage() {
             background: rgba(255,255,255,0.04);
           }
 
-          .gallery-thumb img {
+          .gallery-thumb img,
+          .gallery-video-preview {
             display: block;
             width: 100%;
             height: auto;
@@ -671,41 +640,34 @@ export default function GalleryPage() {
             background: rgba(255,255,255,0.04);
           }
 
-          .gallery-video-poster {
+          .gallery-video-wrap {
             position: relative;
             width: 100%;
             aspect-ratio: 4 / 5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             overflow: hidden;
             background: rgba(255,255,255,0.04);
           }
 
-          .gallery-video-poster-image {
-            position: absolute;
-            inset: 0;
+          .gallery-video-preview,
+          .gallery-video-fallback {
             width: 100%;
             height: 100%;
             object-fit: cover;
+          }
+
+          .gallery-video-fallback {
+            display: block;
             opacity: 0.88;
           }
 
-          .gallery-video-poster-overlay {
+          .gallery-video-overlay {
             position: absolute;
             inset: 0;
             background: linear-gradient(
               to bottom,
-              rgba(0, 0, 0, 0.18),
-              rgba(0, 0, 0, 0.4)
+              rgba(0, 0, 0, 0.12),
+              rgba(0, 0, 0, 0.38)
             );
-          }
-
-          .gallery-video-poster::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border: 1px solid rgba(255,255,255,0.08);
             pointer-events: none;
           }
 
@@ -720,11 +682,15 @@ export default function GalleryPage() {
             border: 1px solid rgba(255,255,255,0.12);
             font-size: 12px;
             letter-spacing: 0.08em;
+            pointer-events: none;
           }
 
           .gallery-video-play {
-            position: relative;
+            position: absolute;
+            left: 50%;
+            top: 50%;
             z-index: 2;
+            transform: translate(-50%, -50%);
             width: 64px;
             height: 64px;
             border-radius: 999px;
@@ -735,6 +701,7 @@ export default function GalleryPage() {
             border: 1px solid rgba(255,255,255,0.18);
             font-size: 24px;
             line-height: 1;
+            pointer-events: none;
           }
 
           .gallery-heart-flash {
@@ -818,7 +785,7 @@ export default function GalleryPage() {
             const isFav = favoritesSet.has(item.id);
             const isHeartFlashing = Boolean(heartFlashById[item.id]);
             const isVideo = item.type === "video";
-            const signedUrl = isVideo ? null : signedUrlsById[item.id] || null;
+            const signedUrl = signedUrlsById[item.id] || null;
 
             const favCount =
               favoriteCountsById[item.id] ?? item?.favorites?.[0]?.count ?? 0;
@@ -832,9 +799,7 @@ export default function GalleryPage() {
                 ? "Verify your age to view boudoir content."
                 : "Unlock this content with Supreme Access.";
 
-              const buttonText = isBoudoir
-                ? "Verify Age"
-                : "Unlock with Supreme";
+              const buttonText = isBoudoir ? "Verify Age" : "Unlock with Supreme";
 
               const buttonAction = isBoudoir
                 ? () => openAgeModal()
@@ -885,15 +850,27 @@ export default function GalleryPage() {
                   tabIndex={0}
                 >
                   {isVideo ? (
-                    <div className="gallery-video-poster">
-                      <img
-                        src={videoPoster}
-                        alt="Video preview"
-                        className="gallery-video-poster-image"
-                        loading="lazy"
-                        draggable="false"
-                      />
-                      <div className="gallery-video-poster-overlay" />
+                    <div className="gallery-video-wrap">
+                      {signedUrl ? (
+                        <video
+                          src={signedUrl}
+                          className="gallery-video-preview"
+                          muted
+                          playsInline
+                          preload="metadata"
+                          onError={() => handleMediaError(item)}
+                        />
+                      ) : (
+                        <img
+                          src={videoPoster}
+                          alt="Video preview"
+                          className="gallery-video-fallback"
+                          loading="lazy"
+                          draggable="false"
+                        />
+                      )}
+
+                      <div className="gallery-video-overlay" />
                       <div className="gallery-video-pill">VIDEO</div>
                       <div className="gallery-video-play">▶</div>
                     </div>
@@ -903,7 +880,7 @@ export default function GalleryPage() {
                       alt={item.title ?? "Media"}
                       loading="lazy"
                       draggable="false"
-                      onError={() => handleImageError(item)}
+                      onError={() => handleMediaError(item)}
                     />
                   ) : (
                     <div className="gallery-thumb-skeleton" />
@@ -919,9 +896,7 @@ export default function GalleryPage() {
                 <div className="gallery-meta">
                   <div className="gallery-meta-text">
                     <div className="gallery-item-title">{item.title ?? ""}</div>
-                    <div className="gallery-item-tagline">
-                      {item.tagline ?? ""}
-                    </div>
+                    <div className="gallery-item-tagline">{item.tagline ?? ""}</div>
 
                     <div
                       style={{
@@ -945,11 +920,7 @@ export default function GalleryPage() {
                     type="button"
                     className={`fav-btn ${isFav ? "is-fav" : ""}`}
                     onClick={() => toggleFavorite(item.id, decision, { flash: true })}
-                    title={
-                      session?.user?.id
-                        ? "Toggle favorite"
-                        : "Login required"
-                    }
+                    title={session?.user?.id ? "Toggle favorite" : "Login required"}
                   >
                     {isFav ? "♥" : "♡"}
                   </button>
@@ -962,9 +933,7 @@ export default function GalleryPage() {
 
       <div ref={sentinelRef} style={{ height: 1 }} />
 
-      {loadingMore ? (
-        <div className="gallery-loading-more">Loading more…</div>
-      ) : null}
+      {loadingMore ? <div className="gallery-loading-more">Loading more…</div> : null}
 
       {!hasMore && items.length > 0 ? (
         <div className="gallery-end">End of gallery</div>

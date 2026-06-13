@@ -3,7 +3,10 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import CommentsPanel from "../components/CommentsPanel";
 import AgeVerificationModal from "../components/AgeVerificationModal";
-import { getAgeVerified, setAgeVerified as setAgeVerifiedLocal } from "../utils/ageGate";
+import {
+  getAgeVerified,
+  setAgeVerified as setAgeVerifiedLocal,
+} from "../utils/ageGate";
 
 const SIGNED_URL_TTL_SECONDS = 600;
 
@@ -16,23 +19,57 @@ function norm(value) {
 }
 
 function normalizeStoragePath(input) {
-  return clean(input);
+  return clean(input).replace(/^\/+/, "");
 }
 
-function isValidMediaType(type) {
-  return type === "video" || type === "image";
+function isVideoPath(path) {
+  const value = norm(path);
+  return (
+    value.endsWith(".mp4") ||
+    value.endsWith(".mov") ||
+    value.endsWith(".webm")
+  );
+}
+
+function isImagePath(path) {
+  const value = norm(path);
+  return (
+    value.endsWith(".jpg") ||
+    value.endsWith(".jpeg") ||
+    value.endsWith(".png") ||
+    value.endsWith(".webp") ||
+    value.endsWith(".gif")
+  );
 }
 
 function normalizeItem(item) {
+  const filePath = clean(item?.file_path);
+  const watermarkedPath = clean(item?.watermarked_path);
+  const storedType = norm(item?.type || item?.media_type || "");
+
+  let resolvedType = storedType;
+
+  if (!resolvedType || (resolvedType !== "video" && resolvedType !== "image")) {
+    if (isVideoPath(filePath) || isVideoPath(watermarkedPath)) {
+      resolvedType = "video";
+    } else if (isImagePath(filePath) || isImagePath(watermarkedPath)) {
+      resolvedType = "image";
+    } else {
+      resolvedType = "image";
+    }
+  }
+
   return {
     ...item,
     access_level: norm(item?.access_level),
-    status: norm(item?.status),
-    hidden: Boolean(item?.hidden),
-    type: norm(item?.type || "image"),
+    status: norm(item?.status || "published"),
+    hidden: Boolean(item?.hidden || item?.is_hidden),
+    type: resolvedType,
     owner_id: item?.owner_id || null,
     slug: clean(item?.slug),
     category: clean(item?.category),
+    file_path: filePath,
+    watermarked_path: watermarkedPath,
   };
 }
 
@@ -52,6 +89,20 @@ function displayTitle(item) {
 function displayCategory(category) {
   const value = clean(category || "Aset Cinema");
   return value.replaceAll("_", " ");
+}
+
+function getPlaybackPath(item, isSupremeUser) {
+  if (!item) return "";
+
+  if (item.type === "video") {
+    return item.file_path || item.watermarked_path || "";
+  }
+
+  if (isSupremeUser) {
+    return item.file_path || item.watermarked_path || "";
+  }
+
+  return item.watermarked_path || item.file_path || "";
 }
 
 export default function MediaDetailPage() {
@@ -161,25 +212,7 @@ export default function MediaDetailPage() {
       }
 
       try {
-        let query = supabase
-          .from("media_items")
-          .select(`
-            id,
-            slug,
-            title,
-            tagline,
-            quote,
-            description,
-            category,
-            type,
-            access_level,
-            status,
-            hidden,
-            file_path,
-            watermarked_path,
-            owner_id,
-            created_at
-          `);
+        let query = supabase.from("media_items").select("*");
 
         const slugValue = clean(slugOrId);
 
@@ -201,7 +234,7 @@ export default function MediaDetailPage() {
 
         const normalized = normalizeItem(data);
 
-        if (!isValidMediaType(normalized.type)) {
+        if (!["video", "image"].includes(normalized.type)) {
           setMediaError("Unsupported media type.");
           setLoading(false);
           return;
@@ -213,9 +246,12 @@ export default function MediaDetailPage() {
           return;
         }
 
-        const rawPath = isSupremeUser
-          ? normalized.file_path || normalized.watermarked_path || ""
-          : normalized.watermarked_path || normalized.file_path || "";
+        const rawPath = getPlaybackPath(normalized, isSupremeUser);
+
+        console.log("MEDIA DETAIL ITEM:", normalized);
+        console.log("MEDIA DETAIL FILE PATH:", normalized.file_path);
+        console.log("MEDIA DETAIL WATERMARK PATH:", normalized.watermarked_path);
+        console.log("MEDIA DETAIL RAW PATH USED:", rawPath);
 
         const signedUrl = await createSignedUrl(rawPath);
 
@@ -274,22 +310,8 @@ export default function MediaDetailPage() {
       try {
         let query = supabase
           .from("media_items")
-          .select(`
-            id,
-            slug,
-            title,
-            description,
-            category,
-            type,
-            status,
-            hidden,
-            file_path,
-            watermarked_path,
-            created_at
-          `)
-          .eq("type", "video")
+          .select("*")
           .eq("status", "published")
-          .eq("hidden", false)
           .neq("id", item.id)
           .order("created_at", { ascending: false })
           .limit(8);
@@ -311,14 +333,15 @@ export default function MediaDetailPage() {
         }
 
         const safeRelated = Array.isArray(data)
-          ? data.map(normalizeItem).filter((video) => video.slug)
+          ? data
+              .map(normalizeItem)
+              .filter((video) => video.type === "video")
+              .filter((video) => !video.hidden)
           : [];
 
         const urlEntries = await Promise.all(
           safeRelated.map(async (video) => {
-            const path =
-              video.watermarked_path || video.file_path || "";
-
+            const path = getPlaybackPath(video, isSupremeUser);
             const signedUrl = await createSignedUrl(path);
             return [video.id, signedUrl];
           })
@@ -345,7 +368,7 @@ export default function MediaDetailPage() {
     return () => {
       mounted = false;
     };
-  }, [item]);
+  }, [item, isSupremeUser]);
 
   async function confirmAgeVerification() {
     setAgeVerifiedLocal(true);
@@ -446,7 +469,9 @@ export default function MediaDetailPage() {
                 </div>
 
                 {loadingRelated ? (
-                  <div style={styles.stateCard}>Preparing more screenings...</div>
+                  <div style={styles.stateCard}>
+                    Preparing more screenings...
+                  </div>
                 ) : relatedItems.length === 0 ? (
                   <div style={styles.stateCard}>
                     More screenings are being prepared.
@@ -459,7 +484,7 @@ export default function MediaDetailPage() {
                       return (
                         <Link
                           key={related.id}
-                          to={`/video/${related.slug}`}
+                          to={`/media/${related.id}`}
                           style={styles.relatedCard}
                         >
                           <div style={styles.relatedMediaWrap}>
@@ -484,6 +509,7 @@ export default function MediaDetailPage() {
                                 Preview unavailable
                               </div>
                             )}
+
                             <div style={styles.relatedOverlay} />
                           </div>
 
@@ -491,6 +517,7 @@ export default function MediaDetailPage() {
                             <p style={styles.relatedCategory}>
                               {displayCategory(related.category)}
                             </p>
+
                             <h3 style={styles.relatedTitle}>
                               {displayTitle(related)}
                             </h3>

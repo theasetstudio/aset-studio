@@ -10,6 +10,7 @@ import FavoritesPage from "./pages/FavoritesPage";
 import AdminPage from "./pages/AdminPage";
 import AdminInquiries from "./pages/AdminInquiries";
 import AdminSpotlight from "./pages/AdminSpotlight";
+import AdminBeautyApplications from "./pages/AdminBeautyApplications";
 import BrickAdminPage from "./pages/BrickAdminPage";
 import AuthPage from "./pages/AuthPage";
 import AuthCallback from "./pages/AuthCallback";
@@ -50,35 +51,6 @@ import PuzzleLibraryPage from "./pages/PuzzleLibraryPage";
 import PuzzlePlayPage from "./pages/PuzzlePlayPage";
 import MyCreationsPage from "./pages/MyCreationsPage";
 
-import SirensRealmPage from "./pages/SirensRealmPage";
-import StoneCollectionPage from "./pages/StoneCollectionPage";
-import StoneDetailPage from "./pages/StoneDetailPage";
-import PiscesPage from "./pages/PiscesPage";
-import AquariusPage from "./pages/AquariusPage";
-import GeminiPage from "./pages/GeminiPage";
-import LibraPage from "./pages/LibraPage";
-import ProtectingTheHomePage from "./pages/ProtectingTheHomePage";
-import IntuitionPage from "./pages/IntuitionPage";
-import FullMoonPage from "./pages/FullMoonPage";
-import BedroomPage from "./pages/BedroomPage";
-import FocusPage from "./pages/FocusPage";
-import ConfidencePage from "./pages/ConfidencePage";
-import LuckPage from "./pages/LuckPage";
-import SafeTravelsPage from "./pages/SafeTravelsPage";
-import MoonSignPage from "./pages/MoonSignPage";
-import RisingSignPage from "./pages/RisingSignPage";
-import MotivationPage from "./pages/MotivationPage";
-import VeteransPage from "./pages/VeteransPage";
-import LovePage from "./pages/LovePage";
-import EmotionalHealingPage from "./pages/EmotionalHealingPage";
-import CreativeMusePage from "./pages/CreativeMusePage";
-import BluePage from "./pages/BluePage";
-import ReturnToSenderDeities from "./pages/ReturnToSenderDeities";
-import MeditationPage from "./pages/MeditationPage";
-
-import FriendshipPage from "./pages/stones/FriendshipPage";
-import PurplePage from "./pages/stones/PurplePage";
-
 import EliteGeneratorPage from "./pages/EliteGeneratorPage";
 import SupremeAccessPage from "./pages/SupremeAccessPage";
 import TalentPage from "./pages/TalentPage";
@@ -109,6 +81,7 @@ function App() {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/inquiries" element={<AdminInquiries />} />
         <Route path="/admin/spotlight" element={<AdminSpotlight />} />
+        <Route path="/admin/beauty-applications" element={<AdminBeautyApplications />} />
         <Route path="/brick-admin" element={<BrickAdminPage />} />
 
         <Route path="/auth" element={<AuthPage />} />
@@ -148,33 +121,7 @@ function App() {
         <Route path="/aset-lounge/puzzle-play" element={<PuzzlePlayPage />} />
         <Route path="/aset-lounge/my-creations" element={<MyCreationsPage />} />
 
-        <Route path="/sirens-realm" element={<SirensRealmPage />} />
-        <Route path="/sirens-realm/stones" element={<StoneCollectionPage />} />
-        <Route path="/sirens-realm/stones/:slug" element={<StoneDetailPage />} />
-        <Route path="/sirens-realm/pisces" element={<PiscesPage />} />
-        <Route path="/sirens-realm/aquarius" element={<AquariusPage />} />
-        <Route path="/sirens-realm/gemini" element={<GeminiPage />} />
-        <Route path="/sirens-realm/libra" element={<LibraPage />} />
-        <Route path="/sirens-realm/protecting-the-home" element={<ProtectingTheHomePage />} />
-        <Route path="/sirens-realm/intuition" element={<IntuitionPage />} />
-        <Route path="/sirens-realm/full-moon" element={<FullMoonPage />} />
-        <Route path="/sirens-realm/bedroom" element={<BedroomPage />} />
-        <Route path="/sirens-realm/focus" element={<FocusPage />} />
-        <Route path="/sirens-realm/confidence" element={<ConfidencePage />} />
-        <Route path="/sirens-realm/luck" element={<LuckPage />} />
-        <Route path="/sirens-realm/safe-travels" element={<SafeTravelsPage />} />
-        <Route path="/sirens-realm/moon-sign" element={<MoonSignPage />} />
-        <Route path="/sirens-realm/rising-sign" element={<RisingSignPage />} />
-        <Route path="/sirens-realm/motivation" element={<MotivationPage />} />
-        <Route path="/sirens-realm/veterans" element={<VeteransPage />} />
-        <Route path="/sirens-realm/love" element={<LovePage />} />
-        <Route path="/sirens-realm/emotional-healing" element={<EmotionalHealingPage />} />
-        <Route path="/sirens-realm/friendship" element={<FriendshipPage />} />
-        <Route path="/sirens-realm/meditation" element={<MeditationPage />} />
-        <Route path="/sirens-realm/creative-muse" element={<CreativeMusePage />} />
-        <Route path="/sirens-realm/blue" element={<BluePage />} />
-        <Route path="/sirens-realm/purple" element={<PurplePage />} />
-        <Route path="/sirens-realm/return-to-sender-deities" element={<ReturnToSenderDeities />} />
+        
 
         <Route path="/elite-generator" element={<EliteGeneratorPage />} />
         <Route path="/studio/writer" element={<Navigate to="/" replace />} />

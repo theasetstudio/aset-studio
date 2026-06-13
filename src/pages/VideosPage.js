@@ -3,73 +3,106 @@ import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./VideosPage.css";
 
+const SIGNED_URL_TTL_SECONDS = 600;
+
+function clean(value) {
+  return String(value || "").trim();
+}
+
+function norm(value) {
+  return clean(value).toLowerCase();
+}
+
+function isVideoFile(path) {
+  const value = norm(path);
+
+  return (
+    value.endsWith(".mp4") ||
+    value.endsWith(".mov") ||
+    value.endsWith(".webm")
+  );
+}
+
+function displayTitle(video) {
+  return (
+    clean(video?.title) ||
+    clean(video?.tagline) ||
+    clean(video?.quote) ||
+    "Aset Cinema Presentation"
+  );
+}
+
 export default function VideosPage() {
   const [videos, setVideos] = useState([]);
   const [featuredVideo, setFeaturedVideo] = useState(null);
+  const [previewUrls, setPreviewUrls] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadVideos();
-    // eslint-disable-next-line
+    async function init() {
+      await loadVideos();
+    }
+
+    init();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function getSignedUrl(path) {
-    if (!path) return null;
+    const cleanPath = clean(path).replace(/^\/+/, "");
+    if (!cleanPath) return "";
 
     const { data, error } = await supabase.storage
       .from("media")
-      .createSignedUrl(path, 60 * 60);
+      .createSignedUrl(cleanPath, SIGNED_URL_TTL_SECONDS);
 
-    if (error) {
+    if (error || !data?.signedUrl) {
       console.error("Signed URL Error:", error);
-      return null;
+      return "";
     }
 
-    return data?.signedUrl || null;
+    return data.signedUrl;
   }
 
   async function loadVideos() {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("media_items")
-      .select("*")
-      .eq("type", "video")
-      .eq("status", "approved")
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("media_items")
+        .select("*")
+        .eq("status", "published")
+        .eq("is_hidden", false)
+        .order("created_at", { ascending: false });
 
-    if (error) {
+      if (error) throw error;
+
+      const safeVideos = (data || []).filter((item) => {
+        const filePath = clean(item.file_path);
+        const watermarkedPath = clean(item.watermarked_path);
+
+        return isVideoFile(filePath) || isVideoFile(watermarkedPath);
+      });
+
+      const urlEntries = await Promise.all(
+        safeVideos.map(async (video) => {
+          const path = video.watermarked_path || video.file_path || "";
+          const signedUrl = await getSignedUrl(path);
+          return [video.id, signedUrl];
+        })
+      );
+
+      setVideos(safeVideos);
+      setFeaturedVideo(safeVideos[0] || null);
+      setPreviewUrls(Object.fromEntries(urlEntries));
+    } catch (error) {
       console.error("Video Fetch Error:", error);
       setVideos([]);
       setFeaturedVideo(null);
+      setPreviewUrls({});
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const visibleVideos = (data || []).filter((video) => !video.hidden);
-
-    const formattedVideos = await Promise.all(
-      visibleVideos.map(async (video) => {
-        const posterPath =
-          video.poster_path ||
-          video.thumbnail_path ||
-          video.image_path ||
-          null;
-
-        const posterUrl = await getSignedUrl(posterPath);
-
-        return {
-          ...video,
-          displayTitle: video.title,
-          displayCategory: video.category,
-          posterUrl,
-        };
-      })
-    );
-
-    setFeaturedVideo(formattedVideos[0] || null);
-    setVideos(formattedVideos);
-    setLoading(false);
   }
 
   function uniqueVideos(items) {
@@ -85,7 +118,7 @@ export default function VideosPage() {
   function matches(video, terms) {
     const text = `${video.category || ""} ${video.title || ""} ${
       video.description || ""
-    }`.toLowerCase();
+    } ${video.tagline || ""}`.toLowerCase();
 
     return terms.some((term) => text.includes(term));
   }
@@ -112,7 +145,9 @@ export default function VideosPage() {
     matches(video, ["music", "performance", "visual"])
   );
 
-  const studioReleases = videos;
+  const studioReleases = videos.filter((video) =>
+    matches(video, ["studio_release", "studio release", "studio"])
+  );
 
   const redCarpet = videos.filter((video) =>
     matches(video, ["red carpet", "event", "premiere", "coverage"])
@@ -153,7 +188,7 @@ export default function VideosPage() {
       title: "Studio Releases",
       subtitle: "STUDIO RELEASES",
       message: "Studio releases are being prepared.",
-      items: studioReleases,
+      items: studioReleases.length > 0 ? studioReleases : videos,
     },
     {
       title: "Red Carpet",
@@ -167,22 +202,28 @@ export default function VideosPage() {
     const previewItems = items.slice(0, 4);
 
     if (previewItems.length > 0) {
-      return previewItems.map((video) => (
-        <Link
-          key={video.id}
-          to={video.slug ? `/video/${video.slug}` : "/videos"}
-          className="release-mini-card"
-        >
-          {video.posterUrl ? (
-            <img
-              src={video.posterUrl}
-              alt={video.displayTitle || video.title || "Aset Cinema"}
-            />
-          ) : (
-            <span />
-          )}
-        </Link>
-      ));
+      return previewItems.map((video) => {
+        const previewUrl = previewUrls[video.id] || "";
+
+        return (
+          <Link
+            key={video.id}
+            to={`/media/${video.id}`}
+            className="release-mini-card"
+          >
+            {previewUrl ? (
+              <video
+                src={previewUrl}
+                muted
+                playsInline
+                preload="metadata"
+              />
+            ) : (
+              <span />
+            )}
+          </Link>
+        );
+      });
     }
 
     return [1, 2, 3, 4].map((item) => (
@@ -198,7 +239,7 @@ export default function VideosPage() {
         <div className="release-room-copy">
           <p>{room.subtitle}</p>
           <h2>{room.title}</h2>
-          <span>{room.message}</span>
+          <span>{room.items.length > 0 ? "Open the room." : room.message}</span>
         </div>
 
         <div className="release-room-preview">{renderMiniCards(room.items)}</div>
@@ -243,11 +284,7 @@ export default function VideosPage() {
               <div className="featured-cinema-content">
                 <p>FEATURED SCREENING</p>
 
-                <h2>
-                  {featuredVideo.displayTitle ||
-                    featuredVideo.title ||
-                    "Aset Cinema Feature"}
-                </h2>
+                <h2>{displayTitle(featuredVideo)}</h2>
 
                 <span>
                   A curated cinematic presentation inside The Aset Studio
@@ -255,7 +292,7 @@ export default function VideosPage() {
                 </span>
 
                 <Link
-                  to={featuredVideo.slug ? `/video/${featuredVideo.slug}` : "/videos"}
+                  to={`/media/${featuredVideo.id}`}
                   className="featured-watch-link"
                 >
                   Watch Screening
@@ -263,14 +300,12 @@ export default function VideosPage() {
               </div>
 
               <div className="featured-cinema-image">
-                {featuredVideo.posterUrl ? (
-                  <img
-                    src={featuredVideo.posterUrl}
-                    alt={
-                      featuredVideo.displayTitle ||
-                      featuredVideo.title ||
-                      "Aset Cinema"
-                    }
+                {previewUrls[featuredVideo.id] ? (
+                  <video
+                    src={previewUrls[featuredVideo.id]}
+                    muted
+                    playsInline
+                    preload="metadata"
                   />
                 ) : (
                   <div className="featured-cinema-fallback">Aset Cinema</div>

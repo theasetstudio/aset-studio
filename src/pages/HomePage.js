@@ -6,14 +6,10 @@ export default function HomePage() {
   const heroImage = `${process.env.PUBLIC_URL}/images/aset-powerhouse.png`;
   const spotlightImage = `${process.env.PUBLIC_URL}/images/aset-person.png`;
 
+  const [screeningItem, setScreeningItem] = useState(null);
   const [videoUrl, setVideoUrl] = useState("");
-  const [poster, setPoster] = useState("");
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
-
-  const [featuredItems, setFeaturedItems] = useState([]);
-  const [featuredUrls, setFeaturedUrls] = useState({});
-  const [loadingFeatured, setLoadingFeatured] = useState(true);
 
   const getInitialWidth = () =>
     typeof window !== "undefined" ? window.innerWidth : 1200;
@@ -27,7 +23,7 @@ export default function HomePage() {
       eyebrow: "THE FIRST DOOR",
       title: "Enter the Gallery",
       text:
-        "The Gallery is where Aset began. Before the cinema, before the portals, before the studio became a larger world, there was image: a visual archive, a portfolio, and the first signal.",
+        "The Gallery is where Aset began: a visual archive, a portfolio, and the first signal of the studio world.",
       panelEyebrow: "ORIGIN WORLD",
       panelTitle: "Gallery",
       panelText: "Image was the seed. The studio grew from there.",
@@ -39,7 +35,7 @@ export default function HomePage() {
       eyebrow: "ASET CINEMA",
       title: "The release room for the world we are building.",
       text:
-        "A controlled stage for feature presentations, visual releases, private conversations, Aset Studio originals, red carpet moments, and curated studio work.",
+        "A controlled stage for studio releases, interviews, cinematic tests, visual campaigns, and original worlds.",
       panelEyebrow: "NOW PRESENTING",
       panelTitle: "Aset Cinema",
       panelText: "Not a feed. Not a shelf. A curated premiere environment.",
@@ -47,27 +43,21 @@ export default function HomePage() {
       button: "Open Aset Cinema",
       variant: "light",
       featured: true,
-      categories: [
-        "Films",
-        "Music Videos",
-        "Interviews",
-        "Studio Releases",
-        "Red Carpet",
-      ],
+      categories: ["Studio Releases", "Interviews", "Visual Releases", "Original Worlds"],
     },
     {
-  eyebrow: "BRICK BY BRICK",
-  title: "Dynasties are not inherited. They are taken.",
-  text:
-    "A cinematic soap opera world of old-money families, secret alliances, dangerous romance, organized power, and the calculated rise of Crown inside an empire that is not as clean as it seems.",
-  panelEyebrow: "ASET STUDIO ORIGINAL",
-  panelTitle: "Brick by Brick",
-  panelText:
-    "A prestige dramatic universe where loyalty is currency, betrayal is inevitable, and power changes the people who survive long enough to hold it.",
-  path: "/brick-by-brick",
-  button: "Enter Brick by Brick",
-  variant: "gold",
-},
+      eyebrow: "BRICK BY BRICK",
+      title: "Dynasties are not inherited. They are taken.",
+      text:
+        "A cinematic soap opera world of old-money families, secret alliances, dangerous romance, organized power, and the calculated rise of Crown.",
+      panelEyebrow: "ASET STUDIO ORIGINAL",
+      panelTitle: "Brick by Brick",
+      panelText:
+        "A prestige dramatic universe where loyalty is currency, betrayal is inevitable, and power changes the people who survive long enough to hold it.",
+      path: "/brick-by-brick",
+      button: "Enter Brick by Brick",
+      variant: "gold",
+    },
   ];
 
   useEffect(() => {
@@ -80,101 +70,52 @@ export default function HomePage() {
   useEffect(() => {
     let mounted = true;
 
-    async function loadFeaturedVideo() {
+    async function loadHomepageScreening() {
       setLoading(true);
       setReady(false);
 
-      const { data } = await supabase
-        .from("media_items")
-        .select("*")
-        .eq("type", "video")
-        .eq("homepage_featured", true)
-        .eq("status", "published")
-        .eq("hidden", false)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from("media_items")
+          .select("*")
+          .eq("homepage_featured", true)
+          .eq("status", "published")
+          .eq("is_hidden", false)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (!mounted) return;
+        if (error) throw error;
+        if (!mounted) return;
 
-      if (!data?.file_path) {
-        setVideoUrl("");
-        setPoster("");
-        setLoading(false);
-        return;
-      }
-
-      const { data: signed } = await supabase.storage
-        .from("media")
-        .createSignedUrl(data.file_path, 3600);
-
-      setVideoUrl(signed?.signedUrl || "");
-
-      if (data.watermarked_path) {
-        const { data: signedPoster } = await supabase.storage
-          .from("media")
-          .createSignedUrl(data.watermarked_path, 3600);
-
-        setPoster(signedPoster?.signedUrl || "");
-      } else {
-        setPoster("");
-      }
-
-      setLoading(false);
-    }
-
-    loadFeaturedVideo();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadFeaturedItems() {
-      setLoadingFeatured(true);
-
-      const { data, error } = await supabase
-        .from("media_items")
-        .select("*")
-        .eq("featured", true)
-        .eq("status", "published")
-        .eq("hidden", false)
-        .order("created_at", { ascending: false })
-        .limit(8);
-
-      if (error || !mounted) {
-        setFeaturedItems([]);
-        setLoadingFeatured(false);
-        return;
-      }
-
-      setFeaturedItems(data || []);
-
-      const urlMap = {};
-
-      for (const item of data || []) {
-        if (!item.file_path) {
-          urlMap[item.id] = "";
-          continue;
+        if (!data?.file_path) {
+          setScreeningItem(null);
+          setVideoUrl("");
+          setLoading(false);
+          return;
         }
+
+        const path = data.watermarked_path || data.file_path;
 
         const { data: signed } = await supabase.storage
           .from("media")
-          .createSignedUrl(item.file_path, 3600);
+          .createSignedUrl(path, 3600);
 
-        urlMap[item.id] = signed?.signedUrl || "";
-      }
+        setScreeningItem(data);
+        setVideoUrl(signed?.signedUrl || "");
+        setLoading(false);
+      } catch (error) {
+        console.error("Homepage screening load failed:", error);
 
-      if (mounted) {
-        setFeaturedUrls(urlMap);
-        setLoadingFeatured(false);
+        if (!mounted) return;
+
+        setScreeningItem(null);
+        setVideoUrl("");
+        setLoading(false);
       }
     }
 
-    loadFeaturedItems();
+    loadHomepageScreening();
 
     return () => {
       mounted = false;
@@ -201,6 +142,7 @@ export default function HomePage() {
             backgroundPosition: isMobile ? "center top" : "center 42%",
           }}
         />
+
         <div style={styles.heroShade} />
 
         <div
@@ -248,7 +190,6 @@ export default function HomePage() {
             style={{
               ...styles.spotlightCard,
               maxWidth: isMobile ? "100%" : isTablet ? 760 : 360,
-              transform: "none",
               marginTop: isMobile ? 26 : isTablet ? 28 : 0,
             }}
           >
@@ -272,9 +213,7 @@ export default function HomePage() {
                 within the world of Aset.
               </p>
 
-              <span style={styles.spotlightButton}>
-                Explore Aset Spotlight
-              </span>
+              <span style={styles.spotlightButton}>Explore Aset Spotlight</span>
             </div>
           </Link>
         </div>
@@ -309,12 +248,7 @@ export default function HomePage() {
                     : "ltr",
               }}
             >
-              <div
-                style={{
-                  ...styles.worldCopy,
-                  direction: "ltr",
-                }}
-              >
+              <div style={{ ...styles.worldCopy, direction: "ltr" }}>
                 <p style={styles.eyebrow}>{world.eyebrow}</p>
                 <h2 style={styles.worldTitle}>{world.title}</h2>
                 <p style={styles.sectionText}>{world.text}</p>
@@ -339,12 +273,7 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              <div
-                style={{
-                  ...styles.worldPanel,
-                  direction: "ltr",
-                }}
-              >
+              <div style={{ ...styles.worldPanel, direction: "ltr" }}>
                 <p style={styles.panelEyebrow}>{world.panelEyebrow}</p>
                 <h3 style={styles.panelTitle}>{world.panelTitle}</h3>
                 <p style={styles.panelText}>{world.panelText}</p>
@@ -358,20 +287,22 @@ export default function HomePage() {
         <div style={styles.sectionInnerNarrow}>
           <div style={styles.screeningHeader}>
             <div>
-              <p style={styles.eyebrow}>FEATURED SCREENING</p>
+              <p style={styles.eyebrow}>NOW SCREENING</p>
 
-              <h2 style={styles.sectionTitle}>Inside The Aset Studio</h2>
+              <h2 style={styles.sectionTitle}>
+                {screeningItem?.title || "Inside The Aset Studio"}
+              </h2>
 
               <p style={styles.screeningText}>
-                A controlled cinematic environment for original releases,
-                interviews, studio conversations, visual campaigns, and curated
-                creative presentation.
+                {screeningItem?.description ||
+                  screeningItem?.tagline ||
+                  "A controlled cinematic environment for original releases, interviews, studio conversations, visual campaigns, and curated creative presentation."}
               </p>
             </div>
 
             <div style={styles.screeningBadge}>
               <span style={styles.screeningDot} />
-              PRIVATE SCREENING
+              FEATURED PRESENTATION
             </div>
           </div>
 
@@ -386,7 +317,6 @@ export default function HomePage() {
               <>
                 <video
                   src={videoUrl}
-                  poster={poster || undefined}
                   muted
                   autoPlay
                   loop
@@ -403,17 +333,20 @@ export default function HomePage() {
                   <p style={styles.screeningMini}>THE ASET STUDIO</p>
 
                   <h3 style={styles.screeningTitle}>
-                    Cinematic Presentation Environment
+                    {screeningItem?.title || "Cinematic Presentation Environment"}
                   </h3>
 
                   <p style={styles.screeningDescription}>
-                    Original worlds, visual storytelling, interviews, studio
-                    releases, and evolving cinematic identity systems.
+                    {screeningItem?.quote ||
+                      "Original worlds, visual storytelling, interviews, studio releases, and evolving cinematic identity systems."}
                   </p>
 
                   <div style={styles.screeningActions}>
-                    <Link to="/videos" style={styles.goldBtn}>
-                      Enter Aset Cinema
+                    <Link
+                      to={screeningItem?.id ? `/media/${screeningItem.id}` : "/videos"}
+                      style={styles.goldBtn}
+                    >
+                      Open Screening
                     </Link>
 
                     <Link to="/services" style={styles.lightBtn}>
@@ -431,92 +364,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section style={styles.featuredSection}>
-        <div style={styles.sectionInner}>
-          <div style={styles.sectionHeader}>
-            <div>
-              <p style={styles.eyebrow}>CURATED FROM THE STUDIO</p>
-              <h2 style={styles.sectionTitle}>Featured Work</h2>
-            </div>
-
-            <Link to="/videos" style={styles.textLink}>
-              View Aset Cinema →
-            </Link>
-          </div>
-
-          {loadingFeatured ? (
-            <div style={styles.placeholderCard}>Loading featured work...</div>
-          ) : featuredItems.length === 0 ? (
-            <div style={styles.placeholderCard}>
-              Featured work is being prepared.
-            </div>
-          ) : (
-            <div style={styles.featuredStrip}>
-              {featuredItems.map((item) => {
-                const itemUrl = featuredUrls[item.id];
-                const isVideo =
-                  String(item.type || "").trim().toLowerCase() === "video";
-
-                return (
-                  <Link
-                    key={item.id}
-                    to={
-                      isVideo && item.slug ? `/video/${item.slug}` : "/gallery"
-                    }
-                    style={styles.featuredCard}
-                  >
-                    <div style={styles.featuredMediaWrap}>
-                      {itemUrl ? (
-                        isVideo ? (
-                          <video
-                            src={itemUrl}
-                            muted
-                            loop
-                            playsInline
-                            preload="metadata"
-                            style={styles.featuredMedia}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.play().catch(() => {});
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.pause();
-                              e.currentTarget.currentTime = 0;
-                            }}
-                          />
-                        ) : (
-                          <img
-                            src={itemUrl}
-                            alt={item.title || "Featured work"}
-                            style={styles.featuredMedia}
-                          />
-                        )
-                      ) : (
-                        <div style={styles.mediaFallback}>
-                          Preview unavailable
-                        </div>
-                      )}
-
-                      <div style={styles.featuredOverlay} />
-                    </div>
-
-                    <div style={styles.featuredMeta}>
-                      <p style={styles.featuredType}>
-                        {item.category ||
-                          (isVideo ? "Aset Cinema" : "Featured")}
-                      </p>
-
-                      <h3 style={styles.featuredTitle}>
-                        {item.title || "Untitled"}
-                      </h3>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-
       <section style={styles.portalSection}>
         <div style={styles.sectionInner}>
           <p style={styles.eyebrow}>ENTER THE STUDIO</p>
@@ -525,18 +372,23 @@ export default function HomePage() {
             <Link to="/gallery" style={styles.portalCard}>
               Gallery
             </Link>
+
             <Link to="/videos" style={styles.portalCard}>
               Aset Cinema
             </Link>
+
             <Link to="/aset-spotlight" style={styles.portalCard}>
               Aset Spotlight
             </Link>
+
             <Link to="/creators" style={styles.portalCard}>
               Creators
             </Link>
+
             <Link to="/brick-by-brick" style={styles.portalCard}>
               Brick by Brick
             </Link>
+
             <Link to="/services" style={styles.portalCard}>
               Services
             </Link>
@@ -560,7 +412,6 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "120px 22px 92px",
     overflow: "hidden",
     background: "#050505",
   },
@@ -569,7 +420,6 @@ const styles = {
     position: "absolute",
     inset: 0,
     backgroundSize: "cover",
-    backgroundPosition: "center 42%",
     opacity: 0.9,
     transform: "scale(1.015)",
   },
@@ -587,8 +437,6 @@ const styles = {
     width: "100%",
     maxWidth: 1180,
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) 360px",
-    gap: 28,
     alignItems: "center",
   },
 
@@ -608,7 +456,6 @@ const styles = {
 
   headline: {
     margin: "0 0 16px",
-    fontSize: "clamp(40px, 5.5vw, 72px)",
     lineHeight: 0.9,
     letterSpacing: "-0.058em",
     fontWeight: 850,
@@ -641,15 +488,12 @@ const styles = {
     boxShadow:
       "0 60px 160px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04)",
     backdropFilter: "blur(16px)",
-    transform: "scale(1.05)",
   },
 
   spotlightImage: {
     position: "relative",
     width: "100%",
-    height: 360,
     backgroundSize: "cover",
-    backgroundPosition: "center",
     backgroundColor: "rgba(255,255,255,0.04)",
     filter: "brightness(0.95) contrast(1.05)",
   },
@@ -691,15 +535,12 @@ const styles = {
 
   spotlightButton: {
     display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
     padding: "10px 14px",
     borderRadius: 999,
     border: "1px solid rgba(245,241,235,0.22)",
     color: "#f5f1eb",
     fontSize: 12,
     fontWeight: 850,
-    letterSpacing: "0.02em",
   },
 
   goldBtn: {
@@ -751,13 +592,11 @@ const styles = {
     maxWidth: 1180,
     margin: "0 auto",
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1.18fr) minmax(280px, 0.82fr)",
     gap: 24,
     alignItems: "stretch",
   },
 
   featuredWorldInner: {
-    gridTemplateColumns: "minmax(0, 1.6fr) minmax(320px, 0.6fr)",
     transform: "scale(1.02)",
   },
 
@@ -831,26 +670,6 @@ const styles = {
     color: "rgba(245,241,235,0.7)",
   },
 
-  screeningSection: {
-    position: "relative",
-    padding: "110px 22px 120px",
-    background:
-      "radial-gradient(circle at center, rgba(198,136,55,0.14), transparent 42%), linear-gradient(180deg, #050505 0%, #080808 48%, #050505 100%)",
-    overflow: "hidden",
-  },
-
-  sectionInner: {
-    maxWidth: 1180,
-    margin: "0 auto",
-  },
-
-  sectionInnerNarrow: {
-    position: "relative",
-    zIndex: 2,
-    maxWidth: 1120,
-    margin: "0 auto",
-  },
-
   eyebrow: {
     margin: "0 0 11px",
     fontSize: 11,
@@ -875,14 +694,24 @@ const styles = {
     color: "rgba(245,241,235,0.72)",
   },
 
-  placeholder: {
-    height: "100%",
-    minHeight: 320,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "rgba(245,241,235,0.68)",
-    background: "rgba(255,255,255,0.025)",
+  screeningSection: {
+    position: "relative",
+    padding: "110px 22px 120px",
+    background:
+      "radial-gradient(circle at center, rgba(198,136,55,0.14), transparent 42%), linear-gradient(180deg, #050505 0%, #080808 48%, #050505 100%)",
+    overflow: "hidden",
+  },
+
+  sectionInner: {
+    maxWidth: 1180,
+    margin: "0 auto",
+  },
+
+  sectionInnerNarrow: {
+    position: "relative",
+    zIndex: 2,
+    maxWidth: 1120,
+    margin: "0 auto",
   },
 
   screeningHeader: {
@@ -954,6 +783,16 @@ const styles = {
     filter: "brightness(0.9) contrast(1.04)",
   },
 
+  placeholder: {
+    height: "100%",
+    minHeight: 320,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "rgba(245,241,235,0.68)",
+    background: "rgba(255,255,255,0.025)",
+  },
+
   screeningContent: {
     position: "absolute",
     left: 0,
@@ -992,102 +831,6 @@ const styles = {
     display: "flex",
     gap: 12,
     flexWrap: "wrap",
-  },
-
-  featuredSection: {
-    padding: "78px 22px",
-    background:
-      "linear-gradient(180deg, #050505 0%, #070707 48%, #050505 100%)",
-  },
-
-  sectionHeader: {
-    display: "flex",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    gap: 18,
-    marginBottom: 22,
-    flexWrap: "wrap",
-  },
-
-  textLink: {
-    color: "rgba(245,241,235,0.74)",
-    textDecoration: "none",
-    fontSize: 14,
-  },
-
-  placeholderCard: {
-    borderRadius: 22,
-    padding: "30px 24px",
-    textAlign: "center",
-    color: "rgba(245,241,235,0.68)",
-    border: "1px solid rgba(245,241,235,0.08)",
-    background: "rgba(255,255,255,0.025)",
-  },
-
-  featuredStrip: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-    gap: 16,
-  },
-
-  featuredCard: {
-    display: "block",
-    overflow: "hidden",
-    borderRadius: 22,
-    textDecoration: "none",
-    color: "#fff",
-    border: "1px solid rgba(245,241,235,0.08)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012))",
-    boxShadow: "0 20px 54px rgba(0,0,0,0.25)",
-  },
-
-  featuredMediaWrap: {
-    position: "relative",
-    aspectRatio: "16 / 10",
-    background: "#000",
-    overflow: "hidden",
-  },
-
-  featuredMedia: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    display: "block",
-  },
-
-  featuredOverlay: {
-    position: "absolute",
-    inset: 0,
-    background:
-      "linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.56))",
-  },
-
-  mediaFallback: {
-    height: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "rgba(245,241,235,0.55)",
-  },
-
-  featuredMeta: {
-    padding: 16,
-  },
-
-  featuredType: {
-    margin: "0 0 8px",
-    fontSize: 10,
-    letterSpacing: "0.22em",
-    textTransform: "uppercase",
-    color: "rgba(245,241,235,0.5)",
-  },
-
-  featuredTitle: {
-    margin: 0,
-    fontSize: 18,
-    lineHeight: 1.22,
-    letterSpacing: "-0.02em",
   },
 
   portalSection: {
