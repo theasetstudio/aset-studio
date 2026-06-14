@@ -32,6 +32,10 @@ function displayTitle(video) {
   );
 }
 
+function safariFrame(url) {
+  return url ? `${url}#t=0.1` : "";
+}
+
 export default function VideosPage() {
   const [videos, setVideos] = useState([]);
   const [featuredVideo, setFeaturedVideo] = useState(null);
@@ -86,7 +90,7 @@ export default function VideosPage() {
 
       const urlEntries = await Promise.all(
         safeVideos.map(async (video) => {
-          const path = video.watermarked_path || video.file_path || "";
+          const path = video.file_path || video.watermarked_path || "";
           const signedUrl = await getSignedUrl(path);
           return [video.id, signedUrl];
         })
@@ -118,7 +122,7 @@ export default function VideosPage() {
   function matches(video, terms) {
     const text = `${video.category || ""} ${video.title || ""} ${
       video.description || ""
-    } ${video.tagline || ""}`.toLowerCase();
+    } ${video.tagline || ""} ${video.quote || ""}`.toLowerCase();
 
     return terms.some((term) => text.includes(term));
   }
@@ -133,6 +137,27 @@ export default function VideosPage() {
     )
   );
 
+  const monologues = uniqueVideos(
+    videos.filter((video) =>
+      matches(video, [
+        "monologue",
+        "monologues",
+        "performance room",
+        "performance",
+        "actor",
+        "acting",
+        "audition",
+        "character read",
+        "character reads",
+        "script reading",
+        "script reads",
+        "scene study",
+        "self tape",
+        "read",
+      ])
+    )
+  );
+
   const hotTakes = videos.filter((video) =>
     matches(video, ["hot", "take", "commentary", "reaction"])
   );
@@ -142,7 +167,7 @@ export default function VideosPage() {
   );
 
   const musicVideos = videos.filter((video) =>
-    matches(video, ["music", "performance", "visual"])
+    matches(video, ["music", "visual"])
   );
 
   const studioReleases = videos.filter((video) =>
@@ -165,6 +190,12 @@ export default function VideosPage() {
       subtitle: "PRIVATE CONVERSATIONS",
       message: "Interview features are being prepared.",
       items: interviews,
+    },
+    {
+      title: "Performance Room",
+      subtitle: "MONOLOGUES & READS",
+      message: "Monologue performances are being prepared.",
+      items: monologues,
     },
     {
       title: "Hot Takes",
@@ -213,10 +244,12 @@ export default function VideosPage() {
           >
             {previewUrl ? (
               <video
-                src={previewUrl}
+                src={safariFrame(previewUrl)}
                 muted
+                autoPlay
+                loop
                 playsInline
-                preload="metadata"
+                preload="auto"
               />
             ) : (
               <span />
@@ -258,9 +291,9 @@ export default function VideosPage() {
           <h1>Aset Cinema</h1>
 
           <p className="cinema-description">
-            A curated screening room for interviews, cinematic releases, studio
-            originals, performances, red carpet moments, and the world built
-            around Aset.
+            A curated screening room for interviews, cinematic releases,
+            monologues, studio originals, performances, red carpet moments, and
+            the world built around Aset.
           </p>
 
           <div className="cinema-buttons">
@@ -302,10 +335,12 @@ export default function VideosPage() {
               <div className="featured-cinema-image">
                 {previewUrls[featuredVideo.id] ? (
                   <video
-                    src={previewUrls[featuredVideo.id]}
+                    src={safariFrame(previewUrls[featuredVideo.id])}
                     muted
+                    autoPlay
+                    loop
                     playsInline
-                    preload="metadata"
+                    preload="auto"
                   />
                 ) : (
                   <div className="featured-cinema-fallback">Aset Cinema</div>
