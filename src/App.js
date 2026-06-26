@@ -11,6 +11,7 @@ import AdminPage from "./pages/AdminPage";
 import AdminInquiries from "./pages/AdminInquiries";
 import AdminSpotlight from "./pages/AdminSpotlight";
 import AdminBeautyApplications from "./pages/AdminBeautyApplications";
+import AdminManagersPage from "./pages/AdminManagersPage";
 import BrickAdminPage from "./pages/BrickAdminPage";
 import AuthPage from "./pages/AuthPage";
 import AuthCallback from "./pages/AuthCallback";
@@ -82,6 +83,7 @@ function App() {
         <Route path="/admin/inquiries" element={<AdminInquiries />} />
         <Route path="/admin/spotlight" element={<AdminSpotlight />} />
         <Route path="/admin/beauty-applications" element={<AdminBeautyApplications />} />
+        <Route path="/admin/managers" element={<AdminManagersPage />} />
         <Route path="/brick-admin" element={<BrickAdminPage />} />
 
         <Route path="/auth" element={<AuthPage />} />
@@ -120,8 +122,6 @@ function App() {
         <Route path="/aset-lounge/puzzle-library" element={<PuzzleLibraryPage />} />
         <Route path="/aset-lounge/puzzle-play" element={<PuzzlePlayPage />} />
         <Route path="/aset-lounge/my-creations" element={<MyCreationsPage />} />
-
-        
 
         <Route path="/elite-generator" element={<EliteGeneratorPage />} />
         <Route path="/studio/writer" element={<Navigate to="/" replace />} />

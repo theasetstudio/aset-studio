@@ -1,337 +1,445 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+import "./VideosPage.css";
 
-export default function WigArtistsPage() {
+const SIGNED_URL_TTL_SECONDS = 600;
+
+function clean(value) {
+  return String(value || "").trim();
+}
+
+function norm(value) {
+  return clean(value).toLowerCase();
+}
+
+function isVideoFile(path) {
+  const value = norm(path);
+
   return (
-    <main style={styles.page}>
-      <section style={styles.hero}>
-        <div style={styles.overlay} />
-
-        <div style={styles.heroContent}>
-          <p style={styles.breadcrumb}>
-            The Aset Studio / Collectives / Aset Beauty Collective
-          </p>
-
-          <h1 style={styles.title}>Wig Artists</h1>
-
-          <p style={styles.subtitle}>
-            Discover wig artists creating polished, character-driven, and
-            production-ready looks for talent and creative projects.
-          </p>
-        </div>
-      </section>
-
-      <section style={styles.section}>
-        <p style={styles.sectionEyebrow}>DISCOVERY FILTERS</p>
-
-        <h2 style={styles.sectionTitle}>Find the right professional.</h2>
-
-        <div style={styles.filters}>
-          <select style={styles.select} defaultValue="">
-            <option value="">Country</option>
-            <option value="United States">United States</option>
-            <option value="Canada">Canada</option>
-            <option value="United Kingdom">United Kingdom</option>
-            <option value="Nigeria">Nigeria</option>
-          </select>
-
-          <select style={styles.select} defaultValue="">
-            <option value="">State / Region</option>
-            <option value="Georgia">Georgia</option>
-            <option value="California">California</option>
-            <option value="New York">New York</option>
-            <option value="England">England</option>
-          </select>
-
-          <select style={styles.select} defaultValue="">
-            <option value="">City</option>
-            <option value="Atlanta">Atlanta</option>
-            <option value="Los Angeles">Los Angeles</option>
-            <option value="New York">New York</option>
-            <option value="London">London</option>
-          </select>
-
-          <select style={styles.select} defaultValue="">
-            <option value="">Specialty</option>
-            <option value="Wig Installation">Wig Installation</option>
-            <option value="Wig Styling">Wig Styling</option>
-            <option value="Lace Fronts">Lace Fronts</option>
-            <option value="Custom Units">Custom Units</option>
-            <option value="Film & Television">Film & Television</option>
-            <option value="Editorial">Editorial</option>
-            <option value="Character Looks">Character Looks</option>
-          </select>
-        </div>
-      </section>
-
-      <section style={styles.section}>
-        <p style={styles.sectionEyebrow}>FEATURED</p>
-
-        <h2 style={styles.sectionTitle}>Featured Wig Artists</h2>
-
-        <p style={styles.sectionText}>
-          Hand-selected wig artists will appear here as the Collective grows.
-        </p>
-
-        <div style={styles.featuredGrid}>
-          <div style={styles.featuredCard}>
-            <div style={styles.featuredImage} />
-            <div style={styles.cardBody}>
-              <p style={styles.cardLabel}>Featured Wig Artist</p>
-              <h3 style={styles.cardTitle}>Coming Soon</h3>
-              <p style={styles.cardMeta}>Global</p>
-            </div>
-          </div>
-
-          <div style={styles.featuredCard}>
-            <div style={styles.featuredImage} />
-            <div style={styles.cardBody}>
-              <p style={styles.cardLabel}>Featured Wig Artist</p>
-              <h3 style={styles.cardTitle}>Coming Soon</h3>
-              <p style={styles.cardMeta}>Global</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section style={styles.section}>
-        <p style={styles.sectionEyebrow}>DIRECTORY</p>
-
-        <h2 style={styles.sectionTitle}>All Wig Artists</h2>
-
-        <p style={styles.sectionText}>
-          Verified wig artist listings will populate this section once approved
-          profiles are added.
-        </p>
-
-        <div style={styles.directoryGrid}>
-          <div style={styles.directoryCard}>
-            <div style={styles.directoryImage} />
-            <div style={styles.cardBody}>
-              <h3 style={styles.directoryTitle}>Wig Artist Listing</h3>
-              <p style={styles.cardMeta}>City, Region, Country</p>
-            </div>
-          </div>
-
-          <div style={styles.directoryCard}>
-            <div style={styles.directoryImage} />
-            <div style={styles.cardBody}>
-              <h3 style={styles.directoryTitle}>Wig Artist Listing</h3>
-              <p style={styles.cardMeta}>City, Region, Country</p>
-            </div>
-          </div>
-
-          <div style={styles.directoryCard}>
-            <div style={styles.directoryImage} />
-            <div style={styles.cardBody}>
-              <h3 style={styles.directoryTitle}>Wig Artist Listing</h3>
-              <p style={styles.cardMeta}>City, Region, Country</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section style={styles.ctaSection}>
-        <p style={styles.sectionEyebrow}>CONSIDERATION</p>
-
-        <h2 style={styles.sectionTitle}>Apply for Consideration</h2>
-
-        <p style={styles.sectionText}>
-          Wig artists may submit for review. Hand-selected professionals may also
-          be added directly by Aset.
-        </p>
-
-        <Link to="/collectives/beauty/apply" style={styles.ctaButton}>
-          Apply for Consideration
-        </Link>
-      </section>
-    </main>
+    value.endsWith(".mp4") ||
+    value.endsWith(".mov") ||
+    value.endsWith(".webm")
   );
 }
 
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "#050505",
-    color: "#f6f1e8",
-    fontFamily: "inherit",
-  },
+function isGalleryOnly(item) {
+  const text = `${item.category || ""} ${item.section || ""} ${
+    item.collection || ""
+  } ${item.type || ""} ${item.title || ""} ${
+    item.description || ""
+  }`.toLowerCase();
 
-  hero: {
-    position: "relative",
-    minHeight: "72vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "130px 24px 90px",
-    background:
-      "linear-gradient(135deg, #050505 0%, #160f0c 45%, #302018 100%)",
-    overflow: "hidden",
-  },
+  return (
+    text.includes("gallery") ||
+    text.includes("visual art") ||
+    text.includes("image gallery")
+  );
+}
 
-  overlay: {
-    position: "absolute",
-    inset: 0,
-    background:
-      "radial-gradient(circle at center, rgba(201,166,107,0.18), transparent 45%)",
-  },
+function displayTitle(video) {
+  return (
+    clean(video?.title) ||
+    clean(video?.tagline) ||
+    clean(video?.quote) ||
+    "Aset Cinema Presentation"
+  );
+}
 
-  heroContent: {
-    position: "relative",
-    zIndex: 2,
-    maxWidth: "920px",
-    textAlign: "center",
-  },
+function safariFrame(url) {
+  return url ? `${url}#t=0.1` : "";
+}
 
-  breadcrumb: {
-    letterSpacing: "0.16em",
-    textTransform: "uppercase",
-    fontSize: "0.68rem",
-    color: "#c9a66b",
-    marginBottom: "18px",
-  },
+function matches(video, terms) {
+  const text = `${video.category || ""} ${video.title || ""} ${
+    video.description || ""
+  } ${video.tagline || ""} ${video.quote || ""}`.toLowerCase();
 
-  title: {
-    fontSize: "clamp(3rem, 7vw, 6.5rem)",
-    lineHeight: 0.95,
-    margin: "0 0 26px",
-    fontWeight: 500,
-  },
+  return terms.some((term) => text.includes(term));
+}
 
-  subtitle: {
-    maxWidth: "760px",
-    margin: "0 auto",
-    fontSize: "1.05rem",
-    lineHeight: 1.8,
-    color: "rgba(246,241,232,0.78)",
-  },
+function uniqueVideos(items) {
+  const seen = new Set();
 
-  section: {
-    maxWidth: "1180px",
-    margin: "0 auto",
-    padding: "70px 24px",
-  },
+  return items.filter((item) => {
+    if (!item?.id || seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
 
-  sectionEyebrow: {
-    letterSpacing: "0.24em",
-    fontSize: "0.72rem",
-    color: "#c9a66b",
-    marginBottom: "14px",
-  },
+export default function VideosPage() {
+  const [videos, setVideos] = useState([]);
+  const [featuredVideo, setFeaturedVideo] = useState(null);
+  const [previewUrls, setPreviewUrls] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  sectionTitle: {
-    fontSize: "clamp(2rem, 4vw, 4rem)",
-    margin: "0 0 22px",
-    fontWeight: 500,
-  },
+  const getSignedUrl = useCallback(async (path) => {
+    const cleanPath = clean(path).replace(/^\/+/, "");
+    if (!cleanPath) return "";
 
-  sectionText: {
-    maxWidth: "780px",
-    fontSize: "1rem",
-    lineHeight: 1.8,
-    color: "rgba(246,241,232,0.72)",
-    marginBottom: "28px",
-  },
+    const { data, error } = await supabase.storage
+      .from("media")
+      .createSignedUrl(cleanPath, SIGNED_URL_TTL_SECONDS);
 
-  filters: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-    gap: "16px",
-    marginTop: "28px",
-  },
+    if (error || !data?.signedUrl) {
+      console.error("Signed URL Error:", error);
+      return "";
+    }
 
-  select: {
-    width: "100%",
-    padding: "14px 14px",
-    background: "#0b0b0b",
-    color: "#f6f1e8",
-    border: "1px solid rgba(201,166,107,0.32)",
-    outline: "none",
-  },
+    return data.signedUrl;
+  }, []);
 
-  featuredGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-    gap: "24px",
-    marginTop: "32px",
-  },
+  const loadVideos = useCallback(async () => {
+    setLoading(true);
 
-  featuredCard: {
-    border: "1px solid rgba(201,166,107,0.25)",
-    background: "rgba(255,255,255,0.035)",
-    overflow: "hidden",
-  },
+    try {
+      const { data, error } = await supabase
+        .from("media_items")
+        .select("*")
+        .eq("status", "published")
+        .eq("is_hidden", false)
+        .order("created_at", { ascending: false });
 
-  featuredImage: {
-    height: "340px",
-    background:
-      "linear-gradient(135deg, rgba(201,166,107,0.16), rgba(255,255,255,0.03)), radial-gradient(circle at top, #3a2118, #060606 72%)",
-  },
+      if (error) throw error;
 
-  directoryGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
-    gap: "24px",
-    marginTop: "32px",
-  },
+      const safeVideos = (data || []).filter((item) => {
+        const filePath = clean(item.file_path);
+        const watermarkedPath = clean(item.watermarked_path);
 
-  directoryCard: {
-    border: "1px solid rgba(201,166,107,0.22)",
-    background: "rgba(255,255,255,0.03)",
-    overflow: "hidden",
-  },
+        return (
+          (isVideoFile(filePath) || isVideoFile(watermarkedPath)) &&
+          !isGalleryOnly(item)
+        );
+      });
 
-  directoryImage: {
-    height: "220px",
-    background:
-      "linear-gradient(135deg, rgba(201,166,107,0.14), rgba(255,255,255,0.025)), radial-gradient(circle at top, #2f1d15, #060606 72%)",
-  },
+      const urlEntries = await Promise.all(
+        safeVideos.map(async (video) => {
+          const path = video.watermarked_path || video.file_path || "";
+          const signedUrl = await getSignedUrl(path);
+          return [video.id, signedUrl];
+        })
+      );
 
-  cardBody: {
-    padding: "22px",
-  },
+      const featured =
+        safeVideos.find((video) =>
+          matches(video, [
+            "cinematic",
+            "film",
+            "movie",
+            "screening",
+            "studio release",
+            "studio_release",
+            "interview",
+            "performance",
+          ])
+        ) || safeVideos[0] || null;
 
-  cardLabel: {
-    letterSpacing: "0.18em",
-    textTransform: "uppercase",
-    fontSize: "0.65rem",
-    color: "#c9a66b",
-    marginBottom: "10px",
-  },
+      setVideos(safeVideos);
+      setFeaturedVideo(featured);
+      setPreviewUrls(Object.fromEntries(urlEntries));
+    } catch (error) {
+      console.error("Video Fetch Error:", error);
+      setVideos([]);
+      setFeaturedVideo(null);
+      setPreviewUrls({});
+    } finally {
+      setLoading(false);
+    }
+  }, [getSignedUrl]);
 
-  cardTitle: {
-    fontSize: "1.7rem",
-    margin: "0 0 10px",
-    fontWeight: 500,
-  },
+  useEffect(() => {
+    loadVideos();
+  }, [loadVideos]);
 
-  directoryTitle: {
-    fontSize: "1.25rem",
-    margin: "0 0 10px",
-    fontWeight: 500,
-  },
+  const cinematicReleases = uniqueVideos(
+    videos.filter((video) =>
+      matches(video, ["cinematic", "release", "screening", "portrait"])
+    )
+  );
 
-  cardMeta: {
-    color: "rgba(246,241,232,0.62)",
-    margin: 0,
-  },
+  const interviews = uniqueVideos(
+    videos.filter((video) =>
+      matches(video, ["interview", "conversation", "private"])
+    )
+  );
 
-  ctaSection: {
-    maxWidth: "1180px",
-    margin: "0 auto",
-    padding: "80px 24px 120px",
-    borderTop: "1px solid rgba(201,166,107,0.18)",
-  },
+  const monologues = uniqueVideos(
+    videos.filter((video) =>
+      matches(video, [
+        "monologue",
+        "monologues",
+        "performance room",
+        "performance",
+        "actor",
+        "acting",
+        "audition",
+        "character read",
+        "script reading",
+        "scene study",
+        "self tape",
+        "read",
+      ])
+    )
+  );
 
-  ctaButton: {
-    display: "inline-block",
-    marginTop: "24px",
-    padding: "14px 28px",
-    border: "1px solid rgba(201,166,107,0.8)",
-    color: "#f6f1e8",
-    textDecoration: "none",
-    letterSpacing: "0.14em",
-    fontSize: "0.78rem",
-    textTransform: "uppercase",
-  },
-};
+  const hotTakes = uniqueVideos(
+    videos.filter((video) =>
+      matches(video, ["hot", "take", "commentary", "reaction"])
+    )
+  );
+
+  const films = uniqueVideos(
+    videos.filter((video) =>
+      matches(video, [
+        "film",
+        "films",
+        "movie",
+        "short film",
+        "feature film",
+        "independent film",
+        "cinema",
+        "original",
+      ])
+    )
+  );
+
+  const comedyClub = uniqueVideos(
+    videos.filter((video) =>
+      matches(video, [
+        "comedy",
+        "comedy club",
+        "stand up",
+        "stand-up",
+        "standup",
+        "sketch",
+        "comedian",
+        "humor",
+        "funny",
+        "satire",
+      ])
+    )
+  );
+
+  const musicVideos = uniqueVideos(
+    videos.filter((video) => matches(video, ["music", "visual"]))
+  );
+
+  const studioReleases = uniqueVideos(
+    videos.filter((video) =>
+      matches(video, ["studio_release", "studio release", "studio"])
+    )
+  );
+
+  const redCarpet = uniqueVideos(
+    videos.filter((video) =>
+      matches(video, ["red carpet", "event", "premiere", "coverage"])
+    )
+  );
+
+  const releaseRooms = [
+    {
+      title: "Cinematic Releases",
+      subtitle: "FEATURED CINEMA",
+      message: "Cinematic releases are being prepared.",
+      items: cinematicReleases,
+    },
+    {
+      title: "Interviews",
+      subtitle: "PRIVATE CONVERSATIONS",
+      message: "Interview features are being prepared.",
+      items: interviews,
+    },
+    {
+      title: "Performance Room",
+      subtitle: "MONOLOGUES & READS",
+      message: "Monologue performances are being prepared.",
+      items: monologues,
+    },
+    {
+      title: "Hot Takes",
+      subtitle: "COMMENTARY ROOM",
+      message: "Hot Takes are being prepared.",
+      items: hotTakes,
+    },
+    {
+      title: "Films",
+      subtitle: "FEATURE FILMS & SHORTS",
+      message: "Film releases are being prepared.",
+      items: films,
+    },
+    {
+      title: "Comedy Club",
+      subtitle: "LAUGHTER LIVES HERE",
+      message: "Comedy Club is coming soon.",
+      items: comedyClub,
+    },
+    {
+      title: "Music Videos",
+      subtitle: "PERFORMANCE VISUALS",
+      message: "Music video releases are being prepared.",
+      items: musicVideos,
+    },
+    {
+      title: "Studio Releases",
+      subtitle: "STUDIO RELEASES",
+      message: "Studio releases are being prepared.",
+      items: studioReleases.length > 0 ? studioReleases : videos,
+    },
+    {
+      title: "Red Carpet",
+      subtitle: "EVENT COVERAGE",
+      message: "Red carpet moments are being prepared.",
+      items: redCarpet,
+    },
+  ];
+
+  function renderMiniCards(items) {
+    const previewItems = items.slice(0, 4);
+
+    if (previewItems.length > 0) {
+      return previewItems.map((video) => {
+        const previewUrl = previewUrls[video.id] || "";
+
+        return (
+          <Link
+            key={video.id}
+            to={`/media/${video.id}`}
+            className="release-mini-card"
+          >
+            {previewUrl ? (
+              <video
+                src={safariFrame(previewUrl)}
+                muted
+                autoPlay
+                loop
+                playsInline
+                preload="auto"
+              />
+            ) : (
+              <span />
+            )}
+          </Link>
+        );
+      });
+    }
+
+    return [1, 2, 3, 4].map((item) => (
+      <div className="release-mini-card" key={item}>
+        <span />
+      </div>
+    ));
+  }
+
+  function renderReleaseRoom(room) {
+    return (
+      <section className="release-room" key={room.title}>
+        <div className="release-room-copy">
+          <p>{room.subtitle}</p>
+          <h2>{room.title}</h2>
+          <span>{room.items.length > 0 ? "Open the room." : room.message}</span>
+        </div>
+
+        <div className="release-room-preview">{renderMiniCards(room.items)}</div>
+
+        <div className="release-room-arrow">›</div>
+      </section>
+    );
+  }
+
+  return (
+    <main className="videos-page">
+      <section className="cinema-layout">
+        <div className="cinema-left-panel">
+          <p className="cinema-kicker">THE ASET STUDIO PRESENTS</p>
+
+          <h1>Aset Cinema</h1>
+
+          <p className="cinema-description">
+            A curated screening environment for films, comedy programming,
+            interviews, performances, studio originals, red carpet moments, and
+            premium cinematic storytelling.
+          </p>
+
+          <div className="cinema-buttons">
+            <Link to="/videos" className="cinema-main-button">
+              Enter Aset Cinema
+            </Link>
+
+            <Link to="/videos" className="cinema-secondary-button">
+              Studio Originals
+            </Link>
+
+            <Link to="/videos" className="cinema-secondary-button">
+              Private Screenings
+            </Link>
+          </div>
+        </div>
+
+        <div className="cinema-right-panel">
+          {featuredVideo && (
+            <section className="featured-cinema-card">
+              <div className="featured-cinema-content">
+                <p>FEATURED SCREENING</p>
+
+                <h2>{displayTitle(featuredVideo)}</h2>
+
+                <span>
+                  A curated cinematic presentation inside The Aset Studio
+                  screening environment.
+                </span>
+
+                <Link
+                  to={`/media/${featuredVideo.id}`}
+                  className="featured-watch-link"
+                >
+                  Watch Screening
+                </Link>
+              </div>
+
+              <div className="featured-cinema-image">
+                {previewUrls[featuredVideo.id] ? (
+                  <video
+                    src={safariFrame(previewUrls[featuredVideo.id])}
+                    muted
+                    autoPlay
+                    loop
+                    playsInline
+                    preload="auto"
+                  />
+                ) : (
+                  <div className="featured-cinema-fallback">Aset Cinema</div>
+                )}
+              </div>
+            </section>
+          )}
+
+          <section className="release-rooms-panel">
+            <div className="release-rooms-heading">
+              <div>
+                <p>NOW SCREENING</p>
+                <h2>Cinema Release Rooms</h2>
+                <span>
+                  Explore release lanes across The Aset Studio screening
+                  environment.
+                </span>
+              </div>
+
+              <Link to="/" className="return-link">
+                Return to Studio →
+              </Link>
+            </div>
+
+            <div className="release-rooms-list">
+              {releaseRooms.map(renderReleaseRoom)}
+            </div>
+          </section>
+        </div>
+      </section>
+
+      {loading && (
+        <div className="videos-loading">Loading cinema experience...</div>
+      )}
+    </main>
+  );
+}

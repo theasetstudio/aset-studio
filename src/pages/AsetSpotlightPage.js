@@ -34,8 +34,10 @@ export default function AsetSpotlightPage() {
   if (loading) {
     return (
       <main style={styles.page}>
-        <p style={styles.kicker}>Aset Spotlight</p>
-        <h1 style={styles.title}>Loading Spotlight Profiles...</h1>
+        <section style={styles.wrap}>
+          <p style={styles.kicker}>Aset Spotlight</p>
+          <p style={styles.loading}>Loading Spotlight Profiles...</p>
+        </section>
       </main>
     );
   }
@@ -44,7 +46,6 @@ export default function AsetSpotlightPage() {
     <main style={styles.page}>
       <section style={styles.wrap}>
         <p style={styles.kicker}>Aset Spotlight</p>
-        <h1 style={styles.title}>Featured Presence</h1>
 
         {profiles.length === 0 ? (
           <p style={styles.empty}>No spotlight profiles are available right now.</p>
@@ -100,7 +101,7 @@ export default function AsetSpotlightPage() {
 const styles = {
   page: {
     minHeight: "100vh",
-    padding: "110px 6vw 80px",
+    padding: "90px 6vw 80px",
     color: "#fff",
     background:
       "radial-gradient(circle at top left, rgba(201,164,106,0.16), transparent 34%), #000",
@@ -116,24 +117,26 @@ const styles = {
     textTransform: "uppercase",
     color: "#c9a46a",
     fontSize: "12px",
-    marginBottom: "14px",
+    margin: "0 0 34px",
     fontWeight: 800,
   },
 
-  title: {
-    fontSize: "clamp(42px, 7vw, 86px)",
-    lineHeight: 0.95,
-    margin: "0 0 42px",
-    letterSpacing: "-0.06em",
+  loading: {
+    color: "#d8cab6",
+    fontSize: "16px",
+    lineHeight: 1.8,
   },
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gridTemplateColumns: "1fr",
     gap: "24px",
   },
 
   card: {
+    width: "100%",
+    maxWidth: "1200px",
+    margin: "0 auto",
     border: "1px solid rgba(255,255,255,0.12)",
     background:
       "linear-gradient(145deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018))",
@@ -142,14 +145,15 @@ const styles = {
 
   image: {
     width: "100%",
-    height: "420px",
+    height: "380px",
     objectFit: "cover",
+    objectPosition: "center 28%",
     display: "block",
     background: "#080808",
   },
 
   placeholder: {
-    height: "420px",
+    height: "380px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -194,7 +198,7 @@ const styles = {
   bio: {
     color: "#dfd2bd",
     lineHeight: 1.75,
-    marginBottom: "24px",
+    margin: "0 0 24px",
   },
 
   button: {

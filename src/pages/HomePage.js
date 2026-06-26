@@ -20,18 +20,6 @@ export default function HomePage() {
 
   const worlds = [
     {
-      eyebrow: "THE FIRST DOOR",
-      title: "Enter the Gallery",
-      text:
-        "The Gallery is where Aset began: a visual archive, a portfolio, and the first signal of the studio world.",
-      panelEyebrow: "ORIGIN WORLD",
-      panelTitle: "Gallery",
-      panelText: "Image was the seed. The studio grew from there.",
-      path: "/gallery",
-      button: "Open Gallery",
-      variant: "gold",
-    },
-    {
       eyebrow: "ASET CINEMA",
       title: "The release room for the world we are building.",
       text:
@@ -46,6 +34,19 @@ export default function HomePage() {
       categories: ["Studio Releases", "Interviews", "Visual Releases", "Original Worlds"],
     },
     {
+      eyebrow: "ASET SPOTLIGHT",
+      title: "Recognition is part of the studio system.",
+      text:
+        "Aset Spotlight is where selected individuals, featured talent, and cultural presence are presented with intention.",
+      panelEyebrow: "FEATURED TALENT",
+      panelTitle: "Aset Spotlight",
+      panelText:
+        "A curated place for visibility, recognition, and studio-level presentation.",
+      path: "/aset-spotlight",
+      button: "Explore Aset Spotlight",
+      variant: "gold",
+    },
+    {
       eyebrow: "BRICK BY BRICK",
       title: "Dynasties are not inherited. They are taken.",
       text:
@@ -57,6 +58,44 @@ export default function HomePage() {
       path: "/brick-by-brick",
       button: "Enter Brick by Brick",
       variant: "gold",
+    },
+    {
+      eyebrow: "COLLECTIVES",
+      title: "The creative rooms inside the larger studio.",
+      text:
+        "Collectives bring together creators, talent, projects, and aligned voices within The Aset Studio ecosystem.",
+      panelEyebrow: "STUDIO ECOSYSTEM",
+      panelTitle: "Collectives",
+      panelText:
+        "A connected space for creative groups, collaborations, and organized cultural movement.",
+      path: "/collectives",
+      button: "Open Collectives",
+      variant: "light",
+    },
+    {
+      eyebrow: "SERVICES",
+      title: "Professional support for people building at a higher level.",
+      text:
+        "The Aset Studio offers executive virtual assistance, creative support, branding, visibility, and operational help for serious clients.",
+      panelEyebrow: "WORK WITH US",
+      panelTitle: "Services",
+      panelText:
+        "Structured support for business owners, creatives, talent, and professionals who need things handled.",
+      path: "/services",
+      button: "View Services",
+      variant: "gold",
+    },
+    {
+      eyebrow: "THE FIRST DOOR",
+      title: "Enter the Gallery",
+      text:
+        "The Gallery is where Aset began: a visual archive, a portfolio, and the first signal of the studio world.",
+      panelEyebrow: "ORIGIN WORLD",
+      panelTitle: "Gallery",
+      panelText: "Image was the seed. The studio grew from there.",
+      path: "/gallery",
+      button: "Open Gallery",
+      variant: "light",
     },
   ];
 
@@ -175,12 +214,12 @@ export default function HomePage() {
             </p>
 
             <div style={styles.ctaRow}>
-              <Link to="/gallery" style={styles.goldBtn}>
-                Enter the Gallery
+              <Link to="/videos" style={styles.goldBtn}>
+                Enter Aset Cinema
               </Link>
 
-              <Link to="/videos" style={styles.lightBtn}>
-                Enter Aset Cinema
+              <Link to="/aset-spotlight" style={styles.lightBtn}>
+                Explore Aset Spotlight
               </Link>
             </div>
           </div>
@@ -369,10 +408,6 @@ export default function HomePage() {
           <p style={styles.eyebrow}>ENTER THE STUDIO</p>
 
           <div style={styles.portalGrid}>
-            <Link to="/gallery" style={styles.portalCard}>
-              Gallery
-            </Link>
-
             <Link to="/videos" style={styles.portalCard}>
               Aset Cinema
             </Link>
@@ -381,16 +416,24 @@ export default function HomePage() {
               Aset Spotlight
             </Link>
 
-            <Link to="/creators" style={styles.portalCard}>
-              Creators
-            </Link>
-
             <Link to="/brick-by-brick" style={styles.portalCard}>
               Brick by Brick
             </Link>
 
+            <Link to="/collectives" style={styles.portalCard}>
+              Collectives
+            </Link>
+
             <Link to="/services" style={styles.portalCard}>
               Services
+            </Link>
+
+            <Link to="/creators" style={styles.portalCard}>
+              Creators
+            </Link>
+
+            <Link to="/gallery" style={styles.portalCard}>
+              Gallery
             </Link>
           </div>
         </div>

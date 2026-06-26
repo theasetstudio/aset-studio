@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./VideosPage.css";
@@ -23,36 +23,67 @@ function isVideoFile(path) {
   );
 }
 
-function displayTitle(video) {
-  return (
-    clean(video?.title) ||
-    clean(video?.tagline) ||
-    clean(video?.quote) ||
-    "Aset Cinema Presentation"
-  );
-}
-
 function safariFrame(url) {
   return url ? `${url}#t=0.1` : "";
 }
 
+function textPool(item) {
+  return `${item.category || ""} ${item.section || ""} ${
+    item.collection || ""
+  } ${item.type || ""} ${item.title || ""} ${item.description || ""} ${
+    item.tagline || ""
+  } ${item.quote || ""}`.toLowerCase();
+}
+
+function matches(item, terms) {
+  const text = textPool(item);
+  return terms.some((term) => text.includes(term));
+}
+
+function isGalleryOnly(item) {
+  const text = textPool(item);
+
+  return (
+    text.includes("gallery") ||
+    text.includes("visual art") ||
+    text.includes("image gallery") ||
+    text.includes("ai video") ||
+    text.includes("ai visual") ||
+    text.includes("experiment") ||
+    text.includes("mood piece")
+  );
+}
+
+function isApprovedForCinema(item) {
+  const text = textPool(item);
+
+  return (
+    item.show_in_cinema === true ||
+    item.cinema_approved === true ||
+    item.is_cinema === true ||
+    text.includes("aset cinema") ||
+    text.includes("cinema release") ||
+    text.includes("studio original") ||
+    text.includes("official screening")
+  );
+}
+
+function uniqueItems(items) {
+  const seen = new Set();
+
+  return items.filter((item) => {
+    if (!item?.id || seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 export default function VideosPage() {
-  const [videos, setVideos] = useState([]);
-  const [featuredVideo, setFeaturedVideo] = useState(null);
+  const [cinemaItems, setCinemaItems] = useState([]);
   const [previewUrls, setPreviewUrls] = useState({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function init() {
-      await loadVideos();
-    }
-
-    init();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function getSignedUrl(path) {
+  const getSignedUrl = useCallback(async (path) => {
     const cleanPath = clean(path).replace(/^\/+/, "");
     if (!cleanPath) return "";
 
@@ -66,9 +97,9 @@ export default function VideosPage() {
     }
 
     return data.signedUrl;
-  }
+  }, []);
 
-  async function loadVideos() {
+  const loadCinemaItems = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -81,175 +112,186 @@ export default function VideosPage() {
 
       if (error) throw error;
 
-      const safeVideos = (data || []).filter((item) => {
+      const approvedCinemaItems = (data || []).filter((item) => {
         const filePath = clean(item.file_path);
         const watermarkedPath = clean(item.watermarked_path);
 
-        return isVideoFile(filePath) || isVideoFile(watermarkedPath);
+        return (
+          (isVideoFile(filePath) || isVideoFile(watermarkedPath)) &&
+          isApprovedForCinema(item) &&
+          !isGalleryOnly(item)
+        );
       });
 
       const urlEntries = await Promise.all(
-        safeVideos.map(async (video) => {
-          const path = video.file_path || video.watermarked_path || "";
+        approvedCinemaItems.map(async (item) => {
+          const path = item.watermarked_path || item.file_path || "";
           const signedUrl = await getSignedUrl(path);
-          return [video.id, signedUrl];
+          return [item.id, signedUrl];
         })
       );
 
-      setVideos(safeVideos);
-      setFeaturedVideo(safeVideos[0] || null);
+      setCinemaItems(approvedCinemaItems);
       setPreviewUrls(Object.fromEntries(urlEntries));
     } catch (error) {
-      console.error("Video Fetch Error:", error);
-      setVideos([]);
-      setFeaturedVideo(null);
+      console.error("Cinema Fetch Error:", error);
+      setCinemaItems([]);
       setPreviewUrls({});
     } finally {
       setLoading(false);
     }
-  }
+  }, [getSignedUrl]);
 
-  function uniqueVideos(items) {
-    const seen = new Set();
+  useEffect(() => {
+    loadCinemaItems();
+  }, [loadCinemaItems]);
 
-    return items.filter((item) => {
-      if (!item?.id || seen.has(item.id)) return false;
-      seen.add(item.id);
-      return true;
-    });
-  }
-
-  function matches(video, terms) {
-    const text = `${video.category || ""} ${video.title || ""} ${
-      video.description || ""
-    } ${video.tagline || ""} ${video.quote || ""}`.toLowerCase();
-
-    return terms.some((term) => text.includes(term));
-  }
-
-  const cinematicReleases = videos.filter((video) =>
-    matches(video, ["cinematic", "release", "screening", "portrait"])
-  );
-
-  const interviews = uniqueVideos(
-    videos.filter((video) =>
-      matches(video, ["interview", "conversation", "private"])
-    )
-  );
-
-  const monologues = uniqueVideos(
-    videos.filter((video) =>
-      matches(video, [
-        "monologue",
-        "monologues",
-        "performance room",
-        "performance",
-        "actor",
-        "acting",
-        "audition",
-        "character read",
-        "character reads",
-        "script reading",
-        "script reads",
-        "scene study",
-        "self tape",
-        "read",
-      ])
-    )
-  );
-
-  const hotTakes = videos.filter((video) =>
-    matches(video, ["hot", "take", "commentary", "reaction"])
-  );
-
-  const films = videos.filter((video) =>
-    matches(video, ["film", "movie", "original"])
-  );
-
-  const musicVideos = videos.filter((video) =>
-    matches(video, ["music", "visual"])
-  );
-
-  const studioReleases = videos.filter((video) =>
-    matches(video, ["studio_release", "studio release", "studio"])
-  );
-
-  const redCarpet = videos.filter((video) =>
-    matches(video, ["red carpet", "event", "premiere", "coverage"])
-  );
-
-  const releaseRooms = [
-    {
-      title: "Cinematic Releases",
-      subtitle: "FEATURED CINEMA",
-      message: "Cinematic releases are being prepared.",
-      items: cinematicReleases,
-    },
-    {
-      title: "Interviews",
-      subtitle: "PRIVATE CONVERSATIONS",
-      message: "Interview features are being prepared.",
-      items: interviews,
-    },
-    {
-      title: "Performance Room",
-      subtitle: "MONOLOGUES & READS",
-      message: "Monologue performances are being prepared.",
-      items: monologues,
-    },
-    {
-      title: "Hot Takes",
-      subtitle: "COMMENTARY ROOM",
-      message: "Hot Takes are being prepared.",
-      items: hotTakes,
-    },
-    {
-      title: "Films",
-      subtitle: "ASET ORIGINALS",
-      message: "Film releases are being prepared.",
-      items: films,
-    },
-    {
-      title: "Music Videos",
-      subtitle: "PERFORMANCE VISUALS",
-      message: "Music video releases are being prepared.",
-      items: musicVideos,
-    },
-    {
-      title: "Studio Releases",
-      subtitle: "STUDIO RELEASES",
-      message: "Studio releases are being prepared.",
-      items: studioReleases.length > 0 ? studioReleases : videos,
-    },
-    {
-      title: "Red Carpet",
-      subtitle: "EVENT COVERAGE",
-      message: "Red carpet moments are being prepared.",
-      items: redCarpet,
-    },
-  ];
+  const releaseRooms = useMemo(() => {
+    return [
+      {
+        title: "Cinematic Releases",
+        subtitle: "FEATURED CINEMA",
+        message: "Curated cinematic releases are being prepared.",
+        items: uniqueItems(
+          cinemaItems.filter((item) =>
+            matches(item, [
+              "cinematic",
+              "cinema release",
+              "screening",
+              "official screening",
+            ])
+          )
+        ),
+      },
+      {
+        title: "Interviews",
+        subtitle: "PRIVATE CONVERSATIONS",
+        message: "Interview features are being prepared.",
+        items: uniqueItems(
+          cinemaItems.filter((item) =>
+            matches(item, ["interview", "conversation", "private"])
+          )
+        ),
+      },
+      {
+        title: "Performance Room",
+        subtitle: "MONOLOGUES & READS",
+        message: "Monologue performances are being prepared.",
+        items: uniqueItems(
+          cinemaItems.filter((item) =>
+            matches(item, [
+              "monologue",
+              "performance room",
+              "actor",
+              "acting",
+              "audition",
+              "character read",
+              "script reading",
+              "scene study",
+              "self tape",
+            ])
+          )
+        ),
+      },
+      {
+        title: "Hot Takes",
+        subtitle: "COMMENTARY ROOM",
+        message: "Hot Takes are being prepared.",
+        items: uniqueItems(
+          cinemaItems.filter((item) =>
+            matches(item, ["hot take", "commentary", "reaction"])
+          )
+        ),
+      },
+      {
+        title: "Films",
+        subtitle: "FEATURE FILMS & SHORTS",
+        message: "Film releases are being prepared.",
+        items: uniqueItems(
+          cinemaItems.filter((item) =>
+            matches(item, [
+              "film",
+              "movie",
+              "short film",
+              "feature film",
+              "independent film",
+            ])
+          )
+        ),
+      },
+      {
+        title: "Comedy Corner",
+        subtitle: "LAUGHTER LIVES HERE",
+        message: "Comedy Corner is coming soon.",
+        items: uniqueItems(
+          cinemaItems.filter((item) =>
+            matches(item, [
+              "comedy",
+              "stand up",
+              "stand-up",
+              "standup",
+              "sketch",
+              "comedian",
+            ])
+          )
+        ),
+      },
+      {
+        title: "Music Videos",
+        subtitle: "PERFORMANCE VISUALS",
+        message: "Music video releases are being prepared.",
+        items: uniqueItems(
+          cinemaItems.filter((item) =>
+            matches(item, ["music video", "performance visual"])
+          )
+        ),
+      },
+      {
+        title: "Studio Releases",
+        subtitle: "STUDIO ORIGINALS",
+        message: "Studio releases are being prepared.",
+        items: uniqueItems(
+          cinemaItems.filter((item) =>
+            matches(item, [
+              "studio release",
+              "studio_release",
+              "studio original",
+            ])
+          )
+        ),
+      },
+      {
+        title: "Red Carpet",
+        subtitle: "EVENT COVERAGE",
+        message: "Red carpet moments are being prepared.",
+        items: uniqueItems(
+          cinemaItems.filter((item) =>
+            matches(item, ["red carpet", "event coverage", "premiere"])
+          )
+        ),
+      },
+    ];
+  }, [cinemaItems]);
 
   function renderMiniCards(items) {
     const previewItems = items.slice(0, 4);
 
     if (previewItems.length > 0) {
-      return previewItems.map((video) => {
-        const previewUrl = previewUrls[video.id] || "";
+      return previewItems.map((item) => {
+        const previewUrl = previewUrls[item.id] || "";
 
         return (
           <Link
-            key={video.id}
-            to={`/media/${video.id}`}
+            key={item.id}
+            to={`/media/${item.id}`}
             className="release-mini-card"
           >
             {previewUrl ? (
               <video
                 src={safariFrame(previewUrl)}
                 muted
-                autoPlay
-                loop
                 playsInline
-                preload="auto"
+                preload="metadata"
               />
             ) : (
               <span />
@@ -260,19 +302,21 @@ export default function VideosPage() {
     }
 
     return [1, 2, 3, 4].map((item) => (
-      <div className="release-mini-card" key={item}>
+      <div className="release-mini-card is-empty" key={item}>
         <span />
       </div>
     ));
   }
 
   function renderReleaseRoom(room) {
+    const hasItems = room.items.length > 0;
+
     return (
       <section className="release-room" key={room.title}>
         <div className="release-room-copy">
           <p>{room.subtitle}</p>
           <h2>{room.title}</h2>
-          <span>{room.items.length > 0 ? "Open the room." : room.message}</span>
+          <span>{hasItems ? "Open the room." : room.message}</span>
         </div>
 
         <div className="release-room-preview">{renderMiniCards(room.items)}</div>
@@ -285,15 +329,15 @@ export default function VideosPage() {
   return (
     <main className="videos-page">
       <section className="cinema-layout">
-        <div className="cinema-left-panel">
+        <aside className="cinema-left-panel">
           <p className="cinema-kicker">THE ASET STUDIO PRESENTS</p>
 
           <h1>Aset Cinema</h1>
 
           <p className="cinema-description">
-            A curated screening room for interviews, cinematic releases,
-            monologues, studio originals, performances, red carpet moments, and
-            the world built around Aset.
+            A curated screening environment for films, comedy programming,
+            interviews, performances, studio originals, red carpet moments, and
+            premium cinematic storytelling.
           </p>
 
           <div className="cinema-buttons">
@@ -309,54 +353,17 @@ export default function VideosPage() {
               Private Screenings
             </Link>
           </div>
-        </div>
+        </aside>
 
-        <div className="cinema-right-panel">
-          {featuredVideo && (
-            <section className="featured-cinema-card">
-              <div className="featured-cinema-content">
-                <p>FEATURED SCREENING</p>
-
-                <h2>{displayTitle(featuredVideo)}</h2>
-
-                <span>
-                  A curated cinematic presentation inside The Aset Studio
-                  screening environment.
-                </span>
-
-                <Link
-                  to={`/media/${featuredVideo.id}`}
-                  className="featured-watch-link"
-                >
-                  Watch Screening
-                </Link>
-              </div>
-
-              <div className="featured-cinema-image">
-                {previewUrls[featuredVideo.id] ? (
-                  <video
-                    src={safariFrame(previewUrls[featuredVideo.id])}
-                    muted
-                    autoPlay
-                    loop
-                    playsInline
-                    preload="auto"
-                  />
-                ) : (
-                  <div className="featured-cinema-fallback">Aset Cinema</div>
-                )}
-              </div>
-            </section>
-          )}
-
+        <section className="cinema-right-panel">
           <section className="release-rooms-panel">
             <div className="release-rooms-heading">
               <div>
                 <p>NOW SCREENING</p>
                 <h2>Cinema Release Rooms</h2>
                 <span>
-                  Explore release lanes across The Aset Studio screening
-                  environment.
+                  Curated films, interviews, performances, comedy, music visuals,
+                  and studio originals.
                 </span>
               </div>
 
@@ -369,7 +376,7 @@ export default function VideosPage() {
               {releaseRooms.map(renderReleaseRoom)}
             </div>
           </section>
-        </div>
+        </section>
       </section>
 
       {loading && (
