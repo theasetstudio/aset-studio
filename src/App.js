@@ -36,6 +36,7 @@ import DiamondVaultPage from "./pages/DiamondVaultPage";
 import ExpressionVaultPage from "./pages/ExpressionVaultPage";
 import AsetSpotlightPage from "./pages/AsetSpotlightPage";
 import SpotlightProfilePage from "./pages/SpotlightProfilePage";
+import ManagersPage from "./pages/ManagersPage";
 import CollectivesPage from "./pages/CollectivesPage";
 import AsetBeautyCollectivePage from "./pages/AsetBeautyCollectivePage";
 import MakeupArtistsPage from "./pages/MakeupArtistsPage";
@@ -108,6 +109,7 @@ function App() {
         <Route path="/featured" element={<FeaturedPage />} />
         <Route path="/aset-spotlight" element={<AsetSpotlightPage />} />
         <Route path="/aset-spotlight/:slug" element={<SpotlightProfilePage />} />
+        <Route path="/managers" element={<ManagersPage />} />
         <Route path="/debug-auth" element={<DebugAuthPage />} />
 
         <Route path="/videos" element={<VideosPage />} />
