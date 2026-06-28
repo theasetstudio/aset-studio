@@ -31,19 +31,37 @@ export default function HomePage() {
       button: "Open Aset Cinema",
       variant: "light",
       featured: true,
-      categories: ["Studio Releases", "Interviews", "Visual Releases", "Original Worlds"],
+      categories: [
+        "Studio Releases",
+        "Interviews",
+        "Visual Releases",
+        "Original Worlds",
+      ],
     },
     {
       eyebrow: "ASET SPOTLIGHT",
       title: "Recognition is part of the studio system.",
       text:
-        "Aset Spotlight is where selected individuals, featured talent, and cultural presence are presented with intention.",
-      panelEyebrow: "FEATURED TALENT",
+        "Aset Spotlight is where established entertainment professionals and people who have put in the work are honored and showcased with intention.",
+      panelEyebrow: "INVITATION ONLY",
       panelTitle: "Aset Spotlight",
       panelText:
-        "A curated place for visibility, recognition, and studio-level presentation.",
+        "A place for visibility, recognition, and studio-level presentation.",
       path: "/aset-spotlight",
       button: "Explore Aset Spotlight",
+      variant: "gold",
+    },
+    {
+      eyebrow: "MANAGERS DOOR",
+      title: "Honoring the professionals behind extraordinary careers.",
+      text:
+        "Managers Door is an invitation-only executive presentation experience created to honor and showcase entertainment managers, executives, and industry professionals whose leadership helps shape creative careers.",
+      panelEyebrow: "EXECUTIVE PRESENTATIONS",
+      panelTitle: "Managers Door",
+      panelText:
+        "Presented by The Aset Studio. Honored. Showcased. Remembered.",
+      path: "/managers",
+      button: "Enter Managers Door",
       variant: "gold",
     },
     {
@@ -63,7 +81,7 @@ export default function HomePage() {
       eyebrow: "COLLECTIVES",
       title: "The creative rooms inside the larger studio.",
       text:
-        "Collectives bring together creators, talent, projects, and aligned voices within The Aset Studio ecosystem.",
+        "Collectives bring together creative professionals, aligned services, and specialized communities within The Aset Studio ecosystem.",
       panelEyebrow: "STUDIO ECOSYSTEM",
       panelTitle: "Collectives",
       panelText:
@@ -89,8 +107,8 @@ export default function HomePage() {
       eyebrow: "THE FIRST DOOR",
       title: "Enter the Gallery",
       text:
-        "The Gallery is where Aset began: a visual archive, a portfolio, and the first signal of the studio world.",
-      panelEyebrow: "ORIGIN WORLD",
+        "The Gallery is now the official portfolio of The Aset Studio: visual work, virtual photoshoots, promotional campaigns, and creative presentation.",
+      panelEyebrow: "ASET PORTFOLIO",
       panelTitle: "Gallery",
       panelText: "Image was the seed. The studio grew from there.",
       path: "/gallery",
@@ -166,12 +184,7 @@ export default function HomePage() {
       <section
         style={{
           ...styles.hero,
-          padding: isMobile
-            ? "135px 18px 56px"
-            : isTablet
-            ? "140px 34px 90px"
-            : "120px 22px 92px",
-          alignItems: isMobile || isTablet ? "flex-start" : "center",
+          padding: isMobile ? "130px 18px 70px" : "135px 22px 95px",
         }}
       >
         <div
@@ -184,23 +197,14 @@ export default function HomePage() {
 
         <div style={styles.heroShade} />
 
-        <div
-          style={{
-            ...styles.heroShell,
-            gridTemplateColumns:
-              isMobile || isTablet ? "1fr" : "minmax(0, 1fr) 360px",
-            gap: isMobile ? 28 : isTablet ? 34 : 28,
-          }}
-        >
-          <div style={styles.heroContent}>
+        <div style={styles.heroCenterShell}>
+          <div style={styles.heroCenterContent}>
             <p style={styles.brand}>THE ASET STUDIO</p>
 
             <h1
               style={{
                 ...styles.headline,
-                fontSize: isMobile
-                  ? "44px"
-                  : "clamp(40px, 5.5vw, 72px)",
+                fontSize: isMobile ? "44px" : "clamp(48px, 6vw, 86px)",
               }}
             >
               Egyptian Mystic
@@ -217,44 +221,48 @@ export default function HomePage() {
               <Link to="/videos" style={styles.goldBtn}>
                 Enter Aset Cinema
               </Link>
-
-              <Link to="/aset-spotlight" style={styles.lightBtn}>
-                Explore Aset Spotlight
-              </Link>
             </div>
           </div>
 
-          <Link
-            to="/aset-spotlight"
+          <div
             style={{
-              ...styles.spotlightCard,
-              maxWidth: isMobile ? "100%" : isTablet ? 760 : 360,
-              marginTop: isMobile ? 26 : isTablet ? 28 : 0,
+              ...styles.flagshipGrid,
+              gridTemplateColumns: isMobile
+                ? "1fr"
+                : "repeat(2, minmax(0, 1fr))",
             }}
           >
-            <div
-              style={{
-                ...styles.spotlightImage,
-                height: isMobile ? 200 : isTablet ? 260 : 360,
-                backgroundImage: `url("${spotlightImage}")`,
-                backgroundPosition: isMobile ? "center 15%" : "center 25%",
-              }}
-            >
-              <div style={styles.spotlightImageOverlay} />
-            </div>
+            <Link to="/aset-spotlight" style={styles.flagshipCard}>
+              <div
+                style={{
+                  ...styles.flagshipImage,
+                  backgroundImage: `url("${spotlightImage}")`,
+                }}
+              >
+                <div style={styles.flagshipImageOverlay} />
+              </div>
 
-            <div style={styles.spotlightBody}>
-              <p style={styles.spotlightEyebrow}>ASET SPOTLIGHT</p>
-              <h3 style={styles.spotlightTitle}>Aset Spotlight</h3>
-
-              <p style={styles.spotlightText}>
-                Recognized individuals, featured talent, and cultural presence
-                within the world of Aset.
+              <p style={styles.flagshipEyebrow}>INVITATION ONLY</p>
+              <h3 style={styles.flagshipTitle}>Aset Spotlight</h3>
+              <p style={styles.flagshipText}>
+                Honoring established artists, actors, filmmakers, musicians,
+                storytellers, and entertainment professionals who have put in the
+                work.
               </p>
+              <span style={styles.flagshipButton}>Enter Spotlight →</span>
+            </Link>
 
-              <span style={styles.spotlightButton}>Explore Aset Spotlight</span>
-            </div>
-          </Link>
+            <Link to="/managers" style={styles.flagshipCard}>
+              <div style={styles.flagshipSeal}>MD</div>
+              <p style={styles.flagshipEyebrow}>INVITATION ONLY</p>
+              <h3 style={styles.flagshipTitle}>Managers Door</h3>
+              <p style={styles.flagshipText}>
+                Honoring managers, executives, and industry professionals whose
+                leadership helps shape creative careers.
+              </p>
+              <span style={styles.flagshipButton}>Enter Managers →</span>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -335,7 +343,7 @@ export default function HomePage() {
               <p style={styles.screeningText}>
                 {screeningItem?.description ||
                   screeningItem?.tagline ||
-                  "A controlled cinematic environment for original releases, interviews, studio conversations, visual campaigns, and curated creative presentation."}
+                  "A controlled cinematic environment for original releases, interviews, studio conversations, visual campaigns, and creative presentation."}
               </p>
             </div>
 
@@ -372,7 +380,8 @@ export default function HomePage() {
                   <p style={styles.screeningMini}>THE ASET STUDIO</p>
 
                   <h3 style={styles.screeningTitle}>
-                    {screeningItem?.title || "Cinematic Presentation Environment"}
+                    {screeningItem?.title ||
+                      "Cinematic Presentation Environment"}
                   </h3>
 
                   <p style={styles.screeningDescription}>
@@ -382,7 +391,11 @@ export default function HomePage() {
 
                   <div style={styles.screeningActions}>
                     <Link
-                      to={screeningItem?.id ? `/media/${screeningItem.id}` : "/videos"}
+                      to={
+                        screeningItem?.id
+                          ? `/media/${screeningItem.id}`
+                          : "/videos"
+                      }
                       style={styles.goldBtn}
                     >
                       Open Screening
@@ -416,6 +429,10 @@ export default function HomePage() {
               Aset Spotlight
             </Link>
 
+            <Link to="/managers" style={styles.portalCard}>
+              Managers Door
+            </Link>
+
             <Link to="/brick-by-brick" style={styles.portalCard}>
               Brick by Brick
             </Link>
@@ -426,10 +443,6 @@ export default function HomePage() {
 
             <Link to="/services" style={styles.portalCard}>
               Services
-            </Link>
-
-            <Link to="/creators" style={styles.portalCard}>
-              Creators
             </Link>
 
             <Link to="/gallery" style={styles.portalCard}>
@@ -450,7 +463,7 @@ const styles = {
   },
 
   hero: {
-    minHeight: "92vh",
+    minHeight: "100vh",
     position: "relative",
     display: "flex",
     alignItems: "center",
@@ -471,21 +484,23 @@ const styles = {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.3) 48%, rgba(5,5,5,0.98) 100%), radial-gradient(circle at center, rgba(0,0,0,0.04), rgba(0,0,0,0.76))",
+      "linear-gradient(180deg, rgba(0,0,0,0.16) 0%, rgba(0,0,0,0.42) 48%, rgba(5,5,5,0.98) 100%), radial-gradient(circle at center, rgba(0,0,0,0.04), rgba(0,0,0,0.78))",
   },
 
-  heroShell: {
+  heroCenterShell: {
     position: "relative",
     zIndex: 2,
     width: "100%",
     maxWidth: 1180,
-    display: "grid",
-    alignItems: "center",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 42,
   },
 
-  heroContent: {
+  heroCenterContent: {
     width: "100%",
-    maxWidth: 720,
+    maxWidth: 780,
     textAlign: "left",
   },
 
@@ -520,70 +535,86 @@ const styles = {
     flexWrap: "wrap",
   },
 
-  spotlightCard: {
-    display: "block",
-    overflow: "hidden",
-    borderRadius: 24,
+  flagshipGrid: {
+    width: "100%",
+    display: "grid",
+    gap: 18,
+    marginTop: 12,
+  },
+
+  flagshipCard: {
+    minHeight: 300,
+    padding: "32px",
+    borderRadius: 26,
     textDecoration: "none",
     color: "#f5f1eb",
-    border: "1px solid rgba(245,241,235,0.18)",
-    background: "rgba(5,5,5,0.72)",
-    boxShadow:
-      "0 60px 160px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04)",
-    backdropFilter: "blur(16px)",
+    border: "1px solid rgba(245,241,235,0.14)",
+    background:
+      "linear-gradient(145deg, rgba(255,255,255,0.055), rgba(0,0,0,0.78))",
+    boxShadow: "0 40px 120px rgba(0,0,0,0.55)",
+    overflow: "hidden",
   },
 
-  spotlightImage: {
-    position: "relative",
-    width: "100%",
+  flagshipImage: {
+    height: 220,
+    margin: "-32px -32px 24px",
+    borderRadius: "26px 26px 0 0",
     backgroundSize: "cover",
-    backgroundColor: "rgba(255,255,255,0.04)",
-    filter: "brightness(0.95) contrast(1.05)",
+    backgroundPosition: "center 25%",
+    position: "relative",
+    overflow: "hidden",
   },
 
-  spotlightImageOverlay: {
+  flagshipImageOverlay: {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.7) 100%)",
+      "linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.76))",
   },
 
-  spotlightBody: {
-    padding: "18px 18px 20px",
+  flagshipSeal: {
+    width: 92,
+    height: 92,
+    borderRadius: "50%",
+    display: "grid",
+    placeItems: "center",
+    marginBottom: 26,
+    border: "1px solid rgba(245,241,235,0.18)",
     background:
-      "linear-gradient(180deg, rgba(10,10,10,0.94), rgba(0,0,0,0.98))",
+      "radial-gradient(circle at center, rgba(197,141,54,0.28), rgba(0,0,0,0.72))",
+    fontSize: 34,
+    fontWeight: 900,
+    letterSpacing: "-0.08em",
   },
 
-  spotlightEyebrow: {
-    margin: "0 0 8px",
+  flagshipEyebrow: {
+    margin: "0 0 10px",
     fontSize: 10,
-    letterSpacing: "0.28em",
+    letterSpacing: "0.26em",
     textTransform: "uppercase",
-    color: "rgba(245,241,235,0.58)",
+    color: "rgba(214,168,79,0.88)",
+    fontWeight: 900,
   },
 
-  spotlightTitle: {
-    margin: "0 0 8px",
-    fontSize: 25,
+  flagshipTitle: {
+    margin: "0 0 12px",
+    fontSize: 32,
     lineHeight: 1,
-    letterSpacing: "-0.035em",
+    letterSpacing: "-0.04em",
   },
 
-  spotlightText: {
-    margin: "0 0 14px",
-    fontSize: 13,
-    lineHeight: 1.55,
+  flagshipText: {
+    margin: "0 0 22px",
+    maxWidth: 520,
+    fontSize: 14,
+    lineHeight: 1.7,
     color: "rgba(245,241,235,0.72)",
   },
 
-  spotlightButton: {
+  flagshipButton: {
     display: "inline-flex",
-    padding: "10px 14px",
-    borderRadius: 999,
-    border: "1px solid rgba(245,241,235,0.22)",
-    color: "#f5f1eb",
-    fontSize: 12,
-    fontWeight: 850,
+    color: "#f1d08a",
+    fontWeight: 900,
   },
 
   goldBtn: {
