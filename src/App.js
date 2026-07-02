@@ -1,5 +1,10 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import TopNav from "./components/TopNav";
 
@@ -31,6 +36,8 @@ import DebugAuthPage from "./pages/DebugAuthPage";
 import VideosPage from "./pages/VideosPage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
 import BrickByBrickPage from "./pages/BrickByBrickPage";
+import BrickSoundtrackPage from "./pages/BrickSoundtrackPage";
+import BrickSongPage from "./pages/BrickSongPage";
 import BrickSocialHub from "./pages/BrickSocialHub";
 import DiamondVaultPage from "./pages/DiamondVaultPage";
 import ExpressionVaultPage from "./pages/ExpressionVaultPage";
@@ -116,7 +123,14 @@ function App() {
 
         <Route path="/videos" element={<VideosPage />} />
         <Route path="/video/:slug" element={<VideoPlayerPage />} />
+
         <Route path="/brick-by-brick" element={<BrickByBrickPage />} />
+        <Route path="/brick-by-brick/soundtrack" element={<BrickSoundtrackPage />} />
+        <Route
+          path="/brick-by-brick/music/that-crown-love"
+          element={<BrickSongPage />}
+        />
+
         <Route path="/brick-social" element={<BrickSocialHub />} />
         <Route path="/diamond-vault" element={<DiamondVaultPage />} />
 

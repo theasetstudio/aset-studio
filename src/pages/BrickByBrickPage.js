@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
 export default function BrickByBrickPage() {
@@ -101,6 +102,10 @@ export default function BrickByBrickPage() {
             <a href="#characters" style={styles.secondaryButton}>
               Meet the Characters
             </a>
+
+            <Link to="/brick-by-brick/soundtrack" style={styles.secondaryButton}>
+              Original Soundtrack
+            </Link>
           </div>
         </div>
       </section>
@@ -130,6 +135,33 @@ export default function BrickByBrickPage() {
           and the calculated rise of Crown inside a dynasty built on loyalty,
           secrecy, and control.
         </p>
+      </section>
+
+      <section style={styles.soundtrackSection}>
+        <div style={styles.soundtrackCard}>
+          <div style={styles.soundtrackGlow} />
+
+          <p style={styles.sectionKicker}>Original Soundtrack</p>
+
+          <h2 style={styles.sectionTitle}>
+            Music From The World of Brick by Brick
+          </h2>
+
+          <p style={styles.bodyText}>
+            Every empire has an anthem. Every betrayal has a melody. Every love
+            story leaves a song.
+          </p>
+
+          <p style={styles.bodyText}>
+            <strong>That Crown Love</strong> is the official signature love
+            theme of Varney "Crown" Simmons and Staciana Charlotte "Sasha"
+            Bellaire.
+          </p>
+
+          <Link to="/brick-by-brick/soundtrack" style={styles.primaryButton}>
+            Enter The Soundtrack
+          </Link>
+        </div>
       </section>
 
       <section style={styles.socialSection}>
@@ -168,13 +200,9 @@ export default function BrickByBrickPage() {
 
               <h3 style={styles.socialName}>{platform.name}</h3>
 
-              <p style={styles.socialDescription}>
-                {platform.description}
-              </p>
+              <p style={styles.socialDescription}>{platform.description}</p>
 
-              <button style={styles.socialButton}>
-                Enter {platform.name}
-              </button>
+              <button style={styles.socialButton}>Enter {platform.name}</button>
             </div>
           ))}
         </div>
@@ -188,17 +216,11 @@ export default function BrickByBrickPage() {
         <div style={styles.feedGrid}>
           {worldActivity.map((item) => (
             <div key={item.id} style={styles.feedCard}>
-              <p style={styles.feedSource}>
-                {item.label || item.platform}
-              </p>
+              <p style={styles.feedSource}>{item.label || item.platform}</p>
 
-              <h3 style={styles.feedHeadline}>
-                {item.title}
-              </h3>
+              <h3 style={styles.feedHeadline}>{item.title}</h3>
 
-              <p style={styles.feedText}>
-                {item.body}
-              </p>
+              <p style={styles.feedText}>{item.body}</p>
             </div>
           ))}
         </div>
@@ -240,9 +262,7 @@ export default function BrickByBrickPage() {
                 ) : null}
 
                 {item.caption ? (
-                  <p style={styles.messageCaption}>
-                    {item.caption}
-                  </p>
+                  <p style={styles.messageCaption}>{item.caption}</p>
                 ) : null}
               </div>
             ))}
@@ -258,7 +278,8 @@ export default function BrickByBrickPage() {
         <p style={styles.bodyText}>
           The official Brick by Brick character world is being built through the
           studio admin system. Profiles, family roles, portraits, alliances,
-          betrayals, and story positions will appear here as the universe expands.
+          betrayals, and story positions will appear here as the universe
+          expands.
         </p>
       </section>
     </main>
@@ -330,6 +351,9 @@ const styles = {
   },
 
   primaryButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
     padding: "14px 20px",
     borderRadius: "999px",
     background: "linear-gradient(135deg, #d4af37, #f2daa0)",
@@ -339,6 +363,9 @@ const styles = {
   },
 
   secondaryButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
     padding: "14px 20px",
     borderRadius: "999px",
     border: "1px solid rgba(255,255,255,0.22)",
@@ -377,6 +404,33 @@ const styles = {
   section: {
     padding: "82px 8vw",
     borderTop: "1px solid rgba(255,255,255,0.08)",
+  },
+
+  soundtrackSection: {
+    padding: "0 8vw 90px",
+  },
+
+  soundtrackCard: {
+    position: "relative",
+    overflow: "hidden",
+    padding: "46px",
+    borderRadius: "28px",
+    background:
+      "radial-gradient(circle at top left, rgba(212,175,55,0.18), transparent 36%), linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))",
+    border: "1px solid rgba(212,175,55,0.18)",
+    boxShadow: "0 40px 120px rgba(0,0,0,.45)",
+  },
+
+  soundtrackGlow: {
+    position: "absolute",
+    top: "-140px",
+    right: "-120px",
+    width: "300px",
+    height: "300px",
+    borderRadius: "50%",
+    background: "#d4af37",
+    opacity: 0.12,
+    filter: "blur(60px)",
   },
 
   socialSection: {
@@ -566,5 +620,7 @@ const styles = {
     color: "#d8d0c2",
     fontSize: "18px",
     lineHeight: 1.75,
+    position: "relative",
+    zIndex: 2,
   },
 };
