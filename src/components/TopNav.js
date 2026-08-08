@@ -8,8 +8,12 @@ export default function TopNav() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
+    let active = true;
+
     supabase.auth.getSession().then(({ data }) => {
-      setUser(data?.session?.user || null);
+      if (active) {
+        setUser(data?.session?.user || null);
+      }
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
@@ -19,18 +23,29 @@ export default function TopNav() {
     );
 
     return () => {
-      listener?.subscription?.unsubscribe();
+      active = false;
+      listener?.subscription?.unsubscribe?.();
     };
   }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.reload();
+    navigate("/");
   };
 
-  const isExpressionVault = location.pathname === "/studio/expression-vault";
+  const isAdminArea =
+    location.pathname.startsWith("/admin") ||
+    location.pathname === "/brick-admin";
+
+  const isExpressionVault =
+    location.pathname === "/studio/expression-vault";
+
   const isServices = location.pathname === "/services";
   const isHomePage = location.pathname === "/";
+
+  if (isAdminArea) {
+    return null;
+  }
 
   const navStyle = {
     ...styles.nav,
@@ -44,12 +59,24 @@ export default function TopNav() {
 
   return (
     <div style={navStyle}>
-      <div style={logoStyle} onClick={() => navigate("/")}>
+      <div
+        style={logoStyle}
+        onClick={() => navigate("/")}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            navigate("/");
+          }
+        }}
+        role="button"
+        tabIndex={0}
+      >
         THE ASET STUDIO
       </div>
 
       <div style={styles.actions}>
         <button
+          type="button"
           style={{
             ...styles.button,
             ...(isExpressionVault ? styles.activeButton : {}),
@@ -60,6 +87,7 @@ export default function TopNav() {
         </button>
 
         <button
+          type="button"
           style={{
             ...styles.button,
             ...(isServices ? styles.activeButton : {}),
@@ -72,18 +100,27 @@ export default function TopNav() {
         {user ? (
           <>
             <button
+              type="button"
               style={styles.button}
               onClick={() => navigate("/creator-hub")}
             >
               Hub
             </button>
 
-            <button style={styles.button} onClick={handleLogout}>
+            <button
+              type="button"
+              style={styles.button}
+              onClick={handleLogout}
+            >
               Logout
             </button>
           </>
         ) : (
-          <button style={styles.button} onClick={() => navigate("/auth")}>
+          <button
+            type="button"
+            style={styles.button}
+            onClick={() => navigate("/auth")}
+          >
             Sign In
           </button>
         )}

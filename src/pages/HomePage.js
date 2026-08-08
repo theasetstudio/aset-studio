@@ -15,6 +15,7 @@ export default function HomePage() {
     typeof window !== "undefined" ? window.innerWidth : 1200;
 
   const [width, setWidth] = useState(getInitialWidth);
+
   const isMobile = width <= 760;
   const isTablet = width > 760 && width <= 1050;
 
@@ -26,7 +27,8 @@ export default function HomePage() {
         "A controlled stage for studio releases, interviews, cinematic tests, visual campaigns, and original worlds.",
       panelEyebrow: "NOW PRESENTING",
       panelTitle: "Aset Cinema",
-      panelText: "Not a feed. Not a shelf. A curated premiere environment.",
+      panelText:
+        "Not a feed. Not a shelf. A curated premiere environment.",
       path: "/videos",
       button: "Open Aset Cinema",
       variant: "light",
@@ -38,6 +40,7 @@ export default function HomePage() {
         "Original Worlds",
       ],
     },
+
     {
       eyebrow: "ASET SPOTLIGHT",
       title: "Recognition is part of the studio system.",
@@ -51,9 +54,11 @@ export default function HomePage() {
       button: "Explore Aset Spotlight",
       variant: "gold",
     },
+
     {
       eyebrow: "MANAGERS DOOR",
-      title: "Honoring the professionals behind extraordinary careers.",
+      title:
+        "Honoring the professionals behind extraordinary careers.",
       text:
         "Managers Door is an invitation-only executive presentation experience created to honor and showcase entertainment managers, executives, and industry professionals whose leadership helps shape creative careers.",
       panelEyebrow: "EXECUTIVE PRESENTATIONS",
@@ -64,6 +69,7 @@ export default function HomePage() {
       button: "Enter Managers Door",
       variant: "gold",
     },
+
     {
       eyebrow: "BRICK BY BRICK",
       title: "Dynasties are not inherited. They are taken.",
@@ -77,6 +83,7 @@ export default function HomePage() {
       button: "Enter Brick by Brick",
       variant: "gold",
     },
+
     {
       eyebrow: "COLLECTIVES",
       title: "The creative rooms inside the larger studio.",
@@ -90,9 +97,11 @@ export default function HomePage() {
       button: "Open Collectives",
       variant: "light",
     },
+
     {
       eyebrow: "SERVICES",
-      title: "Professional support for people building at a higher level.",
+      title:
+        "Professional support for people building at a higher level.",
       text:
         "The Aset Studio offers executive virtual assistance, creative support, branding, visibility, and operational help for serious clients.",
       panelEyebrow: "WORK WITH US",
@@ -103,14 +112,30 @@ export default function HomePage() {
       button: "View Services",
       variant: "gold",
     },
+
     {
-      eyebrow: "THE FIRST DOOR",
+      eyebrow: "PHOTOGRAPHY STUDIO",
+      title: "Photography that feels beautifully real.",
+      text:
+        "Photoshoot-quality portraits, beauty editorials, branding images, fashion photography, and custom visual creations produced virtually by The Aset Studio.",
+      panelEyebrow: "VIRTUAL PHOTOGRAPHY",
+      panelTitle: "Photography Studio",
+      panelText:
+        "Portraiture, beauty, fashion, branding, and custom photography without the limits of a physical studio.",
+      path: "/photography-studio",
+      button: "Enter Photography Studio",
+      variant: "gold",
+    },
+
+    {
+      eyebrow: "THE GALLERY",
       title: "Enter the Gallery",
       text:
-        "The Gallery is now the official portfolio of The Aset Studio: visual work, virtual photoshoots, promotional campaigns, and creative presentation.",
-      panelEyebrow: "ASET PORTFOLIO",
+        "A curated exhibition of original visual work from The Aset Studio, including artwork, creative concepts, and finished visual pieces.",
+      panelEyebrow: "ASET GALLERY",
       panelTitle: "Gallery",
-      panelText: "Image was the seed. The studio grew from there.",
+      panelText:
+        "Original visual work presented as part of The Aset Studio collection.",
       path: "/gallery",
       button: "Open Gallery",
       variant: "light",
@@ -118,10 +143,15 @@ export default function HomePage() {
   ];
 
   useEffect(() => {
-    const handleResize = () => setWidth(window.innerWidth);
+    const handleResize = () => {
+      setWidth(window.innerWidth);
+    };
 
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -138,12 +168,19 @@ export default function HomePage() {
           .eq("homepage_featured", true)
           .eq("status", "published")
           .eq("is_hidden", false)
-          .order("created_at", { ascending: false })
+          .order("created_at", {
+            ascending: false,
+          })
           .limit(1)
           .maybeSingle();
 
-        if (error) throw error;
-        if (!mounted) return;
+        if (error) {
+          throw error;
+        }
+
+        if (!mounted) {
+          return;
+        }
 
         if (!data?.file_path) {
           setScreeningItem(null);
@@ -152,19 +189,29 @@ export default function HomePage() {
           return;
         }
 
-        const path = data.watermarked_path || data.file_path;
+        const path =
+          data.watermarked_path || data.file_path;
 
-        const { data: signed } = await supabase.storage
-          .from("media")
-          .createSignedUrl(path, 3600);
+        const { data: signed } =
+          await supabase.storage
+            .from("media")
+            .createSignedUrl(path, 3600);
 
         setScreeningItem(data);
-        setVideoUrl(signed?.signedUrl || "");
+        setVideoUrl(
+          signed?.signedUrl || ""
+        );
+
         setLoading(false);
       } catch (error) {
-        console.error("Homepage screening load failed:", error);
+        console.error(
+          "Homepage screening load failed:",
+          error
+        );
 
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
         setScreeningItem(null);
         setVideoUrl("");
@@ -181,17 +228,22 @@ export default function HomePage() {
 
   return (
     <div style={styles.page}>
+      {/* HERO */}
       <section
         style={{
           ...styles.hero,
-          padding: isMobile ? "130px 18px 70px" : "135px 22px 95px",
+          padding: isMobile
+            ? "130px 18px 70px"
+            : "135px 22px 95px",
         }}
       >
         <div
           style={{
             ...styles.heroImage,
             backgroundImage: `url("${heroImage}")`,
-            backgroundPosition: isMobile ? "center top" : "center 42%",
+            backgroundPosition: isMobile
+              ? "center top"
+              : "center 42%",
           }}
         />
 
@@ -199,12 +251,16 @@ export default function HomePage() {
 
         <div style={styles.heroCenterShell}>
           <div style={styles.heroCenterContent}>
-            <p style={styles.brand}>THE ASET STUDIO</p>
+            <p style={styles.brand}>
+              THE ASET STUDIO
+            </p>
 
             <h1
               style={{
                 ...styles.headline,
-                fontSize: isMobile ? "44px" : "clamp(48px, 6vw, 86px)",
+                fontSize: isMobile
+                  ? "44px"
+                  : "clamp(48px, 6vw, 86px)",
               }}
             >
               Egyptian Mystic
@@ -213,17 +269,23 @@ export default function HomePage() {
             </h1>
 
             <p style={styles.subtext}>
-              A cinematic entertainment company shaped by image, sound, story,
-              mythology, talent, and sovereign creative presentation.
+              A cinematic entertainment company
+              shaped by image, sound, story,
+              mythology, talent, and sovereign
+              creative presentation.
             </p>
 
             <div style={styles.ctaRow}>
-              <Link to="/videos" style={styles.goldBtn}>
+              <Link
+                to="/videos"
+                style={styles.goldBtn}
+              >
                 Enter Aset Cinema
               </Link>
             </div>
           </div>
 
+          {/* FLAGSHIP DOORS */}
           <div
             style={{
               ...styles.flagshipGrid,
@@ -232,61 +294,108 @@ export default function HomePage() {
                 : "repeat(2, minmax(0, 1fr))",
             }}
           >
-            <Link to="/aset-spotlight" style={styles.flagshipCard}>
+            <Link
+              to="/aset-spotlight"
+              style={styles.flagshipCard}
+            >
               <div
                 style={{
                   ...styles.flagshipImage,
                   backgroundImage: `url("${spotlightImage}")`,
                 }}
               >
-                <div style={styles.flagshipImageOverlay} />
+                <div
+                  style={
+                    styles.flagshipImageOverlay
+                  }
+                />
               </div>
 
-              <p style={styles.flagshipEyebrow}>INVITATION ONLY</p>
-              <h3 style={styles.flagshipTitle}>Aset Spotlight</h3>
+              <p style={styles.flagshipEyebrow}>
+                INVITATION ONLY
+              </p>
+
+              <h3 style={styles.flagshipTitle}>
+                Aset Spotlight
+              </h3>
+
               <p style={styles.flagshipText}>
-                Honoring established artists, actors, filmmakers, musicians,
-                storytellers, and entertainment professionals who have put in the
+                Honoring established artists,
+                actors, filmmakers, musicians,
+                storytellers, and entertainment
+                professionals who have put in the
                 work.
               </p>
-              <span style={styles.flagshipButton}>Enter Spotlight →</span>
+
+              <span
+                style={styles.flagshipButton}
+              >
+                Enter Spotlight →
+              </span>
             </Link>
 
-            <Link to="/managers" style={styles.flagshipCard}>
-              <div style={styles.flagshipSeal}>MD</div>
-              <p style={styles.flagshipEyebrow}>INVITATION ONLY</p>
-              <h3 style={styles.flagshipTitle}>Managers Door</h3>
-              <p style={styles.flagshipText}>
-                Honoring managers, executives, and industry professionals whose
-                leadership helps shape creative careers.
+            <Link
+              to="/managers"
+              style={styles.flagshipCard}
+            >
+              <div style={styles.flagshipSeal}>
+                MD
+              </div>
+
+              <p style={styles.flagshipEyebrow}>
+                INVITATION ONLY
               </p>
-              <span style={styles.flagshipButton}>Enter Managers →</span>
+
+              <h3 style={styles.flagshipTitle}>
+                Managers Door
+              </h3>
+
+              <p style={styles.flagshipText}>
+                Honoring managers, executives,
+                and industry professionals whose
+                leadership helps shape creative
+                careers.
+              </p>
+
+              <span
+                style={styles.flagshipButton}
+              >
+                Enter Managers →
+              </span>
             </Link>
           </div>
         </div>
       </section>
 
+      {/* STUDIO WORLDS */}
       <section style={styles.worldsWrap}>
         {worlds.map((world, index) => (
           <section
             key={world.title}
             style={{
               ...styles.worldSection,
-              ...(world.featured ? styles.featuredWorldSection : {}),
+              ...(world.featured
+                ? styles.featuredWorldSection
+                : {}),
             }}
           >
             <div
               style={{
                 ...styles.worldInner,
-                ...(world.featured && !isMobile && !isTablet
+
+                ...(world.featured &&
+                !isMobile &&
+                !isTablet
                   ? styles.featuredWorldInner
                   : {}),
+
                 gridTemplateColumns:
                   isMobile || isTablet
                     ? "1fr"
                     : world.featured
                     ? "minmax(0, 1.6fr) minmax(320px, 0.6fr)"
                     : "minmax(0, 1.18fr) minmax(280px, 0.82fr)",
+
                 direction:
                   isMobile || isTablet
                     ? "ltr"
@@ -295,49 +404,90 @@ export default function HomePage() {
                     : "ltr",
               }}
             >
-              <div style={{ ...styles.worldCopy, direction: "ltr" }}>
-                <p style={styles.eyebrow}>{world.eyebrow}</p>
-                <h2 style={styles.worldTitle}>{world.title}</h2>
-                <p style={styles.sectionText}>{world.text}</p>
+              <div
+                style={{
+                  ...styles.worldCopy,
+                  direction: "ltr",
+                }}
+              >
+                <p style={styles.eyebrow}>
+                  {world.eyebrow}
+                </p>
+
+                <h2 style={styles.worldTitle}>
+                  {world.title}
+                </h2>
+
+                <p style={styles.sectionText}>
+                  {world.text}
+                </p>
 
                 {world.categories && (
-                  <div style={styles.categoryRow}>
-                    {world.categories.map((category) => (
-                      <span key={category} style={styles.categoryPill}>
-                        {category}
-                      </span>
-                    ))}
+                  <div
+                    style={styles.categoryRow}
+                  >
+                    {world.categories.map(
+                      (category) => (
+                        <span
+                          key={category}
+                          style={
+                            styles.categoryPill
+                          }
+                        >
+                          {category}
+                        </span>
+                      )
+                    )}
                   </div>
                 )}
 
                 <Link
                   to={world.path}
                   style={
-                    world.variant === "gold" ? styles.goldBtn : styles.lightBtn
+                    world.variant === "gold"
+                      ? styles.goldBtn
+                      : styles.lightBtn
                   }
                 >
                   {world.button}
                 </Link>
               </div>
 
-              <div style={{ ...styles.worldPanel, direction: "ltr" }}>
-                <p style={styles.panelEyebrow}>{world.panelEyebrow}</p>
-                <h3 style={styles.panelTitle}>{world.panelTitle}</h3>
-                <p style={styles.panelText}>{world.panelText}</p>
+              <div
+                style={{
+                  ...styles.worldPanel,
+                  direction: "ltr",
+                }}
+              >
+                <p style={styles.panelEyebrow}>
+                  {world.panelEyebrow}
+                </p>
+
+                <h3 style={styles.panelTitle}>
+                  {world.panelTitle}
+                </h3>
+
+                <p style={styles.panelText}>
+                  {world.panelText}
+                </p>
               </div>
             </div>
           </section>
         ))}
       </section>
 
+      {/* SCREENING */}
       <section style={styles.screeningSection}>
         <div style={styles.sectionInnerNarrow}>
           <div style={styles.screeningHeader}>
             <div>
-              <p style={styles.eyebrow}>NOW SCREENING</p>
+              <p style={styles.eyebrow}>
+                NOW SCREENING
+              </p>
 
               <h2 style={styles.sectionTitle}>
-                {screeningItem?.title || "Inside The Aset Studio"}
+                {screeningItem?.title ||
+                  "Inside The Aset Studio"}
               </h2>
 
               <p style={styles.screeningText}>
@@ -348,13 +498,18 @@ export default function HomePage() {
             </div>
 
             <div style={styles.screeningBadge}>
-              <span style={styles.screeningDot} />
+              <span
+                style={styles.screeningDot}
+              />
+
               FEATURED PRESENTATION
             </div>
           </div>
 
           <div style={styles.screeningFrame}>
-            <div style={styles.screeningOverlay} />
+            <div
+              style={styles.screeningOverlay}
+            />
 
             {loading ? (
               <div style={styles.placeholder}>
@@ -369,27 +524,51 @@ export default function HomePage() {
                   loop
                   playsInline
                   preload="metadata"
-                  onLoadedData={() => setReady(true)}
+                  onLoadedData={() =>
+                    setReady(true)
+                  }
                   style={{
                     ...styles.video,
                     opacity: ready ? 1 : 0,
                   }}
                 />
 
-                <div style={styles.screeningContent}>
-                  <p style={styles.screeningMini}>THE ASET STUDIO</p>
+                <div
+                  style={
+                    styles.screeningContent
+                  }
+                >
+                  <p
+                    style={
+                      styles.screeningMini
+                    }
+                  >
+                    THE ASET STUDIO
+                  </p>
 
-                  <h3 style={styles.screeningTitle}>
+                  <h3
+                    style={
+                      styles.screeningTitle
+                    }
+                  >
                     {screeningItem?.title ||
                       "Cinematic Presentation Environment"}
                   </h3>
 
-                  <p style={styles.screeningDescription}>
+                  <p
+                    style={
+                      styles.screeningDescription
+                    }
+                  >
                     {screeningItem?.quote ||
                       "Original worlds, visual storytelling, interviews, studio releases, and evolving cinematic identity systems."}
                   </p>
 
-                  <div style={styles.screeningActions}>
+                  <div
+                    style={
+                      styles.screeningActions
+                    }
+                  >
                     <Link
                       to={
                         screeningItem?.id
@@ -401,7 +580,10 @@ export default function HomePage() {
                       Open Screening
                     </Link>
 
-                    <Link to="/services" style={styles.lightBtn}>
+                    <Link
+                      to="/services"
+                      style={styles.lightBtn}
+                    >
                       Work With The Studio
                     </Link>
                   </div>
@@ -416,36 +598,67 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ENTER THE STUDIO */}
       <section style={styles.portalSection}>
         <div style={styles.sectionInner}>
-          <p style={styles.eyebrow}>ENTER THE STUDIO</p>
+          <p style={styles.eyebrow}>
+            ENTER THE STUDIO
+          </p>
 
           <div style={styles.portalGrid}>
-            <Link to="/videos" style={styles.portalCard}>
+            <Link
+              to="/videos"
+              style={styles.portalCard}
+            >
               Aset Cinema
             </Link>
 
-            <Link to="/aset-spotlight" style={styles.portalCard}>
+            <Link
+              to="/aset-spotlight"
+              style={styles.portalCard}
+            >
               Aset Spotlight
             </Link>
 
-            <Link to="/managers" style={styles.portalCard}>
+            <Link
+              to="/managers"
+              style={styles.portalCard}
+            >
               Managers Door
             </Link>
 
-            <Link to="/brick-by-brick" style={styles.portalCard}>
+            <Link
+              to="/brick-by-brick"
+              style={styles.portalCard}
+            >
               Brick by Brick
             </Link>
 
-            <Link to="/collectives" style={styles.portalCard}>
+            <Link
+              to="/collectives"
+              style={styles.portalCard}
+            >
               Collectives
             </Link>
 
-            <Link to="/services" style={styles.portalCard}>
+            <Link
+              to="/services"
+              style={styles.portalCard}
+            >
               Services
             </Link>
 
-            <Link to="/gallery" style={styles.portalCard}>
+            <Link
+              to="/photography-studio"
+              style={styles.portalCard}
+            >
+              Photography Studio
+            </Link>
+
+            <Link
+              to="/gallery"
+              style={styles.portalCard}
+            >
               Gallery
             </Link>
           </div>
@@ -517,7 +730,8 @@ const styles = {
     lineHeight: 0.9,
     letterSpacing: "-0.058em",
     fontWeight: 850,
-    textShadow: "0 20px 70px rgba(0,0,0,0.92)",
+    textShadow:
+      "0 20px 70px rgba(0,0,0,0.92)",
   },
 
   subtext: {
@@ -526,7 +740,8 @@ const styles = {
     fontSize: 15,
     lineHeight: 1.75,
     color: "rgba(245,241,235,0.84)",
-    textShadow: "0 10px 35px rgba(0,0,0,0.82)",
+    textShadow:
+      "0 10px 35px rgba(0,0,0,0.82)",
   },
 
   ctaRow: {
@@ -548,10 +763,12 @@ const styles = {
     borderRadius: 26,
     textDecoration: "none",
     color: "#f5f1eb",
-    border: "1px solid rgba(245,241,235,0.14)",
+    border:
+      "1px solid rgba(245,241,235,0.14)",
     background:
       "linear-gradient(145deg, rgba(255,255,255,0.055), rgba(0,0,0,0.78))",
-    boxShadow: "0 40px 120px rgba(0,0,0,0.55)",
+    boxShadow:
+      "0 40px 120px rgba(0,0,0,0.55)",
     overflow: "hidden",
   },
 
@@ -579,7 +796,8 @@ const styles = {
     display: "grid",
     placeItems: "center",
     marginBottom: 26,
-    border: "1px solid rgba(245,241,235,0.18)",
+    border:
+      "1px solid rgba(245,241,235,0.18)",
     background:
       "radial-gradient(circle at center, rgba(197,141,54,0.28), rgba(0,0,0,0.72))",
     fontSize: 34,
@@ -623,12 +841,14 @@ const styles = {
     justifyContent: "center",
     padding: "13px 22px",
     borderRadius: 999,
-    background: "linear-gradient(135deg, #c58d36, #f1d08a)",
+    background:
+      "linear-gradient(135deg, #c58d36, #f1d08a)",
     color: "#111",
     textDecoration: "none",
     fontWeight: 850,
     letterSpacing: "0.03em",
-    boxShadow: "0 18px 50px rgba(151,101,33,0.26)",
+    boxShadow:
+      "0 18px 50px rgba(151,101,33,0.26)",
   },
 
   lightBtn: {
@@ -653,7 +873,8 @@ const styles = {
 
   worldSection: {
     padding: "54px 22px",
-    borderBottom: "1px solid rgba(245,241,235,0.055)",
+    borderBottom:
+      "1px solid rgba(245,241,235,0.055)",
   },
 
   featuredWorldSection: {
@@ -679,14 +900,17 @@ const styles = {
     padding: "38px",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.043), rgba(255,255,255,0.016))",
-    border: "1px solid rgba(245,241,235,0.085)",
-    boxShadow: "0 26px 80px rgba(0,0,0,0.38)",
+    border:
+      "1px solid rgba(245,241,235,0.085)",
+    boxShadow:
+      "0 26px 80px rgba(0,0,0,0.38)",
   },
 
   worldTitle: {
     margin: "0 0 16px",
     maxWidth: 760,
-    fontSize: "clamp(34px, 4.5vw, 60px)",
+    fontSize:
+      "clamp(34px, 4.5vw, 60px)",
     lineHeight: 0.96,
     letterSpacing: "-0.052em",
     fontWeight: 850,
@@ -702,8 +926,10 @@ const styles = {
   categoryPill: {
     padding: "8px 12px",
     borderRadius: 999,
-    border: "1px solid rgba(245,241,235,0.12)",
-    background: "rgba(255,255,255,0.035)",
+    border:
+      "1px solid rgba(245,241,235,0.12)",
+    background:
+      "rgba(255,255,255,0.035)",
     color: "rgba(245,241,235,0.78)",
     fontSize: 11,
     letterSpacing: "0.08em",
@@ -715,12 +941,14 @@ const styles = {
     padding: "32px",
     background:
       "linear-gradient(160deg, rgba(198,136,55,0.16), rgba(255,255,255,0.025) 46%, rgba(0,0,0,0.22))",
-    border: "1px solid rgba(245,241,235,0.1)",
+    border:
+      "1px solid rgba(245,241,235,0.1)",
     display: "flex",
     flexDirection: "column",
     justifyContent: "flex-end",
     minHeight: 300,
-    boxShadow: "0 26px 80px rgba(0,0,0,0.38)",
+    boxShadow:
+      "0 26px 80px rgba(0,0,0,0.38)",
   },
 
   panelEyebrow: {
@@ -754,7 +982,8 @@ const styles = {
 
   sectionTitle: {
     margin: "0 0 24px",
-    fontSize: "clamp(34px, 4.4vw, 58px)",
+    fontSize:
+      "clamp(34px, 4.4vw, 58px)",
     lineHeight: 0.98,
     letterSpacing: "-0.05em",
     fontWeight: 900,
@@ -811,8 +1040,10 @@ const styles = {
     gap: 10,
     padding: "10px 16px",
     borderRadius: 999,
-    border: "1px solid rgba(245,241,235,0.12)",
-    background: "rgba(255,255,255,0.03)",
+    border:
+      "1px solid rgba(245,241,235,0.12)",
+    background:
+      "rgba(255,255,255,0.03)",
     fontSize: 11,
     letterSpacing: "0.18em",
     textTransform: "uppercase",
@@ -824,7 +1055,8 @@ const styles = {
     height: 8,
     borderRadius: "50%",
     background: "#c58d36",
-    boxShadow: "0 0 14px rgba(197,141,54,0.9)",
+    boxShadow:
+      "0 0 14px rgba(197,141,54,0.9)",
   },
 
   screeningFrame: {
@@ -834,7 +1066,8 @@ const styles = {
     borderRadius: 36,
     overflow: "hidden",
     background: "#000",
-    border: "1px solid rgba(245,241,235,0.12)",
+    border:
+      "1px solid rgba(245,241,235,0.12)",
     boxShadow:
       "0 80px 220px rgba(0,0,0,0.92), 0 0 80px rgba(198,136,55,0.08)",
   },
@@ -854,7 +1087,8 @@ const styles = {
     display: "block",
     transition: "opacity 1s ease",
     background: "#000",
-    filter: "brightness(0.9) contrast(1.04)",
+    filter:
+      "brightness(0.9) contrast(1.04)",
   },
 
   placeholder: {
@@ -864,7 +1098,8 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     color: "rgba(245,241,235,0.68)",
-    background: "rgba(255,255,255,0.025)",
+    background:
+      "rgba(255,255,255,0.025)",
   },
 
   screeningContent: {
@@ -887,7 +1122,8 @@ const styles = {
   screeningTitle: {
     margin: "0 0 14px",
     maxWidth: 620,
-    fontSize: "clamp(32px, 4vw, 58px)",
+    fontSize:
+      "clamp(32px, 4vw, 58px)",
     lineHeight: 0.94,
     letterSpacing: "-0.05em",
     fontWeight: 900,
@@ -914,7 +1150,8 @@ const styles = {
 
   portalGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(180px, 1fr))",
     gap: 14,
   },
 
@@ -923,7 +1160,9 @@ const styles = {
     borderRadius: 18,
     textDecoration: "none",
     color: "#f5f1eb",
-    border: "1px solid rgba(245,241,235,0.08)",
-    background: "rgba(255,255,255,0.023)",
+    border:
+      "1px solid rgba(245,241,235,0.08)",
+    background:
+      "rgba(255,255,255,0.023)",
   },
 };

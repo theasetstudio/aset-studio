@@ -1,949 +1,896 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "../supabaseClient";
-import { canAccessMediaItem } from "../utils/access";
 
-import lockedPreview from "../assets/locked-preview.jpg";
-import videoPoster from "../assets/video-poster.png";
-import AgeVerificationModal from "../components/AgeVerificationModal";
-
-console.log("ACTIVE GALLERY PAGE");
-
-const PAGE_SIZE = 18;
-const SIGNED_URL_TTL_SECONDS = 60 * 10;
-const HEART_FLASH_DURATION = 450;
-const DOUBLE_TAP_DELAY = 240;
-
-const VIDEO_EXTENSIONS = [".mp4", ".mov", ".webm", ".m4v"];
+const STORAGE_BUCKET = "media";
+const SIGNED_URL_SECONDS = 60 * 30;
 
 export default function GalleryPage() {
-  const navigate = useNavigate();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
+
+  const [selectedItem, setSelectedItem] = useState(null);
+
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentError, setCommentError] = useState("");
 
   const [session, setSession] = useState(null);
-  const [profile, setProfile] = useState(null);
-
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("all");
-
-  const [items, setItems] = useState([]);
-  const [signedUrlsById, setSignedUrlsById] = useState({});
-  const [favoritesSet, setFavoritesSet] = useState(() => new Set());
-  const [favoriteCountsById, setFavoriteCountsById] = useState({});
-  const [heartFlashById, setHeartFlashById] = useState({});
-
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-
-  const [ageModalOpen, setAgeModalOpen] = useState(false);
-
-  const pageRef = useRef(0);
-  const sentinelRef = useRef(null);
-  const fetchingRef = useRef(false);
-
-  const heartFlashTimersRef = useRef({});
-  const favoritePendingRef = useRef(new Set());
-  const openTimersRef = useRef({});
-  const lastTapRef = useRef({});
-
-  const signedUrlsByIdRef = useRef({});
-  const signedUrlQueueRef = useRef([]);
-  const signedUrlWorkerRunningRef = useRef(false);
+  const [shareMessage, setShareMessage] = useState("");
 
   useEffect(() => {
-    signedUrlsByIdRef.current = signedUrlsById;
-  }, [signedUrlsById]);
+    let active = true;
 
-  useEffect(() => {
-    let mounted = true;
-
-    (async () => {
+    async function loadSession() {
       const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
-      setSession(data?.session ?? null);
-    })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-    });
-
-    return () => {
-      mounted = false;
-      sub?.subscription?.unsubscribe?.();
-    };
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-
-    (async () => {
-      if (!session?.user?.id) {
-        setProfile(null);
-        return;
+      if (active) {
+        setSession(data?.session ?? null);
       }
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, role, is_age_verified, display_name")
-        .eq("id", session.user.id)
-        .single();
-
-      if (!alive) return;
-
-      if (error) {
-        console.error("Profile fetch error:", error);
-        setProfile(null);
-        return;
-      }
-
-      setProfile(data);
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, [session?.user?.id]);
-
-  useEffect(() => {
-    let alive = true;
-
-    (async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("id, name, slug")
-        .order("name", { ascending: true });
-
-      if (!alive) return;
-
-      if (error) {
-        console.error("Categories fetch error:", error);
-        setCategories([]);
-        return;
-      }
-
-      setCategories(data ?? []);
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-
-    (async () => {
-      if (!session?.user?.id) {
-        setFavoritesSet(new Set());
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("favorites")
-        .select("media_id")
-        .eq("user_id", session.user.id);
-
-      if (!alive) return;
-
-      if (error) {
-        console.error("Favorites fetch error:", error);
-        setFavoritesSet(new Set());
-        return;
-      }
-
-      setFavoritesSet(new Set((data ?? []).map((r) => r.media_id)));
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, [session?.user?.id]);
-
-  useEffect(() => {
-    pageRef.current = 0;
-    fetchingRef.current = false;
-    signedUrlQueueRef.current = [];
-    signedUrlWorkerRunningRef.current = false;
-
-    setItems([]);
-    setSignedUrlsById({});
-    setFavoriteCountsById({});
-    setHeartFlashById({});
-    setHasMore(true);
-    setLoading(true);
-
-    void loadNextPage(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, profile?.role, profile?.is_age_verified, session?.user?.id]);
-
-  useEffect(() => {
-    if (!sentinelRef.current || !hasMore) return;
-
-    const el = sentinelRef.current;
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (first?.isIntersecting) {
-          void loadNextPage(false);
-        }
-      },
-      { root: null, rootMargin: "500px", threshold: 0 }
-    );
-
-    io.observe(el);
-    return () => io.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasMore, selectedCategory, profile?.role, profile?.is_age_verified]);
-
-  useEffect(() => {
-    const heartFlashTimers = heartFlashTimersRef.current;
-    const openTimers = openTimersRef.current;
-
-    return () => {
-      Object.values(heartFlashTimers).forEach((timerId) => {
-        window.clearTimeout(timerId);
-      });
-
-      Object.values(openTimers).forEach((timerId) => {
-        window.clearTimeout(timerId);
-      });
-    };
-  }, []);
-
-  function isVideoPath(path) {
-    const lowerPath = String(path || "").toLowerCase();
-    return VIDEO_EXTENSIONS.some((ext) => lowerPath.endsWith(ext));
-  }
-
-  function normalizeItem(item) {
-    return {
-      ...item,
-      access_level: String(item?.access_level || "").toLowerCase(),
-      status: String(item?.status || "").toLowerCase(),
-      hidden: Boolean(item?.hidden),
-      type: String(item?.type || "image").toLowerCase(),
-      uploader_id: item?.uploader_id || item?.owner_id || null,
-    };
-  }
-
-  function getDecision(item) {
-    const normalized = normalizeItem(item);
-
-    if (normalized.access_level === "public") {
-      return { allowed: true, gate: "public" };
     }
 
-    return canAccessMediaItem({
-      item: normalized,
-      profile,
-      session,
-    });
-  }
+    void loadSession();
 
-  const categoryFilterValue = useMemo(() => {
-    if (!selectedCategory || selectedCategory === "all") return null;
-    return selectedCategory;
-  }, [selectedCategory]);
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, nextSession) => {
+        setSession(nextSession);
+      }
+    );
 
-  function getDisplayPathForItem(item) {
-    const isSupremeUser = profile?.role === "supreme" || profile?.role === "admin";
+    return () => {
+      active = false;
+      listener?.subscription?.unsubscribe?.();
+    };
+  }, []);
 
-    if (isSupremeUser && item.file_path) return item.file_path;
-
-    if (item.type === "video") return item.file_path;
-
-    if (item.watermarked_path) return item.watermarked_path;
-
-    return item.file_path;
-  }
-
-  async function createSignedUrlForPath(path) {
-    if (!path) return null;
+  const createSignedUrl = useCallback(async (imagePath) => {
+    if (!imagePath) return null;
 
     const { data, error } = await supabase.storage
-      .from("media")
-      .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+      .from(STORAGE_BUCKET)
+      .createSignedUrl(imagePath, SIGNED_URL_SECONDS);
 
     if (error) {
-      console.error("createSignedUrl error:", error, "for path:", path);
+      console.error("Gallery signed URL error:", error);
       return null;
     }
 
     return data?.signedUrl ?? null;
-  }
+  }, []);
 
-  async function processSignedUrlQueue() {
-    if (signedUrlWorkerRunningRef.current) return;
-
-    signedUrlWorkerRunningRef.current = true;
-
-    try {
-      while (signedUrlQueueRef.current.length > 0) {
-        const nextItem = signedUrlQueueRef.current.shift();
-        if (!nextItem) continue;
-
-        const item = normalizeItem(nextItem);
-
-        if (signedUrlsByIdRef.current[item.id]) continue;
-
-        const decision = getDecision(item);
-        if (!decision?.allowed) continue;
-
-        const path = getDisplayPathForItem(item);
-        if (!path) continue;
-
-        const signedUrl = await createSignedUrlForPath(path);
-        if (!signedUrl) continue;
-
-        setSignedUrlsById((prev) => {
-          if (prev[item.id]) return prev;
-
-          const next = { ...prev, [item.id]: signedUrl };
-          signedUrlsByIdRef.current = next;
-          return next;
-        });
-      }
-    } finally {
-      signedUrlWorkerRunningRef.current = false;
-    }
-  }
-
-  function queueSignedUrlsForMedia(newItems) {
-    const itemsToQueue = newItems.filter((raw) => {
-      const item = normalizeItem(raw);
-
-      if (signedUrlsByIdRef.current[item.id]) return false;
-
-      const decision = getDecision(item);
-      if (!decision?.allowed) return false;
-
-      const path = getDisplayPathForItem(item);
-      if (!path) return false;
-
-      if (item.type === "video") return true;
-      if (item.type === "image" && !isVideoPath(path)) return true;
-
-      return false;
-    });
-
-    if (itemsToQueue.length === 0) return;
-
-    signedUrlQueueRef.current.push(...itemsToQueue);
-    void processSignedUrlQueue();
-  }
-
-  function initializeFavoriteCounts(batch, replace = false) {
-    const incomingCounts = {};
-
-    batch.forEach((item) => {
-      incomingCounts[item.id] = item?.favorites?.[0]?.count ?? 0;
-    });
-
-    setFavoriteCountsById((prev) =>
-      replace ? incomingCounts : { ...prev, ...incomingCounts }
-    );
-  }
-
-  async function loadNextPage(isFirstLoad) {
-    if (!hasMore && !isFirstLoad) return;
-    if (fetchingRef.current) return;
-
-    fetchingRef.current = true;
-
-    if (isFirstLoad) {
-      setLoading(true);
-    } else {
-      setLoadingMore(true);
-    }
+  const loadGallery = useCallback(async () => {
+    setLoading(true);
+    setPageError("");
 
     try {
-      const page = pageRef.current;
-      const from = page * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
+      const { data, error } = await supabase
+        .from("gallery_items")
+        .select(
+          "id, title, image_path, is_published, created_at"
+        )
+        .eq("is_published", true)
+        .order("created_at", { ascending: false });
 
-      let q = supabase
-        .from("media_items")
-        .select(`
-          id,
-          title,
-          tagline,
-          quote,
-          category,
-          tags,
-          type,
-          access_level,
-          status,
-          hidden,
-          file_path,
-          watermarked_path,
-          created_at,
-          owner_id,
-          favorites(count),
-          media_comments(count)
-        `)
-        .eq("status", "published")
-        .eq("hidden", false)
-        .order("created_at", { ascending: false })
-        .range(from, to);
+      if (error) throw error;
 
-      if (categoryFilterValue) {
-        q = q.or(`category.eq.${categoryFilterValue},category.eq.${selectedCategory}`);
-      }
+      const rowsWithUrls = await Promise.all(
+        (data ?? []).map(async (item) => ({
+          ...item,
+          signed_url: await createSignedUrl(item.image_path),
+        }))
+      );
 
-      const { data, error } = await q;
+      setItems(
+        rowsWithUrls.filter((item) => Boolean(item.signed_url))
+      );
+    } catch (error) {
+      console.error("Gallery load error:", error);
 
-      if (error) {
-        console.error("Media fetch error:", error);
-        setHasMore(false);
-        return;
-      }
-
-      const batch = (data ?? []).map((item) => ({
-        ...item,
-        uploader_id: item.owner_id,
-        uploader: null,
-      }));
-
-      setItems((prev) => (page === 0 ? batch : [...prev, ...batch]));
-      initializeFavoriteCounts(batch, page === 0);
-
-      if (batch.length < PAGE_SIZE) {
-        setHasMore(false);
-      } else {
-        pageRef.current = page + 1;
-      }
-
-      queueSignedUrlsForMedia(batch);
+      setPageError(
+        error?.message || "The Gallery could not be loaded."
+      );
     } finally {
-      fetchingRef.current = false;
       setLoading(false);
-      setLoadingMore(false);
     }
-  }
+  }, [createSignedUrl]);
 
-  function openAgeModal() {
-    setAgeModalOpen(true);
-  }
+  useEffect(() => {
+    void loadGallery();
+  }, [loadGallery]);
 
-  function closeAgeModal() {
-    setAgeModalOpen(false);
-  }
+  async function loadComments(galleryItemId) {
+    if (!galleryItemId) return;
 
-  async function confirmAgeVerification() {
+    setCommentsLoading(true);
+    setCommentError("");
+
     try {
-      localStorage.setItem("is_age_verified", "true");
+      const { data, error } = await supabase
+        .from("gallery_comments")
+        .select(
+          "id, gallery_item_id, user_id, comment, created_at"
+        )
+        .eq("gallery_item_id", galleryItemId)
+        .order("created_at", { ascending: true });
 
-      if (!session?.user?.id) {
-        setAgeModalOpen(false);
-        navigate("/auth");
-        return;
-      }
+      if (error) throw error;
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_age_verified: true })
-        .eq("id", session.user.id);
+      setComments(data ?? []);
+    } catch (error) {
+      console.error("Gallery comments load error:", error);
 
-      if (error) {
-        console.error("Age verification update error:", error);
-        return;
-      }
-
-      setProfile((prev) => ({
-        ...(prev || { id: session.user.id }),
-        is_age_verified: true,
-      }));
-
-      setAgeModalOpen(false);
-    } catch (e) {
-      console.error("confirmAgeVerification error:", e);
+      setCommentError(
+        error?.message || "Comments could not be loaded."
+      );
+    } finally {
+      setCommentsLoading(false);
     }
   }
 
-  function triggerHeartFlash(mediaId) {
-    if (!mediaId) return;
+  function openItem(item) {
+    setSelectedItem(item);
+    setComments([]);
+    setCommentText("");
+    setCommentError("");
+    setShareMessage("");
 
-    if (heartFlashTimersRef.current[mediaId]) {
-      window.clearTimeout(heartFlashTimersRef.current[mediaId]);
-    }
-
-    setHeartFlashById((prev) => ({
-      ...prev,
-      [mediaId]: true,
-    }));
-
-    heartFlashTimersRef.current[mediaId] = window.setTimeout(() => {
-      setHeartFlashById((prev) => {
-        const next = { ...prev };
-        delete next[mediaId];
-        return next;
-      });
-
-      delete heartFlashTimersRef.current[mediaId];
-    }, HEART_FLASH_DURATION);
+    void loadComments(item.id);
   }
 
-  async function toggleFavorite(mediaId, decision, options = {}) {
-    if (!decision?.allowed) return;
+  function closeItem() {
+    setSelectedItem(null);
+    setComments([]);
+    setCommentText("");
+    setCommentError("");
+    setShareMessage("");
+  }
+
+  async function submitComment(event) {
+    event.preventDefault();
+
+    if (!selectedItem?.id) return;
 
     if (!session?.user?.id) {
-      navigate("/auth");
+      window.location.href = "/auth";
       return;
     }
 
-    if (favoritePendingRef.current.has(mediaId)) return;
+    const cleanComment = commentText.trim();
 
-    favoritePendingRef.current.add(mediaId);
-
-    const userId = session.user.id;
-    const isFav = favoritesSet.has(mediaId);
-    const shouldFlash = options.flash !== false;
-
-    setFavoritesSet((prev) => {
-      const next = new Set(prev);
-      if (isFav) next.delete(mediaId);
-      else next.add(mediaId);
-      return next;
-    });
-
-    setFavoriteCountsById((prev) => {
-      const currentCount = prev[mediaId] ?? 0;
-      return {
-        ...prev,
-        [mediaId]: Math.max(0, currentCount + (isFav ? -1 : 1)),
-      };
-    });
-
-    if (shouldFlash && !isFav) {
-      triggerHeartFlash(mediaId);
+    if (!cleanComment) {
+      setCommentError("Enter a comment first.");
+      return;
     }
+
+    if (cleanComment.length > 600) {
+      setCommentError(
+        "Comments must be 600 characters or fewer."
+      );
+      return;
+    }
+
+    setCommentSubmitting(true);
+    setCommentError("");
 
     try {
-      if (isFav) {
-        const { error } = await supabase
-          .from("favorites")
-          .delete()
-          .eq("user_id", userId)
-          .eq("media_id", mediaId);
+      const { data, error } = await supabase
+        .from("gallery_comments")
+        .insert({
+          gallery_item_id: selectedItem.id,
+          user_id: session.user.id,
+          comment: cleanComment,
+        })
+        .select(
+          "id, gallery_item_id, user_id, comment, created_at"
+        )
+        .single();
 
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("favorites")
-          .insert({ user_id: userId, media_id: mediaId });
+      if (error) throw error;
 
-        if (error) throw error;
-      }
-    } catch (e) {
-      console.error("Favorite toggle error:", e);
+      setComments((current) => [...current, data]);
+      setCommentText("");
+    } catch (error) {
+      console.error("Gallery comment error:", error);
 
-      setFavoritesSet((prev) => {
-        const next = new Set(prev);
-        if (isFav) next.add(mediaId);
-        else next.delete(mediaId);
-        return next;
-      });
-
-      setFavoriteCountsById((prev) => {
-        const currentCount = prev[mediaId] ?? 0;
-        return {
-          ...prev,
-          [mediaId]: Math.max(0, currentCount + (isFav ? 1 : -1)),
-        };
-      });
+      setCommentError(
+        error?.message || "Your comment could not be posted."
+      );
     } finally {
-      favoritePendingRef.current.delete(mediaId);
+      setCommentSubmitting(false);
     }
   }
 
-  function clearPendingOpen(mediaId) {
-    if (openTimersRef.current[mediaId]) {
-      window.clearTimeout(openTimersRef.current[mediaId]);
-      delete openTimersRef.current[mediaId];
+  async function shareItem(item) {
+    if (!item) return;
+
+    const shareUrl = `${window.location.origin}/gallery?item=${item.id}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: item.title || "The Aset Studio Gallery",
+          text: "View this artwork in The Aset Studio Gallery.",
+          url: shareUrl,
+        });
+
+        setShareMessage("Shared.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      setShareMessage("Gallery link copied.");
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        console.error("Gallery share error:", error);
+        setShareMessage("The link could not be copied.");
+      }
     }
   }
 
-  function handleMediaOpen(mediaId) {
-    navigate(`/media/${mediaId}`);
-  }
+  function formatDate(dateValue) {
+    if (!dateValue) return "";
 
-  function handleThumbInteraction(mediaId, decision) {
-    const now = Date.now();
-    const lastTapAt = lastTapRef.current[mediaId] ?? 0;
-    const isDoubleTap = now - lastTapAt <= DOUBLE_TAP_DELAY;
-
-    if (isDoubleTap) {
-      clearPendingOpen(mediaId);
-      lastTapRef.current[mediaId] = 0;
-      void toggleFavorite(mediaId, decision, { flash: true });
-      return;
-    }
-
-    lastTapRef.current[mediaId] = now;
-    clearPendingOpen(mediaId);
-
-    openTimersRef.current[mediaId] = window.setTimeout(() => {
-      delete openTimersRef.current[mediaId];
-      lastTapRef.current[mediaId] = 0;
-      handleMediaOpen(mediaId);
-    }, DOUBLE_TAP_DELAY);
-  }
-
-  function handleMediaError(item) {
-    setSignedUrlsById((prev) => {
-      if (!prev[item.id]) return prev;
-
-      const next = { ...prev };
-      delete next[item.id];
-      signedUrlsByIdRef.current = next;
-      return next;
-    });
-
-    const decision = getDecision(item);
-    if (!decision?.allowed) return;
-
-    const path = getDisplayPathForItem(item);
-    if (!path) return;
-
-    signedUrlQueueRef.current.push(item);
-    void processSignedUrlQueue();
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(new Date(dateValue));
   }
 
   return (
-    <div className="gallery-page">
-      <style>
-        {`
-          .gallery-thumb {
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            background: rgba(255,255,255,0.04);
-          }
+    <main className="aset-gallery-page">
+      <style>{galleryStyles}</style>
 
-          .gallery-thumb img,
-          .gallery-video-preview {
-            display: block;
-            width: 100%;
-            height: auto;
-            min-height: 220px;
-            object-fit: cover;
-            background: rgba(255,255,255,0.04);
-          }
+      <section className="aset-gallery-hero">
+        <div className="aset-gallery-hero-inner">
+          <p className="aset-gallery-eyebrow">
+            THE ASET STUDIO
+          </p>
 
-          .gallery-thumb-skeleton {
-            width: 100%;
-            aspect-ratio: 4 / 5;
-            background: rgba(255,255,255,0.04);
-          }
+          <h1 className="aset-gallery-title">
+            Gallery
+          </h1>
 
-          .gallery-video-wrap {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 4 / 5;
-            overflow: hidden;
-            background: rgba(255,255,255,0.04);
-          }
-
-          .gallery-video-preview,
-          .gallery-video-fallback {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-          }
-
-          .gallery-video-fallback {
-            display: block;
-            opacity: 0.88;
-          }
-
-          .gallery-video-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-              to bottom,
-              rgba(0, 0, 0, 0.12),
-              rgba(0, 0, 0, 0.38)
-            );
-            pointer-events: none;
-          }
-
-          .gallery-video-pill {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            z-index: 2;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: rgba(0,0,0,0.55);
-            border: 1px solid rgba(255,255,255,0.12);
-            font-size: 12px;
-            letter-spacing: 0.08em;
-            pointer-events: none;
-          }
-
-          .gallery-video-play {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            z-index: 2;
-            transform: translate(-50%, -50%);
-            width: 64px;
-            height: 64px;
-            border-radius: 999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.18);
-            font-size: 24px;
-            line-height: 1;
-            pointer-events: none;
-          }
-
-          .gallery-heart-flash {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-            z-index: 3;
-            background: rgba(0, 0, 0, 0.08);
-            animation: galleryHeartFlashFade ${HEART_FLASH_DURATION}ms ease forwards;
-          }
-
-          .gallery-heart-flash-icon {
-            font-size: clamp(44px, 10vw, 72px);
-            line-height: 1;
-            transform: scale(0.6);
-            filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.35));
-            animation: galleryHeartFlashPop ${HEART_FLASH_DURATION}ms ease forwards;
-            user-select: none;
-          }
-
-          @keyframes galleryHeartFlashPop {
-            0% {
-              opacity: 0;
-              transform: scale(0.45);
-            }
-            35% {
-              opacity: 1;
-              transform: scale(1.18);
-            }
-            100% {
-              opacity: 0;
-              transform: scale(1);
-            }
-          }
-
-          @keyframes galleryHeartFlashFade {
-            0% {
-              opacity: 0;
-            }
-            20% {
-              opacity: 1;
-            }
-            100% {
-              opacity: 0;
-            }
-          }
-        `}
-      </style>
-
-      <div className="gallery-header">
-        <h1 className="gallery-title">Gallery</h1>
-
-        <div className="gallery-filters">
-          <select
-            className="gallery-select"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            <option value="all">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.slug ?? c.name}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <p className="aset-gallery-intro">
+            A curated exhibition of original visual work from
+            The Aset Studio.
+          </p>
         </div>
-      </div>
+      </section>
 
-      {loading && items.length === 0 ? (
-        <div className="gallery-loading">Loading…</div>
-      ) : (
-        <div className="gallery-grid">
-          {items.map((raw) => {
-            const item = normalizeItem(raw);
-            const decision = getDecision(item);
+      <section className="aset-gallery-content">
+        {loading ? (
+          <div className="aset-gallery-state">
+            Preparing the Gallery...
+          </div>
+        ) : pageError ? (
+          <div className="aset-gallery-state aset-gallery-error">
+            {pageError}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="aset-gallery-empty">
+            <p className="aset-gallery-eyebrow">
+              CURRENTLY CURATING
+            </p>
 
-            const isLocked = !decision?.allowed;
-            const isFav = favoritesSet.has(item.id);
-            const isHeartFlashing = Boolean(heartFlashById[item.id]);
-            const isVideo = item.type === "video";
-            const signedUrl = signedUrlsById[item.id] || null;
+            <h2 className="aset-gallery-empty-title">
+              The next exhibition is in preparation.
+            </h2>
 
-            const favCount =
-              favoriteCountsById[item.id] ?? item?.favorites?.[0]?.count ?? 0;
+            <p className="aset-gallery-empty-text">
+              New works will appear here as they are added to
+              The Aset Studio Gallery.
+            </p>
+          </div>
+        ) : (
+          <div className="aset-gallery-grid">
+            {items.map((item) => (
+              <article
+                className="aset-gallery-card"
+                key={item.id}
+              >
+                <button
+                  className="aset-gallery-image-button"
+                  type="button"
+                  onClick={() => openItem(item)}
+                  aria-label={`Open ${item.title}`}
+                >
+                  <img
+                    className="aset-gallery-image"
+                    src={item.signed_url}
+                    alt={item.title}
+                    loading="lazy"
+                  />
+                </button>
 
-            const commentCount = item?.media_comments?.[0]?.count ?? 0;
+                <div className="aset-gallery-card-body">
+                  <h2 className="aset-gallery-card-title">
+                    {item.title}
+                  </h2>
 
-            if (isLocked) {
-              const isBoudoir = item.access_level === "boudoir";
-              const badgeText = isBoudoir ? "AGE VERIFIED" : "SUPREME ACCESS";
-              const subtitle = isBoudoir
-                ? "Verify your age to view boudoir content."
-                : "Unlock this content with Supreme Access.";
+                  <div className="aset-gallery-card-actions">
+                    <button
+                      className="aset-gallery-action-button"
+                      type="button"
+                      onClick={() => openItem(item)}
+                    >
+                      Comments
+                    </button>
 
-              const buttonText = isBoudoir ? "Verify Age" : "Unlock with Supreme";
-
-              const buttonAction = isBoudoir
-                ? () => openAgeModal()
-                : () => navigate("/supreme-access");
-
-              return (
-                <div key={item.id} className="gallery-card locked">
-                  <div className="locked-media">
-                    <img
-                      src={lockedPreview}
-                      alt="Locked content preview"
-                      className="locked-img"
-                      loading="lazy"
-                    />
-
-                    <div className="locked-overlay">
-                      <div className="locked-badge">{badgeText}</div>
-
-                      <div className="locked-center">
-                        <div className="locked-icon">🔒</div>
-                        <div className="locked-title">Locked</div>
-                        <div className="locked-subtitle">{subtitle}</div>
-
-                        <button className="locked-btn" onClick={buttonAction}>
-                          {buttonText}
-                        </button>
-                      </div>
-                    </div>
+                    <button
+                      className="aset-gallery-action-button"
+                      type="button"
+                      onClick={() => shareItem(item)}
+                    >
+                      Share
+                    </button>
                   </div>
                 </div>
-              );
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {selectedItem ? (
+        <div
+          className="aset-gallery-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeItem();
             }
+          }}
+        >
+          <section
+            className="aset-gallery-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={selectedItem.title}
+          >
+            <div className="aset-gallery-modal-image-wrap">
+              <img
+                className="aset-gallery-modal-image"
+                src={selectedItem.signed_url}
+                alt={selectedItem.title}
+              />
+            </div>
 
-            return (
-              <div key={item.id} className="gallery-card">
-                <div
-                  className="gallery-thumb"
-                  onClick={() => handleThumbInteraction(item.id, decision)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      clearPendingOpen(item.id);
-                      lastTapRef.current[item.id] = 0;
-                      navigate(`/media/${item.id}`);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
+            <aside className="aset-gallery-modal-sidebar">
+              <button
+                className="aset-gallery-close"
+                type="button"
+                onClick={closeItem}
+                aria-label="Close artwork"
+              >
+                ×
+              </button>
+
+              <p className="aset-gallery-modal-eyebrow">
+                THE ASET STUDIO GALLERY
+              </p>
+
+              <h2 className="aset-gallery-modal-title">
+                {selectedItem.title}
+              </h2>
+
+              <div className="aset-gallery-share-row">
+                <button
+                  className="aset-gallery-action-button"
+                  type="button"
+                  onClick={() => shareItem(selectedItem)}
                 >
-                  {isVideo ? (
-                    <div className="gallery-video-wrap">
-                      {signedUrl ? (
-                        <video
-                          src={signedUrl}
-                          className="gallery-video-preview"
-                          muted
-                          playsInline
-                          preload="metadata"
-                          onError={() => handleMediaError(item)}
-                        />
-                      ) : (
-                        <img
-                          src={videoPoster}
-                          alt="Video preview"
-                          className="gallery-video-fallback"
-                          loading="lazy"
-                          draggable="false"
-                        />
-                      )}
+                  Share Artwork
+                </button>
 
-                      <div className="gallery-video-overlay" />
-                      <div className="gallery-video-pill">VIDEO</div>
-                      <div className="gallery-video-play">▶</div>
-                    </div>
-                  ) : signedUrl ? (
-                    <img
-                      src={signedUrl}
-                      alt={item.title ?? "Media"}
-                      loading="lazy"
-                      draggable="false"
-                      onError={() => handleMediaError(item)}
-                    />
-                  ) : (
-                    <div className="gallery-thumb-skeleton" />
-                  )}
+                {shareMessage ? (
+                  <span className="aset-gallery-share-message">
+                    {shareMessage}
+                  </span>
+                ) : null}
+              </div>
 
-                  {isHeartFlashing ? (
-                    <div className="gallery-heart-flash" aria-hidden="true">
-                      <div className="gallery-heart-flash-icon">♥</div>
+              <section className="aset-gallery-comments">
+                <h3 className="aset-gallery-comments-title">
+                  Comments
+                </h3>
+
+                {commentsLoading ? (
+                  <p className="aset-gallery-muted">
+                    Loading comments...
+                  </p>
+                ) : comments.length === 0 ? (
+                  <p className="aset-gallery-muted">
+                    No comments yet.
+                  </p>
+                ) : (
+                  <div className="aset-gallery-comment-list">
+                    {comments.map((comment) => (
+                      <article
+                        className="aset-gallery-comment"
+                        key={comment.id}
+                      >
+                        <p className="aset-gallery-comment-text">
+                          {comment.comment}
+                        </p>
+
+                        <div className="aset-gallery-comment-date">
+                          Studio Member ·{" "}
+                          {formatDate(comment.created_at)}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+
+                <form
+                  className="aset-gallery-comment-form"
+                  onSubmit={submitComment}
+                >
+                  <textarea
+                    className="aset-gallery-comment-input"
+                    value={commentText}
+                    onChange={(event) =>
+                      setCommentText(event.target.value)
+                    }
+                    placeholder={
+                      session?.user
+                        ? "Write a comment..."
+                        : "Sign in to leave a comment..."
+                    }
+                    maxLength={600}
+                    disabled={commentSubmitting}
+                  />
+
+                  {commentError ? (
+                    <div className="aset-gallery-comment-error">
+                      {commentError}
                     </div>
                   ) : null}
-                </div>
-
-                <div className="gallery-meta">
-                  <div className="gallery-meta-text">
-                    <div className="gallery-item-title">{item.title ?? ""}</div>
-                    <div className="gallery-item-tagline">{item.tagline ?? ""}</div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 12,
-                        alignItems: "center",
-                        marginTop: 8,
-                        fontSize: 13,
-                        opacity: 0.85,
-                      }}
-                    >
-                      {favCount > 0 ? <span>❤️ {favCount}</span> : null}
-                      {commentCount > 0 ? <span>💬 {commentCount}</span> : null}
-                      {favCount === 0 && commentCount === 0 ? (
-                        <span style={{ opacity: 0.65 }}>—</span>
-                      ) : null}
-                    </div>
-                  </div>
 
                   <button
-                    type="button"
-                    className={`fav-btn ${isFav ? "is-fav" : ""}`}
-                    onClick={() => toggleFavorite(item.id, decision, { flash: true })}
-                    title={session?.user?.id ? "Toggle favorite" : "Login required"}
+                    className="aset-gallery-submit-comment"
+                    type="submit"
+                    disabled={commentSubmitting}
                   >
-                    {isFav ? "♥" : "♡"}
+                    {session?.user
+                      ? commentSubmitting
+                        ? "Posting..."
+                        : "Post Comment"
+                      : "Sign In to Comment"}
                   </button>
-                </div>
-              </div>
-            );
-          })}
+                </form>
+              </section>
+            </aside>
+          </section>
         </div>
-      )}
-
-      <div ref={sentinelRef} style={{ height: 1 }} />
-
-      {loadingMore ? <div className="gallery-loading-more">Loading more…</div> : null}
-
-      {!hasMore && items.length > 0 ? (
-        <div className="gallery-end">End of gallery</div>
       ) : null}
-
-      <AgeVerificationModal
-        open={ageModalOpen}
-        onCancel={closeAgeModal}
-        onConfirm={confirmAgeVerification}
-      />
-    </div>
+    </main>
   );
 }
+
+const galleryStyles = `
+  .aset-gallery-page {
+    min-height: 100vh;
+    padding-bottom: 110px;
+    background: #050505;
+    color: #f4efe6;
+    font-family: Arial, sans-serif;
+  }
+
+  .aset-gallery-hero {
+    min-height: 52vh;
+    padding: 90px 7vw 68px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: flex-end;
+    background:
+      radial-gradient(
+        circle at 72% 20%,
+        rgba(194, 149, 76, 0.16),
+        transparent 34%
+      ),
+      linear-gradient(135deg, #080808, #040404);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .aset-gallery-hero-inner {
+    width: min(100%, 1180px);
+    margin: 0 auto;
+  }
+
+  .aset-gallery-eyebrow,
+  .aset-gallery-modal-eyebrow {
+    margin: 0 0 15px;
+    color: #d8af6a;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.24em;
+  }
+
+  .aset-gallery-title {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(4rem, 12vw, 9rem);
+    font-weight: 500;
+    line-height: 0.88;
+    letter-spacing: -0.065em;
+  }
+
+  .aset-gallery-intro {
+    max-width: 590px;
+    margin: 28px 0 0;
+    color: #aaa39a;
+    font-size: 15px;
+    line-height: 1.85;
+  }
+
+  .aset-gallery-content {
+    width: min(100%, 1600px);
+    margin: 0 auto;
+    padding: 70px 60px 0;
+    box-sizing: border-box;
+  }
+
+  .aset-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 32px;
+    align-items: start;
+  }
+
+  .aset-gallery-card {
+    width: 100%;
+    overflow: hidden;
+    background: #0d0d0d;
+    border: 1px solid rgba(255,255,255,0.09);
+    transition:
+      transform 250ms ease,
+      border-color 250ms ease,
+      box-shadow 250ms ease;
+  }
+
+  .aset-gallery-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(216,175,106,0.4);
+    box-shadow: 0 20px 55px rgba(0,0,0,0.42);
+  }
+
+  .aset-gallery-image-button {
+    width: 100%;
+    padding: 0;
+    display: block;
+    overflow: hidden;
+    border: none;
+    background: #090909;
+    cursor: pointer;
+  }
+
+  .aset-gallery-image {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    display: block;
+    object-fit: cover;
+    transition: transform 400ms ease;
+  }
+
+  .aset-gallery-image-button:hover .aset-gallery-image {
+    transform: scale(1.03);
+  }
+
+  .aset-gallery-card-body {
+    padding: 20px;
+  }
+
+  .aset-gallery-card-title {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1.15;
+  }
+
+  .aset-gallery-card-actions {
+    margin-top: 17px;
+    display: flex;
+    gap: 9px;
+    flex-wrap: wrap;
+  }
+
+  .aset-gallery-action-button {
+    min-height: 37px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.13);
+    background: #151515;
+    color: #eae4db;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 800;
+    transition:
+      border-color 180ms ease,
+      color 180ms ease,
+      background 180ms ease;
+  }
+
+  .aset-gallery-action-button:hover {
+    border-color: rgba(216,175,106,0.5);
+    color: #e2bd7b;
+    background: #191919;
+  }
+
+  .aset-gallery-state,
+  .aset-gallery-empty {
+    padding: 100px 24px;
+    text-align: center;
+    background: #0a0a0a;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .aset-gallery-error {
+    color: #efc5c5;
+  }
+
+  .aset-gallery-empty-title {
+    max-width: 850px;
+    margin: 0 auto;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(2.6rem, 7vw, 5.5rem);
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .aset-gallery-empty-text {
+    max-width: 560px;
+    margin: 20px auto 0;
+    color: #918b83;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .aset-gallery-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    padding: 24px;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.93);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .aset-gallery-modal {
+    width: min(100%, 1280px);
+    max-height: calc(100vh - 48px);
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1.45fr)
+      minmax(330px, 0.7fr);
+    overflow: hidden;
+    background: #0b0b0b;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 40px 120px rgba(0,0,0,0.65);
+  }
+
+  .aset-gallery-modal-image-wrap {
+    min-height: 640px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #030303;
+  }
+
+  .aset-gallery-modal-image {
+    width: 100%;
+    height: 100%;
+    max-height: calc(100vh - 48px);
+    display: block;
+    object-fit: contain;
+  }
+
+  .aset-gallery-modal-sidebar {
+    max-height: calc(100vh - 48px);
+    padding: 28px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    border-left: 1px solid rgba(255,255,255,0.09);
+  }
+
+  .aset-gallery-close {
+    width: 42px;
+    height: 42px;
+    margin-left: auto;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: #151515;
+    color: white;
+    cursor: pointer;
+    font-size: 18px;
+  }
+
+  .aset-gallery-modal-eyebrow {
+    margin-top: 28px;
+  }
+
+  .aset-gallery-modal-title {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(2.3rem, 4vw, 4.3rem);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+
+  .aset-gallery-share-row {
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .aset-gallery-share-message {
+    color: #d8af6a;
+    font-size: 11px;
+  }
+
+  .aset-gallery-comments {
+    margin-top: 34px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .aset-gallery-comments-title {
+    margin: 0 0 18px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 25px;
+    font-weight: 500;
+  }
+
+  .aset-gallery-muted {
+    color: #918b83;
+    font-size: 13px;
+  }
+
+  .aset-gallery-comment-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .aset-gallery-comment {
+    padding: 14px;
+    background: #141414;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .aset-gallery-comment-text {
+    margin: 0;
+    color: #ddd7ce;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+
+  .aset-gallery-comment-date {
+    margin-top: 9px;
+    color: #736e67;
+    font-size: 10px;
+  }
+
+  .aset-gallery-comment-form {
+    margin-top: 20px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .aset-gallery-comment-input {
+    width: 100%;
+    min-height: 110px;
+    padding: 13px;
+    box-sizing: border-box;
+    resize: vertical;
+    outline: none;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.13);
+    background: #151515;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+  }
+
+  .aset-gallery-comment-error {
+    color: #efbcbc;
+    font-size: 11px;
+  }
+
+  .aset-gallery-submit-comment {
+    min-height: 43px;
+    border: none;
+    border-radius: 4px;
+    background: #d8af6a;
+    color: #090807;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .aset-gallery-submit-comment:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 1200px) {
+    .aset-gallery-content {
+      padding-left: 32px;
+      padding-right: 32px;
+    }
+
+    .aset-gallery-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 26px;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .aset-gallery-modal {
+      grid-template-columns: 1fr;
+      max-height: none;
+    }
+
+    .aset-gallery-modal-image-wrap {
+      min-height: auto;
+    }
+
+    .aset-gallery-modal-image {
+      max-height: 72vh;
+    }
+
+    .aset-gallery-modal-sidebar {
+      max-height: none;
+      border-left: none;
+      border-top: 1px solid rgba(255,255,255,0.09);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .aset-gallery-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .aset-gallery-content {
+      padding: 40px 20px 0;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .aset-gallery-hero {
+      min-height: 44vh;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+
+    .aset-gallery-card-title {
+      font-size: 24px;
+    }
+
+    .aset-gallery-modal-backdrop {
+      padding: 0;
+      display: block;
+    }
+
+    .aset-gallery-modal {
+      width: 100%;
+      min-height: 100vh;
+      border: none;
+    }
+  }
+`;

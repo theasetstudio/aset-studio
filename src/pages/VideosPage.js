@@ -1,106 +1,161 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import "./VideosPage.css";
+import "../components/cinema/VideosPage.css";
 
-const SIGNED_URL_TTL_SECONDS = 600;
+import CinemaHero from "../components/cinema/CinemaHero";
+import FeaturedPremiere from "../components/cinema/FeaturedPremiere";
+import CinemaToolbar from "../components/cinema/CinemaToolbar";
+import CinemaRow from "../components/cinema/CinemaRow";
+import CinemaCollectionHub from "../components/cinema/CinemaCollectionHub";
+import ComingSoon from "../components/cinema/ComingSoon";
+import CinemaManifesto from "../components/cinema/CinemaManifesto";
 
-function clean(value) {
-  return String(value || "").trim();
-}
+import {
+  CinemaEmpty,
+  CinemaError,
+  CinemaLoading,
+} from "../components/cinema/CinemaStatus";
 
-function norm(value) {
-  return clean(value).toLowerCase();
-}
+import {
+  ENTERTAINMENT_COLLECTION,
+  FILTER_OPTIONS,
+  INTERVIEW_COLLECTION,
+  PRIMARY_ROWS,
+  UPCOMING_TERMS,
+} from "../components/cinema/cinemaConfig";
 
-function isVideoFile(path) {
-  const value = norm(path);
+import {
+  SIGNED_URL_TTL_SECONDS,
+  clean,
+  getMediaPath,
+  isApprovedForCinema,
+  isGalleryOnly,
+  isVideoFile,
+  matches,
+  norm,
+  roomMatches,
+  textPool,
+  uniqueItems,
+} from "../components/cinema/cinemaUtils";
 
-  return (
-    value.endsWith(".mp4") ||
-    value.endsWith(".mov") ||
-    value.endsWith(".webm")
-  );
-}
+const CONTINUE_WATCHING_LIMIT = 10;
+const COMPLETION_PERCENTAGE = 0.95;
+const MINIMUM_PROGRESS_SECONDS = 2;
 
-function safariFrame(url) {
-  return url ? `${url}#t=0.1` : "";
-}
-
-function textPool(item) {
-  return `${item.category || ""} ${item.section || ""} ${
-    item.collection || ""
-  } ${item.type || ""} ${item.title || ""} ${item.description || ""} ${
-    item.tagline || ""
-  } ${item.quote || ""}`.toLowerCase();
-}
-
-function matches(item, terms) {
-  const text = textPool(item);
-  return terms.some((term) => text.includes(term));
-}
-
-function isGalleryOnly(item) {
-  const text = textPool(item);
-
-  return (
-    text.includes("gallery") ||
-    text.includes("visual art") ||
-    text.includes("image gallery") ||
-    text.includes("ai video") ||
-    text.includes("ai visual") ||
-    text.includes("experiment") ||
-    text.includes("mood piece")
-  );
-}
-
-function isApprovedForCinema(item) {
-  const text = textPool(item);
-
-  return (
-    item.show_in_cinema === true ||
-    item.cinema_approved === true ||
-    item.is_cinema === true ||
-    text.includes("aset cinema") ||
-    text.includes("cinema release") ||
-    text.includes("studio original") ||
-    text.includes("official screening")
-  );
-}
-
-function uniqueItems(items) {
-  const seen = new Set();
-
-  return items.filter((item) => {
-    if (!item?.id || seen.has(item.id)) return false;
-    seen.add(item.id);
-    return true;
-  });
+function safeNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
 }
 
 export default function VideosPage() {
+  const [session, setSession] = useState(null);
+
   const [cinemaItems, setCinemaItems] = useState([]);
   const [previewUrls, setPreviewUrls] = useState({});
+
+  const [watchHistory, setWatchHistory] = useState([]);
+  const [loadingWatchHistory, setLoadingWatchHistory] = useState(false);
+
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  const [activeFilter, setActiveFilter] = useState("All Cinema");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [mutedHero, setMutedHero] = useState(true);
+
+  const libraryRef = useRef(null);
+
+  const userId = session?.user?.id || null;
 
   const getSignedUrl = useCallback(async (path) => {
     const cleanPath = clean(path).replace(/^\/+/, "");
-    if (!cleanPath) return "";
 
-    const { data, error } = await supabase.storage
-      .from("media")
-      .createSignedUrl(cleanPath, SIGNED_URL_TTL_SECONDS);
-
-    if (error || !data?.signedUrl) {
-      console.error("Signed URL Error:", error);
+    if (!cleanPath) {
       return "";
     }
 
-    return data.signedUrl;
+    try {
+      const { data, error } = await supabase.storage
+        .from("media")
+        .createSignedUrl(
+          cleanPath,
+          SIGNED_URL_TTL_SECONDS
+        );
+
+      if (error) {
+        console.error(
+          "The Aset Cinema signed URL error:",
+          cleanPath,
+          error
+        );
+
+        return "";
+      }
+
+      return data?.signedUrl || "";
+    } catch (error) {
+      console.error(
+        "The Aset Cinema signed URL request failed:",
+        cleanPath,
+        error
+      );
+
+      return "";
+    }
   }, []);
 
+  /*
+   * Load the signed-in session.
+   * Continue Watching remains private to the current account.
+   */
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadSession() {
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
+
+      if (!mounted) {
+        return;
+      }
+
+      setSession(currentSession || null);
+    }
+
+    loadSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event, nextSession) => {
+        if (!mounted) {
+          return;
+        }
+
+        setSession(nextSession || null);
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  /*
+   * Load all published Cinema videos.
+   */
   const loadCinemaItems = useCallback(async () => {
     setLoading(true);
+    setLoadError("");
 
     try {
       const { data, error } = await supabase
@@ -108,35 +163,68 @@ export default function VideosPage() {
         .select("*")
         .eq("status", "published")
         .eq("is_hidden", false)
-        .order("created_at", { ascending: false });
+        .order("created_at", {
+          ascending: false,
+        });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      const approvedCinemaItems = (data || []).filter((item) => {
-        const filePath = clean(item.file_path);
-        const watermarkedPath = clean(item.watermarked_path);
+      const publishedItems = Array.isArray(data)
+        ? data
+        : [];
 
-        return (
-          (isVideoFile(filePath) || isVideoFile(watermarkedPath)) &&
-          isApprovedForCinema(item) &&
-          !isGalleryOnly(item)
+      const publishedVideos = publishedItems.filter(
+        (item) => {
+          const mediaPath = getMediaPath(item);
+
+          return (
+            Boolean(mediaPath) &&
+            isVideoFile(mediaPath) &&
+            !isGalleryOnly(item)
+          );
+        }
+      );
+
+      const explicitlyApprovedVideos =
+        publishedVideos.filter((item) =>
+          isApprovedForCinema(item)
         );
-      });
 
-      const urlEntries = await Promise.all(
-        approvedCinemaItems.map(async (item) => {
-          const path = item.watermarked_path || item.file_path || "";
-          const signedUrl = await getSignedUrl(path);
+      /*
+       * Older uploads may not contain newer Cinema flags.
+       * If none are explicitly approved, display all valid videos.
+       */
+      const selectedCinemaItems =
+        explicitlyApprovedVideos.length > 0
+          ? explicitlyApprovedVideos
+          : publishedVideos;
+
+      const signedEntries = await Promise.all(
+        selectedCinemaItems.map(async (item) => {
+          const mediaPath = getMediaPath(item);
+          const signedUrl = await getSignedUrl(mediaPath);
+
           return [item.id, signedUrl];
         })
       );
 
-      setCinemaItems(approvedCinemaItems);
-      setPreviewUrls(Object.fromEntries(urlEntries));
+      setCinemaItems(selectedCinemaItems);
+      setPreviewUrls(
+        Object.fromEntries(signedEntries)
+      );
     } catch (error) {
-      console.error("Cinema Fetch Error:", error);
+      console.error(
+        "The Aset Cinema loading error:",
+        error
+      );
+
       setCinemaItems([]);
       setPreviewUrls({});
+      setLoadError(
+        "The cinema could not connect to the screening library. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -146,242 +234,569 @@ export default function VideosPage() {
     loadCinemaItems();
   }, [loadCinemaItems]);
 
-  const releaseRooms = useMemo(() => {
-    return [
-      {
-        title: "Cinematic Releases",
-        subtitle: "FEATURED CINEMA",
-        message: "Curated cinematic releases are being prepared.",
-        items: uniqueItems(
-          cinemaItems.filter((item) =>
-            matches(item, [
-              "cinematic",
-              "cinema release",
-              "screening",
-              "official screening",
-            ])
-          )
-        ),
-      },
-      {
-        title: "Interviews",
-        subtitle: "PRIVATE CONVERSATIONS",
-        message: "Interview features are being prepared.",
-        items: uniqueItems(
-          cinemaItems.filter((item) =>
-            matches(item, ["interview", "conversation", "private"])
-          )
-        ),
-      },
-      {
-        title: "Performance Room",
-        subtitle: "MONOLOGUES & READS",
-        message: "Monologue performances are being prepared.",
-        items: uniqueItems(
-          cinemaItems.filter((item) =>
-            matches(item, [
-              "monologue",
-              "performance room",
-              "actor",
-              "acting",
-              "audition",
-              "character read",
-              "script reading",
-              "scene study",
-              "self tape",
-            ])
-          )
-        ),
-      },
-      {
-        title: "Hot Takes",
-        subtitle: "COMMENTARY ROOM",
-        message: "Hot Takes are being prepared.",
-        items: uniqueItems(
-          cinemaItems.filter((item) =>
-            matches(item, ["hot take", "commentary", "reaction"])
-          )
-        ),
-      },
-      {
-        title: "Films",
-        subtitle: "FEATURE FILMS & SHORTS",
-        message: "Film releases are being prepared.",
-        items: uniqueItems(
-          cinemaItems.filter((item) =>
-            matches(item, [
-              "film",
-              "movie",
-              "short film",
-              "feature film",
-              "independent film",
-            ])
-          )
-        ),
-      },
-      {
-        title: "Comedy Corner",
-        subtitle: "LAUGHTER LIVES HERE",
-        message: "Comedy Corner is coming soon.",
-        items: uniqueItems(
-          cinemaItems.filter((item) =>
-            matches(item, [
-              "comedy",
-              "stand up",
-              "stand-up",
-              "standup",
-              "sketch",
-              "comedian",
-            ])
-          )
-        ),
-      },
-      {
-        title: "Music Videos",
-        subtitle: "PERFORMANCE VISUALS",
-        message: "Music video releases are being prepared.",
-        items: uniqueItems(
-          cinemaItems.filter((item) =>
-            matches(item, ["music video", "performance visual"])
-          )
-        ),
-      },
-      {
-        title: "Studio Releases",
-        subtitle: "STUDIO ORIGINALS",
-        message: "Studio releases are being prepared.",
-        items: uniqueItems(
-          cinemaItems.filter((item) =>
-            matches(item, [
-              "studio release",
-              "studio_release",
-              "studio original",
-            ])
-          )
-        ),
-      },
-      {
-        title: "Red Carpet",
-        subtitle: "EVENT COVERAGE",
-        message: "Red carpet moments are being prepared.",
-        items: uniqueItems(
-          cinemaItems.filter((item) =>
-            matches(item, ["red carpet", "event coverage", "premiere"])
-          )
-        ),
-      },
-    ];
-  }, [cinemaItems]);
-
-  function renderMiniCards(items) {
-    const previewItems = items.slice(0, 4);
-
-    if (previewItems.length > 0) {
-      return previewItems.map((item) => {
-        const previewUrl = previewUrls[item.id] || "";
-
-        return (
-          <Link
-            key={item.id}
-            to={`/media/${item.id}`}
-            className="release-mini-card"
-          >
-            {previewUrl ? (
-              <video
-                src={safariFrame(previewUrl)}
-                muted
-                playsInline
-                preload="metadata"
-              />
-            ) : (
-              <span />
-            )}
-          </Link>
-        );
-      });
+  /*
+   * Load the current viewer's unfinished watch history.
+   */
+  const loadWatchHistory = useCallback(async () => {
+    if (!userId) {
+      setWatchHistory([]);
+      return;
     }
 
-    return [1, 2, 3, 4].map((item) => (
-      <div className="release-mini-card is-empty" key={item}>
-        <span />
-      </div>
-    ));
+    setLoadingWatchHistory(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("watch_history")
+        .select(`
+          media_id,
+          progress_seconds,
+          duration_seconds,
+          completed,
+          updated_at
+        `)
+        .eq("user_id", userId)
+        .eq("completed", false)
+        .order("updated_at", {
+          ascending: false,
+        })
+        .limit(CONTINUE_WATCHING_LIMIT);
+
+      if (error) {
+        throw error;
+      }
+
+      const unfinishedHistory = (
+        Array.isArray(data) ? data : []
+      ).filter((historyItem) => {
+        const progress = safeNumber(
+          historyItem.progress_seconds
+        );
+
+        const duration = safeNumber(
+          historyItem.duration_seconds
+        );
+
+        if (
+          progress < MINIMUM_PROGRESS_SECONDS ||
+          duration <= 0
+        ) {
+          return false;
+        }
+
+        return (
+          progress / duration <
+          COMPLETION_PERCENTAGE
+        );
+      });
+
+      setWatchHistory(unfinishedHistory);
+    } catch (error) {
+      console.error(
+        "Continue Watching load failed:",
+        error
+      );
+
+      setWatchHistory([]);
+    } finally {
+      setLoadingWatchHistory(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadWatchHistory();
+  }, [loadWatchHistory]);
+
+  /*
+   * Reload Continue Watching when the viewer returns
+   * to the browser tab after watching something.
+   */
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        loadWatchHistory();
+      }
+    }
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    return () => {
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+    };
+  }, [loadWatchHistory]);
+
+  const featuredPremiere = useMemo(() => {
+    if (!cinemaItems.length) {
+      return null;
+    }
+
+    const explicitlyFeatured = cinemaItems.find(
+      (item) =>
+        item?.featured === true ||
+        item?.is_featured === true ||
+        item?.homepage_featured === true ||
+        matches(item, [
+          "featured premiere",
+          "featured screening",
+          "premiere feature",
+        ])
+    );
+
+    return explicitlyFeatured || cinemaItems[0];
+  }, [cinemaItems]);
+
+  const featuredUrl = featuredPremiere
+    ? previewUrls[featuredPremiere.id] || ""
+    : "";
+
+  /*
+   * Match watch-history rows with their media records.
+   */
+  const continueWatchingItems = useMemo(() => {
+    if (!watchHistory.length) {
+      return [];
+    }
+
+    const mediaById = new Map(
+      cinemaItems.map((item) => [
+        String(item.id),
+        item,
+      ])
+    );
+
+    return watchHistory
+      .map((historyItem) => {
+        const mediaItem = mediaById.get(
+          String(historyItem.media_id)
+        );
+
+        if (!mediaItem) {
+          return null;
+        }
+
+        const progressSeconds = safeNumber(
+          historyItem.progress_seconds
+        );
+
+        const durationSeconds = safeNumber(
+          historyItem.duration_seconds
+        );
+
+        const progressPercentage =
+          durationSeconds > 0
+            ? Math.min(
+                100,
+                Math.max(
+                  0,
+                  (progressSeconds /
+                    durationSeconds) *
+                    100
+                )
+              )
+            : 0;
+
+        return {
+          ...mediaItem,
+
+          watch_progress_seconds:
+            progressSeconds,
+
+          watch_duration_seconds:
+            durationSeconds,
+
+          watch_progress_percentage:
+            progressPercentage,
+
+          watch_updated_at:
+            historyItem.updated_at,
+        };
+      })
+      .filter(Boolean);
+  }, [cinemaItems, watchHistory]);
+
+  const continueWatchingRoom = useMemo(() => {
+    return {
+      key: "continue-watching",
+      title: "Continue Watching",
+      icon: "▶",
+      subtitle: "PICK UP WHERE YOU LEFT OFF",
+      description:
+        "Resume unfinished films, interviews, performances, and Aset Cinema presentations across your signed-in devices.",
+      items: continueWatchingItems,
+    };
+  }, [continueWatchingItems]);
+
+  const filteredCinemaItems = useMemo(() => {
+    let filtered = [...cinemaItems];
+
+    if (activeFilter === "Real Cinema") {
+      filtered = filtered.filter(
+        (item) =>
+          matches(item, [
+            "real cinema",
+            "live action",
+            "live-action",
+            "independent film",
+            "traditional film",
+            "documentary",
+            "short film",
+            "feature film",
+            "movie",
+          ]) &&
+          !matches(item, [
+            "ai cinema",
+            "ai film",
+            "ai series",
+            "virtual production",
+            "generative film",
+            "synthetic cinema",
+          ])
+      );
+    }
+
+    if (activeFilter === "AI Cinema") {
+      filtered = filtered.filter((item) =>
+        matches(item, [
+          "ai cinema",
+          "ai film",
+          "ai series",
+          "virtual production",
+          "generative film",
+          "synthetic cinema",
+          "artificial intelligence",
+        ])
+      );
+    }
+
+    if (activeFilter === "Interviews") {
+      filtered = filtered.filter((item) =>
+        matches(item, [
+          "interview",
+          "conversation",
+          "cast interview",
+          "director interview",
+          "creator interview",
+          "spotlight interview",
+          "behind the lens",
+          "director commentary",
+        ])
+      );
+    }
+
+    if (activeFilter === "Performances") {
+      filtered = filtered.filter((item) =>
+        matches(item, [
+          "performance",
+          "performance room",
+          "monologue",
+          "spoken word",
+          "live session",
+          "music video",
+          "comedy",
+          "stand-up",
+          "stand up",
+          "sketch",
+          "audition",
+          "scene study",
+        ])
+      );
+    }
+
+    const query = norm(searchQuery);
+
+    if (query) {
+      filtered = filtered.filter((item) =>
+        textPool(item).includes(query)
+      );
+    }
+
+    return uniqueItems(filtered);
+  }, [
+    activeFilter,
+    cinemaItems,
+    searchQuery,
+  ]);
+
+  const primaryRows = useMemo(() => {
+    return PRIMARY_ROWS.map((row) => {
+      const rowItems =
+        row.mode === "recent"
+          ? uniqueItems(
+              filteredCinemaItems
+            ).slice(0, 10)
+          : roomMatches(
+              filteredCinemaItems,
+              row.terms || []
+            );
+
+      return {
+        ...row,
+        items: rowItems,
+      };
+    }).filter((row) => row.items.length > 0);
+  }, [filteredCinemaItems]);
+
+  const buildCollection = useCallback(
+    (collection) => {
+      return {
+        ...collection,
+
+        rooms: collection.rooms.map(
+          (room) => ({
+            ...room,
+
+            items: roomMatches(
+              filteredCinemaItems,
+              room.terms || []
+            ),
+          })
+        ),
+      };
+    },
+    [filteredCinemaItems]
+  );
+
+  const interviewsCollection = useMemo(
+    () =>
+      buildCollection(
+        INTERVIEW_COLLECTION
+      ),
+    [buildCollection]
+  );
+
+  const entertainmentCollection = useMemo(
+    () =>
+      buildCollection(
+        ENTERTAINMENT_COLLECTION
+      ),
+    [buildCollection]
+  );
+
+  const upcomingItems = useMemo(() => {
+    return roomMatches(
+      filteredCinemaItems,
+      UPCOMING_TERMS || []
+    );
+  }, [filteredCinemaItems]);
+
+  const interviewsCount = useMemo(() => {
+    return interviewsCollection.rooms.reduce(
+      (total, room) =>
+        total + room.items.length,
+      0
+    );
+  }, [interviewsCollection]);
+
+  const entertainmentCount = useMemo(() => {
+    return entertainmentCollection.rooms.reduce(
+      (total, room) =>
+        total + room.items.length,
+      0
+    );
+  }, [entertainmentCollection]);
+
+  const hasVisibleContent =
+    continueWatchingItems.length > 0 ||
+    primaryRows.length > 0 ||
+    interviewsCount > 0 ||
+    entertainmentCount > 0 ||
+    upcomingItems.length > 0;
+
+  function scrollToLibrary() {
+    libraryRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }
 
-  function renderReleaseRoom(room) {
-    const hasItems = room.items.length > 0;
+  function scrollRoom(direction, roomId) {
+    const row =
+      document.getElementById(roomId);
 
-    return (
-      <section className="release-room" key={room.title}>
-        <div className="release-room-copy">
-          <p>{room.subtitle}</p>
-          <h2>{room.title}</h2>
-          <span>{hasItems ? "Open the room." : room.message}</span>
-        </div>
+    if (!row) {
+      return;
+    }
 
-        <div className="release-room-preview">{renderMiniCards(room.items)}</div>
-
-        <div className="release-room-arrow">›</div>
-      </section>
+    const amount = Math.max(
+      row.clientWidth * 0.75,
+      280
     );
+
+    row.scrollBy({
+      left:
+        direction === "left"
+          ? -amount
+          : amount,
+
+      behavior: "smooth",
+    });
+  }
+
+  function resetFilters() {
+    setSearchQuery("");
+    setActiveFilter("All Cinema");
   }
 
   return (
     <main className="videos-page">
-      <section className="cinema-layout">
-        <aside className="cinema-left-panel">
-          <p className="cinema-kicker">THE ASET STUDIO PRESENTS</p>
+      <CinemaHero
+        featuredPremiere={featuredPremiere}
+        featuredUrl={featuredUrl}
+        mutedHero={mutedHero}
+        onToggleMute={() =>
+          setMutedHero(
+            (current) => !current
+          )
+        }
+        onExplore={scrollToLibrary}
+      />
 
-          <h1>Aset Cinema</h1>
+      <FeaturedPremiere
+        item={featuredPremiere}
+        previewUrl={featuredUrl}
+      />
 
-          <p className="cinema-description">
-            A curated screening environment for films, comedy programming,
-            interviews, performances, studio originals, red carpet moments, and
-            premium cinematic storytelling.
-          </p>
+      <section
+        className="cinema-library"
+        ref={libraryRef}
+        id="cinema-library"
+      >
+        <div className="cinema-library-heading">
+          <div>
+            <p>NOW SCREENING</p>
 
-          <div className="cinema-buttons">
-            <Link to="/videos" className="cinema-main-button">
-              Enter Aset Cinema
-            </Link>
+            <h2>
+              Explore The Aset Cinema
+            </h2>
 
-            <Link to="/videos" className="cinema-secondary-button">
-              Studio Originals
-            </Link>
-
-            <Link to="/videos" className="cinema-secondary-button">
-              Private Screenings
-            </Link>
+            <span>
+              Real cinema, AI storytelling,
+              interviews, music, performance,
+              comedy, commentary, premieres,
+              and original productions.
+            </span>
           </div>
-        </aside>
 
-        <section className="cinema-right-panel">
-          <section className="release-rooms-panel">
-            <div className="release-rooms-heading">
-              <div>
-                <p>NOW SCREENING</p>
-                <h2>Cinema Release Rooms</h2>
-                <span>
-                  Curated films, interviews, performances, comedy, music visuals,
-                  and studio originals.
-                </span>
-              </div>
+          <Link
+            to="/"
+            className="cinema-return-link"
+          >
+            Return to The Aset Studio →
+          </Link>
+        </div>
 
-              <Link to="/" className="return-link">
-                Return to Studio →
-              </Link>
+        <CinemaToolbar
+          filterOptions={FILTER_OPTIONS}
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onClearSearch={() =>
+            setSearchQuery("")
+          }
+        />
+
+        {loading && <CinemaLoading />}
+
+        {!loading && loadError && (
+          <CinemaError
+            message={loadError}
+            onRetry={loadCinemaItems}
+          />
+        )}
+
+        {!loading &&
+          !loadError &&
+          hasVisibleContent && (
+            <div className="cinema-premium-layout">
+              {userId &&
+                loadingWatchHistory && (
+                  <div className="videos-loading">
+                    <span className="cinema-loader" />
+                    Preparing Continue Watching...
+                  </div>
+                )}
+
+              {userId &&
+                !loadingWatchHistory &&
+                continueWatchingItems.length >
+                  0 && (
+                  <div className="cinema-continue-watching-section">
+                    <CinemaRow
+                      room={continueWatchingRoom}
+                      previewUrls={previewUrls}
+                      onScroll={scrollRoom}
+                    />
+                  </div>
+                )}
+
+              {primaryRows.length > 0 && (
+                <div className="cinema-rooms-list">
+                  {primaryRows.map(
+                    (room) => (
+                      <CinemaRow
+                        key={
+                          room.key ||
+                          room.title
+                        }
+                        room={room}
+                        previewUrls={
+                          previewUrls
+                        }
+                        onScroll={
+                          scrollRoom
+                        }
+                      />
+                    )
+                  )}
+                </div>
+              )}
+
+              {interviewsCount > 0 && (
+                <CinemaCollectionHub
+                  collection={
+                    interviewsCollection
+                  }
+                  previewUrls={
+                    previewUrls
+                  }
+                />
+              )}
+
+              {entertainmentCount > 0 && (
+                <CinemaCollectionHub
+                  collection={
+                    entertainmentCollection
+                  }
+                  previewUrls={
+                    previewUrls
+                  }
+                />
+              )}
+
+              <ComingSoon
+                items={upcomingItems}
+                previewUrls={previewUrls}
+              />
             </div>
+          )}
 
-            <div className="release-rooms-list">
-              {releaseRooms.map(renderReleaseRoom)}
-            </div>
-          </section>
-        </section>
+        {!loading &&
+          !loadError &&
+          !hasVisibleContent && (
+            <CinemaEmpty
+              onReset={resetFilters}
+            />
+          )}
       </section>
 
-      {loading && (
-        <div className="videos-loading">Loading cinema experience...</div>
-      )}
+      <CinemaManifesto />
     </main>
   );
 }
