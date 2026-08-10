@@ -27,6 +27,7 @@ export default function CreatorUploadPage() {
     async function loadAuth() {
       try {
         const { data } = await supabase.auth.getSession();
+
         if (!alive) return;
 
         const currentSession = data?.session ?? null;
@@ -34,18 +35,21 @@ export default function CreatorUploadPage() {
 
         if (!currentSession?.user?.id) return;
 
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, role, display_name")
-          .eq("id", currentSession.user.id)
-          .single();
+        const { data: profileData, error: profileError } =
+          await supabase
+            .from("profiles")
+            .select("id, role, display_name")
+            .eq("id", currentSession.user.id)
+            .single();
 
         if (profileError) {
           console.warn("Profile fetch warning:", profileError);
           return;
         }
 
-        if (alive) setProfile(profileData ?? null);
+        if (alive) {
+          setProfile(profileData ?? null);
+        }
       } catch (error) {
         console.error("Auth load error:", error);
       }
@@ -53,24 +57,26 @@ export default function CreatorUploadPage() {
 
     loadAuth();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, nextSession) => {
-        setSession(nextSession);
+    const { data: listener } =
+      supabase.auth.onAuthStateChange(
+        async (_event, nextSession) => {
+          setSession(nextSession);
 
-        if (!nextSession?.user?.id) {
-          setProfile(null);
-          return;
+          if (!nextSession?.user?.id) {
+            setProfile(null);
+            return;
+          }
+
+          const { data: profileData } =
+            await supabase
+              .from("profiles")
+              .select("id, role, display_name")
+              .eq("id", nextSession.user.id)
+              .single();
+
+          setProfile(profileData ?? null);
         }
-
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("id, role, display_name")
-          .eq("id", nextSession.user.id)
-          .single();
-
-        setProfile(profileData ?? null);
-      }
-    );
+      );
 
     return () => {
       alive = false;
@@ -80,6 +86,7 @@ export default function CreatorUploadPage() {
 
   const previewUrl = useMemo(() => {
     if (!file) return null;
+
     return URL.createObjectURL(file);
   }, [file]);
 
@@ -93,8 +100,15 @@ export default function CreatorUploadPage() {
 
   function getMediaType(selectedFile) {
     if (!selectedFile?.type) return "file";
-    if (selectedFile.type.startsWith("video/")) return "video";
-    if (selectedFile.type.startsWith("image/")) return "image";
+
+    if (selectedFile.type.startsWith("video/")) {
+      return "video";
+    }
+
+    if (selectedFile.type.startsWith("image/")) {
+      return "image";
+    }
+
     return "file";
   }
 
@@ -112,6 +126,7 @@ export default function CreatorUploadPage() {
 
   async function handleUpload(e) {
     e.preventDefault();
+
     setMessage("");
     setDebugInfo("");
 
@@ -130,34 +145,53 @@ export default function CreatorUploadPage() {
     try {
       setMessage("Step 1: Preparing upload...");
 
-      const userId = session?.user?.id || "aset-studio";
+      const userId =
+        session?.user?.id || "aset-studio";
+
       const cleanTitle = slugify(title);
+
       const extension = file.name.includes(".")
         ? file.name.split(".").pop()
         : "file";
 
       const mediaType = getMediaType(file);
-      const filePath = `${userId}/${mediaType}/${Date.now()}-${cleanTitle}.${extension}`;
+
+      const filePath =
+        `${userId}/${mediaType}/${Date.now()}-${cleanTitle}.${extension}`;
 
       setDebugInfo(`File path: ${filePath}`);
 
-      setMessage("Step 2: Uploading file to Supabase Storage...");
+      setMessage(
+        "Step 2: Uploading file to Supabase Storage..."
+      );
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const {
+        data: uploadData,
+        error: uploadError,
+      } = await supabase.storage
         .from(MEDIA_BUCKET)
         .upload(filePath, file, {
           cacheControl: "3600",
           upsert: false,
-          contentType: file.type || "application/octet-stream",
+          contentType:
+            file.type ||
+            "application/octet-stream",
         });
 
-      console.log("UPLOAD RESULT:", { uploadData, uploadError });
+      console.log("UPLOAD RESULT:", {
+        uploadData,
+        uploadError,
+      });
 
       if (uploadError) {
-        throw new Error(`Storage upload failed: ${uploadError.message}`);
+        throw new Error(
+          `Storage upload failed: ${uploadError.message}`
+        );
       }
 
-      setMessage("Step 3: File uploaded. Saving media record...");
+      setMessage(
+        "Step 3: File uploaded. Saving media record..."
+      );
 
       const tagArray = tags
         .split(",")
@@ -166,8 +200,10 @@ export default function CreatorUploadPage() {
 
       const mediaRecord = {
         title: title.trim(),
-        tagline: tagline.trim() || null,
-        quote: quote.trim() || null,
+        tagline:
+          tagline.trim() || null,
+        quote:
+          quote.trim() || null,
         category,
         tags: tagArray,
         access_level: accessLevel,
@@ -175,28 +211,56 @@ export default function CreatorUploadPage() {
         hidden,
         file_path: filePath,
         watermarked_path: null,
-        owner_id: session?.user?.id || null,
+        owner_id:
+          session?.user?.id || null,
       };
 
-      console.log("MEDIA RECORD:", mediaRecord);
+      console.log(
+        "MEDIA RECORD:",
+        mediaRecord
+      );
 
-      const { data: insertData, error: insertError } = await supabase
+      const {
+        data: insertData,
+        error: insertError,
+      } = await supabase
         .from("media_items")
         .insert(mediaRecord)
         .select();
 
-      console.log("INSERT RESULT:", { insertData, insertError });
+      console.log("INSERT RESULT:", {
+        insertData,
+        insertError,
+      });
 
       if (insertError) {
-        throw new Error(`Database insert failed: ${insertError.message}`);
+        throw new Error(
+          `Database insert failed: ${insertError.message}`
+        );
       }
 
-      setMessage("Upload complete. Check Gallery and Videos.");
-      setDebugInfo(`Saved media ID: ${insertData?.[0]?.id || "created"}`);
+      setMessage(
+        "Upload complete. Check Gallery and Videos."
+      );
+
+      setDebugInfo(
+        `Saved media ID: ${
+          insertData?.[0]?.id ||
+          "created"
+        }`
+      );
+
       resetForm();
     } catch (error) {
-      console.error("UPLOAD FAILED:", error);
-      setMessage(error.message || "Upload failed.");
+      console.error(
+        "UPLOAD FAILED:",
+        error
+      );
+
+      setMessage(
+        error.message ||
+          "Upload failed."
+      );
     } finally {
       setUploading(false);
     }
@@ -210,8 +274,17 @@ export default function CreatorUploadPage() {
             min-height: 100vh;
             padding: 48px 20px;
             background:
-              radial-gradient(circle at top left, rgba(212, 175, 55, 0.14), transparent 32%),
-              linear-gradient(135deg, #070707, #161616 55%, #050505);
+              radial-gradient(
+                circle at top left,
+                rgba(212, 175, 55, 0.14),
+                transparent 32%
+              ),
+              linear-gradient(
+                135deg,
+                #070707,
+                #161616 55%,
+                #050505
+              );
             color: #fff;
           }
 
@@ -233,7 +306,11 @@ export default function CreatorUploadPage() {
           }
 
           .upload-title {
-            font-size: clamp(34px, 6vw, 64px);
+            font-size: clamp(
+              34px,
+              6vw,
+              64px
+            );
             line-height: 0.95;
             margin: 0;
           }
@@ -246,17 +323,23 @@ export default function CreatorUploadPage() {
           }
 
           .upload-card {
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background:
+              rgba(255, 255, 255, 0.07);
+            border:
+              1px solid
+              rgba(255, 255, 255, 0.12);
             border-radius: 24px;
             padding: 24px;
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+            box-shadow:
+              0 24px 80px
+              rgba(0, 0, 0, 0.45);
             backdrop-filter: blur(18px);
           }
 
           .upload-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns:
+              1fr 1fr;
             gap: 16px;
           }
 
@@ -280,8 +363,11 @@ export default function CreatorUploadPage() {
             width: 100%;
             box-sizing: border-box;
             border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            background: rgba(0, 0, 0, 0.38);
+            border:
+              1px solid
+              rgba(255, 255, 255, 0.14);
+            background:
+              rgba(0, 0, 0, 0.38);
             color: #fff;
             padding: 13px 14px;
             outline: none;
@@ -300,8 +386,11 @@ export default function CreatorUploadPage() {
             margin-top: 18px;
             border-radius: 18px;
             overflow: hidden;
-            background: rgba(0, 0, 0, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background:
+              rgba(0, 0, 0, 0.35);
+            border:
+              1px solid
+              rgba(255, 255, 255, 0.1);
           }
 
           .upload-preview img,
@@ -339,14 +428,16 @@ export default function CreatorUploadPage() {
             margin-top: 16px;
             padding: 14px 16px;
             border-radius: 14px;
-            background: rgba(255, 255, 255, 0.08);
+            background:
+              rgba(255, 255, 255, 0.08);
           }
 
           .upload-debug {
             margin-top: 10px;
             padding: 12px 14px;
             border-radius: 14px;
-            background: rgba(0, 0, 0, 0.35);
+            background:
+              rgba(0, 0, 0, 0.35);
             font-size: 13px;
             opacity: 0.8;
             word-break: break-word;
@@ -373,89 +464,179 @@ export default function CreatorUploadPage() {
 
       <div className="upload-shell">
         <div className="upload-hero">
-          <div className="upload-kicker">The Aset Studio</div>
-          <h1 className="upload-title">Creator Upload</h1>
+          <div className="upload-kicker">
+            The Aset Studio
+          </div>
+
+          <h1 className="upload-title">
+            Creator Upload
+          </h1>
+
           <p className="upload-subtitle">
-            Upload videos and images into the Aset media library. Published items feed the Gallery, Videos page, and media detail pages.
+            Upload videos and images into
+            the Aset media library.
+            Published items feed the
+            Gallery, Videos page, and
+            media detail pages.
           </p>
         </div>
 
-        <form className="upload-card" onSubmit={handleUpload}>
+        <form
+          className="upload-card"
+          onSubmit={handleUpload}
+        >
           <div className="upload-grid">
             <div className="field full">
               <label>Title</label>
+
               <input
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Example: Brick by Brick Teaser"
+                onChange={(e) =>
+                  setTitle(e.target.value)
+                }
+                placeholder="Example: Aset Cinema Teaser"
                 required
               />
             </div>
 
             <div className="field full">
               <label>Tagline</label>
+
               <input
                 value={tagline}
-                onChange={(e) => setTagline(e.target.value)}
+                onChange={(e) =>
+                  setTagline(e.target.value)
+                }
                 placeholder="Short description for the card"
               />
             </div>
 
             <div className="field full">
-              <label>Quote / Caption</label>
+              <label>
+                Quote / Caption
+              </label>
+
               <textarea
                 value={quote}
-                onChange={(e) => setQuote(e.target.value)}
+                onChange={(e) =>
+                  setQuote(e.target.value)
+                }
                 placeholder="Optional caption, quote, or content note"
               />
             </div>
 
             <div className="field">
               <label>Category</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                <option value="videos">Videos</option>
-                <option value="gallery">Gallery</option>
-                <option value="featured">Featured</option>
-                <option value="spotlight">Spotlight</option>
-                <option value="brick-by-brick">Brick by Brick</option>
-                <option value="aset-cinema">Aset Cinema</option>
+
+              <select
+                value={category}
+                onChange={(e) =>
+                  setCategory(
+                    e.target.value
+                  )
+                }
+              >
+                <option value="videos">
+                  Videos
+                </option>
+
+                <option value="gallery">
+                  Gallery
+                </option>
+
+                <option value="featured">
+                  Featured
+                </option>
+
+                <option value="spotlight">
+                  Spotlight
+                </option>
+
+                <option value="aset-cinema">
+                  Aset Cinema
+                </option>
               </select>
             </div>
 
             <div className="field">
-              <label>Access Level</label>
-              <select value={accessLevel} onChange={(e) => setAccessLevel(e.target.value)}>
-                <option value="public">Public</option>
-                <option value="supreme">Supreme Access</option>
-                <option value="boudoir">Age Verified</option>
+              <label>
+                Access Level
+              </label>
+
+              <select
+                value={accessLevel}
+                onChange={(e) =>
+                  setAccessLevel(
+                    e.target.value
+                  )
+                }
+              >
+                <option value="public">
+                  Public
+                </option>
+
+                <option value="supreme">
+                  Supreme Access
+                </option>
+
+                <option value="boudoir">
+                  Age Verified
+                </option>
               </select>
             </div>
 
             <div className="field">
               <label>Status</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="published">Published</option>
-                <option value="draft">Draft</option>
-                <option value="pending">Pending</option>
+
+              <select
+                value={status}
+                onChange={(e) =>
+                  setStatus(
+                    e.target.value
+                  )
+                }
+              >
+                <option value="published">
+                  Published
+                </option>
+
+                <option value="draft">
+                  Draft
+                </option>
+
+                <option value="pending">
+                  Pending
+                </option>
               </select>
             </div>
 
             <div className="field">
               <label>Tags</label>
+
               <input
                 value={tags}
-                onChange={(e) => setTags(e.target.value)}
+                onChange={(e) =>
+                  setTags(e.target.value)
+                }
                 placeholder="trailer, promo, interview"
               />
             </div>
 
             <div className="field full">
-              <label>Upload File</label>
+              <label>
+                Upload File
+              </label>
+
               <input
                 type="file"
                 accept="image/*,video/*"
                 disabled={uploading}
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) =>
+                  setFile(
+                    e.target.files?.[0] ??
+                      null
+                  )
+                }
               />
             </div>
 
@@ -465,37 +646,69 @@ export default function CreatorUploadPage() {
                   type="checkbox"
                   checked={hidden}
                   disabled={uploading}
-                  onChange={(e) => setHidden(e.target.checked)}
+                  onChange={(e) =>
+                    setHidden(
+                      e.target.checked
+                    )
+                  }
                 />
-                Hide this item from public galleries
+
+                Hide this item from
+                public galleries
               </label>
             </div>
           </div>
 
           {file && previewUrl && (
             <div className="upload-preview">
-              {file.type.startsWith("video/") ? (
-                <video src={previewUrl} controls />
+              {file.type.startsWith(
+                "video/"
+              ) ? (
+                <video
+                  src={previewUrl}
+                  controls
+                />
               ) : (
-                <img src={previewUrl} alt="Upload preview" />
+                <img
+                  src={previewUrl}
+                  alt="Upload preview"
+                />
               )}
             </div>
           )}
 
           <div className="upload-actions">
-            <button className="upload-btn" type="submit" disabled={uploading}>
-              {uploading ? "Uploading..." : "Upload Content"}
+            <button
+              className="upload-btn"
+              type="submit"
+              disabled={uploading}
+            >
+              {uploading
+                ? "Uploading..."
+                : "Upload Content"}
             </button>
 
-            <span style={{ opacity: 0.7 }}>
+            <span
+              style={{ opacity: 0.7 }}
+            >
               {profile?.display_name
                 ? `Signed in as ${profile.display_name}`
-                : session?.user?.email || "Uploading as The Aset Studio"}
+                : session?.user?.email ||
+                  "Uploading as The Aset Studio"}
             </span>
           </div>
 
-          {message && <div className="upload-message">{message}</div>}
-          {debugInfo && <div className="upload-debug">{debugInfo}</div>}
+          {message && (
+            <div className="upload-message">
+              {message}
+            </div>
+          )}
+
+          {debugInfo && (
+            <div className="upload-debug">
+              {debugInfo}
+            </div>
+          )}
         </form>
       </div>
     </div>

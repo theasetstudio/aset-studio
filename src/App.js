@@ -21,7 +21,6 @@ import AdminPhotographyPage from "./pages/AdminPhotographyPage";
 import AdminGalleryPage from "./pages/AdminGalleryPage";
 import AdminBeautyApplications from "./pages/AdminBeautyApplications";
 import AdminManagersPage from "./pages/AdminManagersPage";
-import BrickAdminPage from "./pages/BrickAdminPage";
 
 import AuthPage from "./pages/AuthPage";
 import AuthCallback from "./pages/AuthCallback";
@@ -43,11 +42,6 @@ import DebugAuthPage from "./pages/DebugAuthPage";
 
 import VideosPage from "./pages/VideosPage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
-
-import BrickByBrickPage from "./pages/BrickByBrickPage";
-import BrickSoundtrackPage from "./pages/BrickSoundtrackPage";
-import BrickSongPage from "./pages/BrickSongPage";
-import BrickSocialHub from "./pages/BrickSocialHub";
 
 import DiamondVaultPage from "./pages/DiamondVaultPage";
 import ExpressionVaultPage from "./pages/ExpressionVaultPage";
@@ -99,38 +93,47 @@ function App() {
 
         {/* COLLECTIVES */}
         <Route path="/collectives" element={<CollectivesPage />} />
+
         <Route
           path="/collectives/beauty"
           element={<AsetBeautyCollectivePage />}
         />
+
         <Route
           path="/collectives/beauty/makeup-artists"
           element={<MakeupArtistsPage />}
         />
+
         <Route
           path="/collectives/beauty/hairstylists"
           element={<HairstylistsPage />}
         />
+
         <Route
           path="/collectives/beauty/wig-artists"
           element={<WigArtistsPage />}
         />
+
         <Route
           path="/collectives/beauty/grooming-artists"
           element={<GroomingArtistsPage />}
         />
+
         <Route
           path="/collectives/beauty/nail-artists"
           element={<NailArtistsPage />}
         />
+
         <Route
           path="/collectives/beauty/sfx-makeup-artists"
           element={<SfxMakeupArtistsPage />}
         />
+
         <Route
           path="/collectives/beauty/companies"
           element={<BeautyCompaniesPage />}
         />
+
         <Route
           path="/collectives/beauty/apply"
           element={<BeautyApplyPage />}
@@ -169,17 +172,14 @@ function App() {
           element={<AdminManagersPage />}
         />
 
-        <Route
-          path="/brick-admin"
-          element={<BrickAdminPage />}
-        />
-
         {/* AUTH */}
         <Route path="/auth" element={<AuthPage />} />
+
         <Route
           path="/auth/callback"
           element={<AuthCallback />}
         />
+
         <Route
           path="/reset-password"
           element={<ResetPasswordPage />}
@@ -281,27 +281,6 @@ function App() {
         <Route
           path="/video/:slug"
           element={<VideoPlayerPage />}
-        />
-
-        {/* BRICK BY BRICK */}
-        <Route
-          path="/brick-by-brick"
-          element={<BrickByBrickPage />}
-        />
-
-        <Route
-          path="/brick-by-brick/soundtrack"
-          element={<BrickSoundtrackPage />}
-        />
-
-        <Route
-          path="/brick-by-brick/music/that-crown-love"
-          element={<BrickSongPage />}
-        />
-
-        <Route
-          path="/brick-social"
-          element={<BrickSocialHub />}
         />
 
         {/* VAULTS */}

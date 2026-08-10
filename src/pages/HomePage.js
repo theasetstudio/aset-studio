@@ -71,20 +71,6 @@ export default function HomePage() {
     },
 
     {
-      eyebrow: "BRICK BY BRICK",
-      title: "Dynasties are not inherited. They are taken.",
-      text:
-        "A cinematic soap opera world of old-money families, secret alliances, dangerous romance, organized power, and the calculated rise of Crown.",
-      panelEyebrow: "ASET STUDIO ORIGINAL",
-      panelTitle: "Brick by Brick",
-      panelText:
-        "A prestige dramatic universe where loyalty is currency, betrayal is inevitable, and power changes the people who survive long enough to hold it.",
-      path: "/brick-by-brick",
-      button: "Enter Brick by Brick",
-      variant: "gold",
-    },
-
-    {
       eyebrow: "COLLECTIVES",
       title: "The creative rooms inside the larger studio.",
       text:
@@ -625,13 +611,6 @@ export default function HomePage() {
               style={styles.portalCard}
             >
               Managers Door
-            </Link>
-
-            <Link
-              to="/brick-by-brick"
-              style={styles.portalCard}
-            >
-              Brick by Brick
             </Link>
 
             <Link

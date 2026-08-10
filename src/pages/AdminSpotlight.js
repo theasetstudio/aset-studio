@@ -90,10 +90,13 @@ export default function AdminSpotlight() {
     },
   });
 
-  const getSetter = (mode) => (mode === "edit" ? setEditForm : setForm);
+  const getSetter = (mode) =>
+    mode === "edit" ? setEditForm : setForm;
 
   const getBulkFilmographyValue = (mode) =>
-    mode === "edit" ? bulkFilmographyEdit : bulkFilmographyCreate;
+    mode === "edit"
+      ? bulkFilmographyEdit
+      : bulkFilmographyCreate;
 
   const setBulkFilmographyValue = (mode, value) => {
     if (mode === "edit") {
@@ -110,11 +113,18 @@ export default function AdminSpotlight() {
 
     setter((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : value,
     }));
   };
 
-  const updateOfficialPresence = (field, value, mode = "create") => {
+  const updateOfficialPresence = (
+    field,
+    value,
+    mode = "create"
+  ) => {
     const setter = getSetter(mode);
 
     setter((prev) => ({
@@ -122,14 +132,18 @@ export default function AdminSpotlight() {
       representation: {
         ...(prev.representation || {}),
         official_presence: {
-          ...(prev.representation?.official_presence || {}),
+          ...(prev.representation
+            ?.official_presence || {}),
           [field]: value,
         },
       },
     }));
   };
 
-  const updateRepresentationStatement = (value, mode = "create") => {
+  const updateRepresentationStatement = (
+    value,
+    mode = "create"
+  ) => {
     const setter = getSetter(mode);
 
     setter((prev) => ({
@@ -138,7 +152,8 @@ export default function AdminSpotlight() {
         ...(prev.representation || {}),
         statement: value,
         official_presence: {
-          ...(prev.representation?.official_presence || {}),
+          ...(prev.representation
+            ?.official_presence || {}),
         },
       },
     }));
@@ -147,7 +162,9 @@ export default function AdminSpotlight() {
   const parseFilmographyLine = (line) => {
     const cleanLine = line.trim();
 
-    if (!cleanLine) return null;
+    if (!cleanLine) {
+      return null;
+    }
 
     const parts = cleanLine
       .split("|")
@@ -164,9 +181,18 @@ export default function AdminSpotlight() {
       };
     }
 
-    const yearMatch = cleanLine.match(/\b(19|20)\d{2}\b/);
-    const year = yearMatch ? yearMatch[0] : "";
-    const title = year ? cleanLine.replace(year, "").trim() : cleanLine;
+    const yearMatch =
+      cleanLine.match(/\b(19|20)\d{2}\b/);
+
+    const year =
+      yearMatch
+        ? yearMatch[0]
+        : "";
+
+    const title =
+      year
+        ? cleanLine.replace(year, "").trim()
+        : cleanLine;
 
     return {
       year,
@@ -179,14 +205,26 @@ export default function AdminSpotlight() {
 
   const sortFilmographyNewestFirst = (items) =>
     [...items].sort((a, b) => {
-      const yearA = parseInt(String(a.year || "").match(/\d{4}/)?.[0] || "0", 10);
-      const yearB = parseInt(String(b.year || "").match(/\d{4}/)?.[0] || "0", 10);
+      const yearA = parseInt(
+        String(a.year || "").match(/\d{4}/)?.[0] ||
+          "0",
+        10
+      );
+
+      const yearB = parseInt(
+        String(b.year || "").match(/\d{4}/)?.[0] ||
+          "0",
+        10
+      );
 
       return yearB - yearA;
     });
 
-  const importBulkFilmography = (mode = "create") => {
-    const rawText = getBulkFilmographyValue(mode);
+  const importBulkFilmography = (
+    mode = "create"
+  ) => {
+    const rawText =
+      getBulkFilmographyValue(mode);
 
     if (!rawText.trim()) {
       alert("Paste filmography credits first.");
@@ -197,38 +235,51 @@ export default function AdminSpotlight() {
       .split("\n")
       .map(parseFilmographyLine)
       .filter(Boolean)
-      .filter((item) => item.title || item.year);
+      .filter(
+        (item) =>
+          item.title ||
+          item.year
+      );
 
     if (parsedItems.length === 0) {
-      alert("No valid filmography credits found.");
+      alert(
+        "No valid filmography credits found."
+      );
       return;
     }
 
     const setter = getSetter(mode);
 
     setter((prev) => {
-      const currentItems = Array.isArray(prev.filmography)
-        ? prev.filmography
-        : [];
+      const currentItems =
+        Array.isArray(prev.filmography)
+          ? prev.filmography
+          : [];
 
       return {
         ...prev,
-        filmography: sortFilmographyNewestFirst([
-          ...currentItems,
-          ...parsedItems,
-        ]),
+        filmography:
+          sortFilmographyNewestFirst([
+            ...currentItems,
+            ...parsedItems,
+          ]),
       };
     });
 
     setBulkFilmographyValue(mode, "");
   };
 
-  const clearFilmography = (mode = "create") => {
-    const confirmClear = window.confirm(
-      "Clear all filmography items from this profile form?"
-    );
+  const clearFilmography = (
+    mode = "create"
+  ) => {
+    const confirmClear =
+      window.confirm(
+        "Clear all filmography items from this profile form?"
+      );
 
-    if (!confirmClear) return;
+    if (!confirmClear) {
+      return;
+    }
 
     const setter = getSetter(mode);
 
@@ -238,13 +289,19 @@ export default function AdminSpotlight() {
     }));
   };
 
-  const updateFilmographyItem = (index, field, value, mode = "create") => {
+  const updateFilmographyItem = (
+    index,
+    field,
+    value,
+    mode = "create"
+  ) => {
     const setter = getSetter(mode);
 
     setter((prev) => {
-      const nextFilmography = Array.isArray(prev.filmography)
-        ? [...prev.filmography]
-        : [];
+      const nextFilmography =
+        Array.isArray(prev.filmography)
+          ? [...prev.filmography]
+          : [];
 
       nextFilmography[index] = {
         ...(nextFilmography[index] || {}),
@@ -258,13 +315,17 @@ export default function AdminSpotlight() {
     });
   };
 
-  const addFilmographyItem = (mode = "create") => {
+  const addFilmographyItem = (
+    mode = "create"
+  ) => {
     const setter = getSetter(mode);
 
     setter((prev) => ({
       ...prev,
       filmography: [
-        ...(Array.isArray(prev.filmography) ? prev.filmography : []),
+        ...(Array.isArray(prev.filmography)
+          ? prev.filmography
+          : []),
         {
           title: "",
           year: "",
@@ -276,25 +337,38 @@ export default function AdminSpotlight() {
     }));
   };
 
-  const removeFilmographyItem = (index, mode = "create") => {
+  const removeFilmographyItem = (
+    index,
+    mode = "create"
+  ) => {
     const setter = getSetter(mode);
 
     setter((prev) => ({
       ...prev,
-      filmography: (Array.isArray(prev.filmography)
-        ? prev.filmography
-        : []
-      ).filter((_, itemIndex) => itemIndex !== index),
+      filmography: (
+        Array.isArray(prev.filmography)
+          ? prev.filmography
+          : []
+      ).filter(
+        (_, itemIndex) =>
+          itemIndex !== index
+      ),
     }));
   };
 
-  const updateBibliographyItem = (index, field, value, mode = "create") => {
+  const updateBibliographyItem = (
+    index,
+    field,
+    value,
+    mode = "create"
+  ) => {
     const setter = getSetter(mode);
 
     setter((prev) => {
-      const nextBibliography = Array.isArray(prev.bibliography)
-        ? [...prev.bibliography]
-        : [];
+      const nextBibliography =
+        Array.isArray(prev.bibliography)
+          ? [...prev.bibliography]
+          : [];
 
       nextBibliography[index] = {
         ...(nextBibliography[index] || {}),
@@ -303,18 +377,23 @@ export default function AdminSpotlight() {
 
       return {
         ...prev,
-        bibliography: nextBibliography,
+        bibliography:
+          nextBibliography,
       };
     });
   };
 
-  const addBibliographyItem = (mode = "create") => {
+  const addBibliographyItem = (
+    mode = "create"
+  ) => {
     const setter = getSetter(mode);
 
     setter((prev) => ({
       ...prev,
       bibliography: [
-        ...(Array.isArray(prev.bibliography) ? prev.bibliography : []),
+        ...(Array.isArray(prev.bibliography)
+          ? prev.bibliography
+          : []),
         {
           title: "",
           year: "",
@@ -326,121 +405,229 @@ export default function AdminSpotlight() {
     }));
   };
 
-  const removeBibliographyItem = (index, mode = "create") => {
+  const removeBibliographyItem = (
+    index,
+    mode = "create"
+  ) => {
     const setter = getSetter(mode);
 
     setter((prev) => ({
       ...prev,
-      bibliography: (Array.isArray(prev.bibliography)
-        ? prev.bibliography
-        : []
-      ).filter((_, itemIndex) => itemIndex !== index),
+      bibliography: (
+        Array.isArray(prev.bibliography)
+          ? prev.bibliography
+          : []
+      ).filter(
+        (_, itemIndex) =>
+          itemIndex !== index
+      ),
     }));
   };
 
-  const uploadFile = async (file, slug, folder) => {
-    if (!file || !slug) return null;
-
-    const cleanName = file.name.replace(/\s+/g, "-").toLowerCase();
-    const filePath = `${slug}/${folder}/${Date.now()}-${cleanName}`;
-
-    const { error } = await supabase.storage
-      .from(SPOTLIGHT_BUCKET)
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-
-    if (error) {
-      console.error("Upload error:", error);
-      alert(`Upload failed: ${error.message}`);
+  const uploadFile = async (
+    file,
+    slug,
+    folder
+  ) => {
+    if (!file || !slug) {
       return null;
     }
 
-    const { data } = supabase.storage
-      .from(SPOTLIGHT_BUCKET)
-      .getPublicUrl(filePath);
+    const cleanName = file.name
+      .replace(/\s+/g, "-")
+      .toLowerCase();
+
+    const filePath =
+      `${slug}/${folder}/${Date.now()}-${cleanName}`;
+
+    const { error } =
+      await supabase.storage
+        .from(SPOTLIGHT_BUCKET)
+        .upload(
+          filePath,
+          file,
+          {
+            cacheControl: "3600",
+            upsert: false,
+          }
+        );
+
+    if (error) {
+      console.error(
+        "Upload error:",
+        error
+      );
+
+      alert(
+        `Upload failed: ${error.message}`
+      );
+
+      return null;
+    }
+
+    const { data } =
+      supabase.storage
+        .from(SPOTLIGHT_BUCKET)
+        .getPublicUrl(filePath);
 
     return {
       url: data.publicUrl,
       path: filePath,
-      type: file.type.startsWith("video") ? "video" : "image",
+      type:
+        file.type.startsWith("video")
+          ? "video"
+          : "image",
       caption: "",
     };
   };
 
-  const uploadProfileImage = async (e, mode = "create") => {
-    const file = e.target.files?.[0];
-    const activeForm = mode === "edit" ? editForm : form;
+  const uploadProfileImage = async (
+    e,
+    mode = "create"
+  ) => {
+    const file =
+      e.target.files?.[0];
+
+    const activeForm =
+      mode === "edit"
+        ? editForm
+        : form;
 
     if (!activeForm.slug) {
-      alert("Add a slug before uploading.");
+      alert(
+        "Add a slug before uploading."
+      );
       return;
     }
 
-    const uploaded = await uploadFile(file, activeForm.slug, "profile-image");
-    if (!uploaded) return;
+    const uploaded =
+      await uploadFile(
+        file,
+        activeForm.slug,
+        "profile-image"
+      );
+
+    if (!uploaded) {
+      return;
+    }
 
     const setter = getSetter(mode);
+
     setter((prev) => ({
       ...prev,
-      profile_image_url: uploaded.url,
+      profile_image_url:
+        uploaded.url,
     }));
   };
 
-  const uploadFeaturedVideo = async (e, mode = "create") => {
-    const file = e.target.files?.[0];
-    const activeForm = mode === "edit" ? editForm : form;
+  const uploadFeaturedVideo = async (
+    e,
+    mode = "create"
+  ) => {
+    const file =
+      e.target.files?.[0];
+
+    const activeForm =
+      mode === "edit"
+        ? editForm
+        : form;
 
     if (!activeForm.slug) {
-      alert("Add a slug before uploading.");
+      alert(
+        "Add a slug before uploading."
+      );
       return;
     }
 
-    const uploaded = await uploadFile(file, activeForm.slug, "featured-video");
-    if (!uploaded) return;
+    const uploaded =
+      await uploadFile(
+        file,
+        activeForm.slug,
+        "featured-video"
+      );
+
+    if (!uploaded) {
+      return;
+    }
 
     const setter = getSetter(mode);
+
     setter((prev) => ({
       ...prev,
-      featured_video_url: uploaded.url,
+      featured_video_url:
+        uploaded.url,
       featured_video_title:
         prev.featured_video_title ||
         `${prev.alias || prev.name} — Featured Screening`,
     }));
   };
 
-  const uploadGalleryFiles = async (e, mode = "create") => {
-    const files = Array.from(e.target.files || []);
-    const activeForm = mode === "edit" ? editForm : form;
+  const uploadGalleryFiles = async (
+    e,
+    mode = "create"
+  ) => {
+    const files =
+      Array.from(
+        e.target.files || []
+      );
+
+    const activeForm =
+      mode === "edit"
+        ? editForm
+        : form;
 
     if (!activeForm.slug) {
-      alert("Add a slug before uploading.");
+      alert(
+        "Add a slug before uploading."
+      );
       return;
     }
 
-    if (files.length === 0) return;
+    if (files.length === 0) {
+      return;
+    }
 
     const uploads = [];
 
     for (const file of files) {
-      const uploaded = await uploadFile(file, activeForm.slug, "gallery");
-      if (uploaded) uploads.push(uploaded);
+      const uploaded =
+        await uploadFile(
+          file,
+          activeForm.slug,
+          "gallery"
+        );
+
+      if (uploaded) {
+        uploads.push(uploaded);
+      }
     }
 
     const setter = getSetter(mode);
 
     setter((prev) => ({
       ...prev,
-      gallery: [...(Array.isArray(prev.gallery) ? prev.gallery : []), ...uploads],
+      gallery: [
+        ...(Array.isArray(prev.gallery)
+          ? prev.gallery
+          : []),
+        ...uploads,
+      ],
     }));
   };
 
-  const updateGalleryCaption = (index, caption, mode = "create") => {
+  const updateGalleryCaption = (
+    index,
+    caption,
+    mode = "create"
+  ) => {
     const setter = getSetter(mode);
 
     setter((prev) => {
-      const nextGallery = [...(Array.isArray(prev.gallery) ? prev.gallery : [])];
+      const nextGallery = [
+        ...(Array.isArray(prev.gallery)
+          ? prev.gallery
+          : []),
+      ];
 
       nextGallery[index] = {
         ...nextGallery[index],
@@ -454,20 +641,33 @@ export default function AdminSpotlight() {
     });
   };
 
-  const removeGalleryItem = (index, mode = "create") => {
+  const removeGalleryItem = (
+    index,
+    mode = "create"
+  ) => {
     const setter = getSetter(mode);
 
     setter((prev) => ({
       ...prev,
-      gallery: (Array.isArray(prev.gallery) ? prev.gallery : []).filter(
-        (_, itemIndex) => itemIndex !== index
+      gallery: (
+        Array.isArray(prev.gallery)
+          ? prev.gallery
+          : []
+      ).filter(
+        (_, itemIndex) =>
+          itemIndex !== index
       ),
     }));
   };
 
   const handleCreate = async () => {
-    if (!form.name.trim() || !form.slug.trim()) {
-      alert("Name and slug are required.");
+    if (
+      !form.name.trim() ||
+      !form.slug.trim()
+    ) {
+      alert(
+        "Name and slug are required."
+      );
       return;
     }
 
@@ -475,14 +675,26 @@ export default function AdminSpotlight() {
 
     const payload = {
       ...form,
-      slug: form.slug.trim().toLowerCase(),
+      slug: form.slug
+        .trim()
+        .toLowerCase(),
     };
 
-    const { error } = await supabase.from("spotlight_profiles").insert([payload]);
+    const { error } =
+      await supabase
+        .from("spotlight_profiles")
+        .insert([payload]);
 
     if (error) {
-      console.error("Error creating profile:", error);
-      alert("Error creating profile.");
+      console.error(
+        "Error creating profile:",
+        error
+      );
+
+      alert(
+        "Error creating profile."
+      );
+
       setSaving(false);
       return;
     }
@@ -494,9 +706,16 @@ export default function AdminSpotlight() {
   };
 
   const startEdit = (profile) => {
-    setEditForm(normalizeProfile(profile));
+    setEditForm(
+      normalizeProfile(profile)
+    );
+
     setBulkFilmographyEdit("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
   const cancelEdit = () => {
@@ -505,10 +724,17 @@ export default function AdminSpotlight() {
   };
 
   const saveEdit = async () => {
-    if (!editForm?.id) return;
+    if (!editForm?.id) {
+      return;
+    }
 
-    if (!editForm.name.trim() || !editForm.slug.trim()) {
-      alert("Name and slug are required.");
+    if (
+      !editForm.name.trim() ||
+      !editForm.slug.trim()
+    ) {
+      alert(
+        "Name and slug are required."
+      );
       return;
     }
 
@@ -516,34 +742,58 @@ export default function AdminSpotlight() {
 
     const payload = {
       name: editForm.name,
-      slug: editForm.slug.trim().toLowerCase(),
+      slug: editForm.slug
+        .trim()
+        .toLowerCase(),
       alias: editForm.alias,
       role: editForm.role,
       bio: editForm.bio,
-      aset_statement: editForm.aset_statement,
-      profile_image_url: editForm.profile_image_url,
-      featured_video_url: editForm.featured_video_url,
-      featured_video_title: editForm.featured_video_title,
-      featured_video_caption: editForm.featured_video_caption,
+      aset_statement:
+        editForm.aset_statement,
+      profile_image_url:
+        editForm.profile_image_url,
+      featured_video_url:
+        editForm.featured_video_url,
+      featured_video_title:
+        editForm.featured_video_title,
+      featured_video_caption:
+        editForm.featured_video_caption,
       awards: editForm.awards,
       gallery: editForm.gallery,
-      filmography: editForm.filmography,
-      discography: editForm.discography,
-      bibliography: editForm.bibliography,
-      fan_club: editForm.fan_club,
-      representation: editForm.representation,
+      filmography:
+        editForm.filmography,
+      discography:
+        editForm.discography,
+      bibliography:
+        editForm.bibliography,
+      fan_club:
+        editForm.fan_club,
+      representation:
+        editForm.representation,
       status: editForm.status,
-      featured: editForm.featured,
+      featured:
+        editForm.featured,
     };
 
-    const { error } = await supabase
-      .from("spotlight_profiles")
-      .update(payload)
-      .eq("id", editForm.id);
+    const { error } =
+      await supabase
+        .from("spotlight_profiles")
+        .update(payload)
+        .eq(
+          "id",
+          editForm.id
+        );
 
     if (error) {
-      console.error("Error saving profile:", error);
-      alert("Error saving profile.");
+      console.error(
+        "Error saving profile:",
+        error
+      );
+
+      alert(
+        "Error saving profile."
+      );
+
       setSaving(false);
       return;
     }
@@ -554,24 +804,43 @@ export default function AdminSpotlight() {
     fetchProfiles();
   };
 
-  const togglePublish = async (id, currentStatus) => {
-    const newStatus = currentStatus === "published" ? "draft" : "published";
+  const togglePublish = async (
+    id,
+    currentStatus
+  ) => {
+    const newStatus =
+      currentStatus === "published"
+        ? "draft"
+        : "published";
 
-    const { error } = await supabase
-      .from("spotlight_profiles")
-      .update({ status: newStatus })
-      .eq("id", id);
+    const { error } =
+      await supabase
+        .from("spotlight_profiles")
+        .update({
+          status: newStatus,
+        })
+        .eq("id", id);
 
     if (error) {
-      console.error("Error updating status:", error);
-      alert("Error updating profile status.");
+      console.error(
+        "Error updating status:",
+        error
+      );
+
+      alert(
+        "Error updating profile status."
+      );
+
       return;
     }
 
     fetchProfiles();
   };
 
-  const renderFormFields = (activeForm, mode) => (
+  const renderFormFields = (
+    activeForm,
+    mode
+  ) => (
     <>
       <div style={styles.grid}>
         <input
@@ -579,7 +848,9 @@ export default function AdminSpotlight() {
           name="name"
           placeholder="Name"
           value={activeForm.name}
-          onChange={(e) => handleChange(e, mode)}
+          onChange={(e) =>
+            handleChange(e, mode)
+          }
         />
 
         <input
@@ -587,7 +858,9 @@ export default function AdminSpotlight() {
           name="slug"
           placeholder="Slug example: richard-lawson"
           value={activeForm.slug}
-          onChange={(e) => handleChange(e, mode)}
+          onChange={(e) =>
+            handleChange(e, mode)
+          }
         />
 
         <input
@@ -595,7 +868,9 @@ export default function AdminSpotlight() {
           name="alias"
           placeholder="Alias / Stage Name"
           value={activeForm.alias}
-          onChange={(e) => handleChange(e, mode)}
+          onChange={(e) =>
+            handleChange(e, mode)
+          }
         />
 
         <input
@@ -603,96 +878,151 @@ export default function AdminSpotlight() {
           name="role"
           placeholder="Role"
           value={activeForm.role}
-          onChange={(e) => handleChange(e, mode)}
+          onChange={(e) =>
+            handleChange(e, mode)
+          }
         />
 
         <select
           style={styles.input}
           name="status"
           value={activeForm.status}
-          onChange={(e) => handleChange(e, mode)}
+          onChange={(e) =>
+            handleChange(e, mode)
+          }
         >
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
+          <option value="draft">
+            Draft
+          </option>
+
+          <option value="published">
+            Published
+          </option>
         </select>
       </div>
 
-      <h3 style={styles.subheading}>Profile Image</h3>
+      <h3 style={styles.subheading}>
+        Profile Image
+      </h3>
 
       <input
         style={styles.input}
         name="profile_image_url"
         placeholder="Profile Image URL"
-        value={activeForm.profile_image_url}
-        onChange={(e) => handleChange(e, mode)}
+        value={
+          activeForm.profile_image_url
+        }
+        onChange={(e) =>
+          handleChange(e, mode)
+        }
       />
 
       <input
         style={styles.fileInput}
         type="file"
         accept="image/*"
-        onChange={(e) => uploadProfileImage(e, mode)}
+        onChange={(e) =>
+          uploadProfileImage(
+            e,
+            mode
+          )
+        }
       />
 
       {activeForm.profile_image_url && (
         <img
-          src={activeForm.profile_image_url}
+          src={
+            activeForm.profile_image_url
+          }
           alt="Profile preview"
           style={styles.previewImage}
         />
       )}
 
-      <h3 style={styles.subheading}>Studio Statement</h3>
+      <h3 style={styles.subheading}>
+        Studio Statement
+      </h3>
 
       <p style={styles.helpText}>
-        Short statement shown near the top of the public Spotlight profile. Keep
-        this sharp, cinematic, and positioning-focused.
+        Short statement shown near the
+        top of the public Spotlight
+        profile. Keep this sharp,
+        cinematic, and
+        positioning-focused.
       </p>
 
       <textarea
         style={styles.textarea}
         name="aset_statement"
         placeholder="A career spanning more than five decades, Richard Lawson’s body of work moves through film, television, stage presence, cultural classics, and contemporary Black cinema."
-        value={activeForm.aset_statement}
-        onChange={(e) => handleChange(e, mode)}
+        value={
+          activeForm.aset_statement
+        }
+        onChange={(e) =>
+          handleChange(e, mode)
+        }
       />
 
-      <h3 style={styles.subheading}>Full Profile Bio</h3>
+      <h3 style={styles.subheading}>
+        Full Profile Bio
+      </h3>
 
       <p style={styles.helpText}>
-        This is the full cinematic profile shown on the public Spotlight page.
-        Write this as a complete entertainment biography including origin,
-        experience, creative identity, current projects, and future direction.
+        This is the full cinematic
+        profile shown on the public
+        Spotlight page. Write this as a
+        complete entertainment biography
+        including origin, experience,
+        creative identity, current
+        projects, and future direction.
       </p>
 
       <textarea
-        style={{ ...styles.textarea, minHeight: "220px" }}
+        style={{
+          ...styles.textarea,
+          minHeight: "220px",
+        }}
         name="bio"
         placeholder="Paste full cinematic biography here..."
         value={activeForm.bio}
-        onChange={(e) => handleChange(e, mode)}
+        onChange={(e) =>
+          handleChange(e, mode)
+        }
       />
 
       <p style={styles.helpText}>
-        Tip: Use paragraph breaks. The Spotlight page preserves spacing for a
-        cinematic reading experience.
+        Tip: Use paragraph breaks. The
+        Spotlight page preserves spacing
+        for a cinematic reading
+        experience.
       </p>
 
-      <h3 style={styles.subheading}>Verified Official Presence</h3>
+      <h3 style={styles.subheading}>
+        Verified Official Presence
+      </h3>
 
       <p style={styles.helpText}>
-        Add official external accounts for this Spotlight profile. These links
-        help visitors avoid scam, fake, or imitation accounts.
+        Add official external accounts
+        for this Spotlight profile. These
+        links help visitors avoid scam,
+        fake, or imitation accounts.
       </p>
 
       <input
         style={styles.input}
         placeholder="Section Label example: Verified Official Presence"
         value={
-          activeForm.representation?.official_presence?.label ||
+          activeForm.representation
+            ?.official_presence?.label ||
           "Verified Official Presence"
         }
-        onChange={(e) => updateOfficialPresence("label", e.target.value, mode)}
+        onChange={(e) =>
+          updateOfficialPresence(
+            "label",
+            e.target.value,
+            mode
+          )
+        }
       />
 
       <div style={styles.grid}>
@@ -700,10 +1030,16 @@ export default function AdminSpotlight() {
           style={styles.input}
           placeholder="Official Instagram URL"
           value={
-            activeForm.representation?.official_presence?.instagram_url || ""
+            activeForm.representation
+              ?.official_presence
+              ?.instagram_url || ""
           }
           onChange={(e) =>
-            updateOfficialPresence("instagram_url", e.target.value, mode)
+            updateOfficialPresence(
+              "instagram_url",
+              e.target.value,
+              mode
+            )
           }
         />
 
@@ -711,93 +1047,153 @@ export default function AdminSpotlight() {
           style={styles.input}
           placeholder="Official YouTube Channel URL"
           value={
-            activeForm.representation?.official_presence?.youtube_url || ""
+            activeForm.representation
+              ?.official_presence
+              ?.youtube_url || ""
           }
           onChange={(e) =>
-            updateOfficialPresence("youtube_url", e.target.value, mode)
+            updateOfficialPresence(
+              "youtube_url",
+              e.target.value,
+              mode
+            )
           }
         />
       </div>
 
-      <h3 style={styles.subheading}>Representation Statement</h3>
+      <h3 style={styles.subheading}>
+        Representation Statement
+      </h3>
 
       <p style={styles.helpText}>
-        Custom representation messaging shown on the public profile. Use this
-        for inquiry instructions, contact positioning, or representative notes.
+        Custom representation messaging
+        shown on the public profile. Use
+        this for inquiry instructions,
+        contact positioning, or
+        representative notes.
       </p>
 
       <textarea
-        style={{ ...styles.textarea, minHeight: "140px" }}
+        style={{
+          ...styles.textarea,
+          minHeight: "140px",
+        }}
         placeholder="Example: All professional inquiries are managed through The Aset Studio..."
-        value={activeForm.representation?.statement || ""}
-        onChange={(e) => updateRepresentationStatement(e.target.value, mode)}
+        value={
+          activeForm.representation
+            ?.statement || ""
+        }
+        onChange={(e) =>
+          updateRepresentationStatement(
+            e.target.value,
+            mode
+          )
+        }
       />
 
-      <h3 style={styles.subheading}>Featured Screening</h3>
+      <h3 style={styles.subheading}>
+        Featured Screening
+      </h3>
 
       <input
         style={styles.input}
         name="featured_video_url"
         placeholder="Featured Video URL"
-        value={activeForm.featured_video_url}
-        onChange={(e) => handleChange(e, mode)}
+        value={
+          activeForm.featured_video_url
+        }
+        onChange={(e) =>
+          handleChange(e, mode)
+        }
       />
 
       <input
         style={styles.fileInput}
         type="file"
         accept="video/*"
-        onChange={(e) => uploadFeaturedVideo(e, mode)}
+        onChange={(e) =>
+          uploadFeaturedVideo(
+            e,
+            mode
+          )
+        }
       />
 
       <input
         style={styles.input}
         name="featured_video_title"
         placeholder="Featured Video Title"
-        value={activeForm.featured_video_title}
-        onChange={(e) => handleChange(e, mode)}
+        value={
+          activeForm.featured_video_title
+        }
+        onChange={(e) =>
+          handleChange(e, mode)
+        }
       />
 
       <textarea
         style={styles.textarea}
         name="featured_video_caption"
         placeholder="Featured Video Caption"
-        value={activeForm.featured_video_caption}
-        onChange={(e) => handleChange(e, mode)}
+        value={
+          activeForm.featured_video_caption
+        }
+        onChange={(e) =>
+          handleChange(e, mode)
+        }
       />
 
       {activeForm.featured_video_url && (
         <video
-          src={activeForm.featured_video_url}
+          src={
+            activeForm.featured_video_url
+          }
           controls
           playsInline
           style={styles.previewVideo}
         />
       )}
 
-      <h3 style={styles.subheading}>Bulk Filmography Import</h3>
+      <h3 style={styles.subheading}>
+        Bulk Filmography Import
+      </h3>
 
       <p style={styles.helpText}>
-        Paste one credit per line. Best format: Year | Title | Type or Status |
-        Role | Optional Description. Example: 1982 | Poltergeist | Film | Ryan.
+        Paste one credit per line. Best
+        format: Year | Title | Type or
+        Status | Role | Optional
+        Description. Example: 1982 |
+        Poltergeist | Film | Ryan.
       </p>
 
       <textarea
-        style={{ ...styles.textarea, minHeight: "180px" }}
+        style={{
+          ...styles.textarea,
+          minHeight: "180px",
+        }}
         placeholder={`2025 | Beauty in Black | Series | Norman
 2024 | Tyler Perry’s Divorce in the Black | Film | Clarence
 2022 | The Ms. Pat Show | Series | Major
 1982 | Poltergeist | Film | Ryan
 1974 | Sugar Hill | Film | Valentine`}
-        value={getBulkFilmographyValue(mode)}
-        onChange={(e) => setBulkFilmographyValue(mode, e.target.value)}
+        value={
+          getBulkFilmographyValue(mode)
+        }
+        onChange={(e) =>
+          setBulkFilmographyValue(
+            mode,
+            e.target.value
+          )
+        }
       />
 
       <div style={styles.buttonRow}>
         <button
           style={styles.secondaryButton}
           type="button"
-          onClick={() => importBulkFilmography(mode)}
+          onClick={() =>
+            importBulkFilmography(mode)
+          }
         >
           Import Filmography
         </button>
@@ -805,219 +1201,384 @@ export default function AdminSpotlight() {
         <button
           style={styles.dangerButton}
           type="button"
-          onClick={() => clearFilmography(mode)}
+          onClick={() =>
+            clearFilmography(mode)
+          }
         >
           Clear Filmography
         </button>
       </div>
 
-      <h3 style={styles.subheading}>Filmography</h3>
+      <h3 style={styles.subheading}>
+        Filmography
+      </h3>
 
       <p style={styles.helpText}>
-        Add official, upcoming, or in-development screen projects. For long
-        careers, use the bulk importer above, then clean individual cards here.
+        Add official, upcoming, or
+        in-development screen projects.
+        For long careers, use the bulk
+        importer above, then clean
+        individual cards here.
       </p>
 
-      {Array.isArray(activeForm.filmography) &&
-        activeForm.filmography.map((item, index) => (
-          <div key={`filmography-${index}`} style={styles.filmCard}>
-            <div style={styles.grid}>
-              <input
-                style={styles.input}
-                placeholder="Title example: Poltergeist"
-                value={item.title || ""}
-                onChange={(e) =>
-                  updateFilmographyItem(index, "title", e.target.value, mode)
-                }
-              />
-
-              <input
-                style={styles.input}
-                placeholder="Year example: 1982"
-                value={item.year || ""}
-                onChange={(e) =>
-                  updateFilmographyItem(index, "year", e.target.value, mode)
-                }
-              />
-
-              <input
-                style={styles.input}
-                placeholder="Type / Status example: Film"
-                value={item.status || ""}
-                onChange={(e) =>
-                  updateFilmographyItem(index, "status", e.target.value, mode)
-                }
-              />
-
-              <input
-                style={styles.input}
-                placeholder="Role example: Ryan"
-                value={item.role || ""}
-                onChange={(e) =>
-                  updateFilmographyItem(index, "role", e.target.value, mode)
-                }
-              />
-            </div>
-
-            <textarea
-              style={styles.textarea}
-              placeholder="Optional description..."
-              value={item.description || ""}
-              onChange={(e) =>
-                updateFilmographyItem(index, "description", e.target.value, mode)
-              }
-            />
-
-            <button
-              style={styles.dangerButton}
-              type="button"
-              onClick={() => removeFilmographyItem(index, mode)}
+      {Array.isArray(
+        activeForm.filmography
+      ) &&
+        activeForm.filmography.map(
+          (item, index) => (
+            <div
+              key={`filmography-${index}`}
+              style={styles.filmCard}
             >
-              Remove Credit
-            </button>
-          </div>
-        ))}
+              <div style={styles.grid}>
+                <input
+                  style={styles.input}
+                  placeholder="Title example: Poltergeist"
+                  value={
+                    item.title || ""
+                  }
+                  onChange={(e) =>
+                    updateFilmographyItem(
+                      index,
+                      "title",
+                      e.target.value,
+                      mode
+                    )
+                  }
+                />
+
+                <input
+                  style={styles.input}
+                  placeholder="Year example: 1982"
+                  value={
+                    item.year || ""
+                  }
+                  onChange={(e) =>
+                    updateFilmographyItem(
+                      index,
+                      "year",
+                      e.target.value,
+                      mode
+                    )
+                  }
+                />
+
+                <input
+                  style={styles.input}
+                  placeholder="Type / Status example: Film"
+                  value={
+                    item.status || ""
+                  }
+                  onChange={(e) =>
+                    updateFilmographyItem(
+                      index,
+                      "status",
+                      e.target.value,
+                      mode
+                    )
+                  }
+                />
+
+                <input
+                  style={styles.input}
+                  placeholder="Role example: Ryan"
+                  value={
+                    item.role || ""
+                  }
+                  onChange={(e) =>
+                    updateFilmographyItem(
+                      index,
+                      "role",
+                      e.target.value,
+                      mode
+                    )
+                  }
+                />
+              </div>
+
+              <textarea
+                style={
+                  styles.textarea
+                }
+                placeholder="Optional description..."
+                value={
+                  item.description || ""
+                }
+                onChange={(e) =>
+                  updateFilmographyItem(
+                    index,
+                    "description",
+                    e.target.value,
+                    mode
+                  )
+                }
+              />
+
+              <button
+                style={
+                  styles.dangerButton
+                }
+                type="button"
+                onClick={() =>
+                  removeFilmographyItem(
+                    index,
+                    mode
+                  )
+                }
+              >
+                Remove Credit
+              </button>
+            </div>
+          )
+        )}
 
       <button
         style={styles.secondaryButton}
         type="button"
-        onClick={() => addFilmographyItem(mode)}
+        onClick={() =>
+          addFilmographyItem(mode)
+        }
       >
         + Add Credit
       </button>
 
-      <h3 style={styles.subheading}>Bibliography</h3>
+      <h3 style={styles.subheading}>
+        Bibliography
+      </h3>
 
       <p style={styles.helpText}>
-        Add novels, written works, source material, and literary IP. Use this for
-        foundational works like Brick by Brick.
+        Add novels, written works, source
+        material, and literary IP
+        connected to the featured
+        professional's career and creative
+        work.
       </p>
 
-      {Array.isArray(activeForm.bibliography) &&
-        activeForm.bibliography.map((item, index) => (
-          <div key={`bibliography-${index}`} style={styles.filmCard}>
-            <div style={styles.grid}>
-              <input
-                style={styles.input}
-                placeholder="Title example: Brick by Brick"
-                value={item.title || ""}
-                onChange={(e) =>
-                  updateBibliographyItem(index, "title", e.target.value, mode)
-                }
-              />
-
-              <input
-                style={styles.input}
-                placeholder="Year example: 2026"
-                value={item.year || ""}
-                onChange={(e) =>
-                  updateBibliographyItem(index, "year", e.target.value, mode)
-                }
-              />
-
-              <input
-                style={styles.input}
-                placeholder="Type example: Novel / Source Material"
-                value={item.type || ""}
-                onChange={(e) =>
-                  updateBibliographyItem(index, "type", e.target.value, mode)
-                }
-              />
-
-              <input
-                style={styles.input}
-                placeholder="Role example: Creator / Writer"
-                value={item.role || ""}
-                onChange={(e) =>
-                  updateBibliographyItem(index, "role", e.target.value, mode)
-                }
-              />
-            </div>
-
-            <textarea
-              style={styles.textarea}
-              placeholder="Description example: Foundational novel for Brick by Brick: The Series..."
-              value={item.description || ""}
-              onChange={(e) =>
-                updateBibliographyItem(index, "description", e.target.value, mode)
-              }
-            />
-
-            <button
-              style={styles.dangerButton}
-              type="button"
-              onClick={() => removeBibliographyItem(index, mode)}
+      {Array.isArray(
+        activeForm.bibliography
+      ) &&
+        activeForm.bibliography.map(
+          (item, index) => (
+            <div
+              key={`bibliography-${index}`}
+              style={styles.filmCard}
             >
-              Remove Written Work
-            </button>
-          </div>
-        ))}
+              <div style={styles.grid}>
+                <input
+                  style={styles.input}
+                  placeholder="Title of written work"
+                  value={
+                    item.title || ""
+                  }
+                  onChange={(e) =>
+                    updateBibliographyItem(
+                      index,
+                      "title",
+                      e.target.value,
+                      mode
+                    )
+                  }
+                />
+
+                <input
+                  style={styles.input}
+                  placeholder="Year example: 2026"
+                  value={
+                    item.year || ""
+                  }
+                  onChange={(e) =>
+                    updateBibliographyItem(
+                      index,
+                      "year",
+                      e.target.value,
+                      mode
+                    )
+                  }
+                />
+
+                <input
+                  style={styles.input}
+                  placeholder="Type example: Novel / Source Material"
+                  value={
+                    item.type || ""
+                  }
+                  onChange={(e) =>
+                    updateBibliographyItem(
+                      index,
+                      "type",
+                      e.target.value,
+                      mode
+                    )
+                  }
+                />
+
+                <input
+                  style={styles.input}
+                  placeholder="Role example: Creator / Writer"
+                  value={
+                    item.role || ""
+                  }
+                  onChange={(e) =>
+                    updateBibliographyItem(
+                      index,
+                      "role",
+                      e.target.value,
+                      mode
+                    )
+                  }
+                />
+              </div>
+
+              <textarea
+                style={
+                  styles.textarea
+                }
+                placeholder="Description of the written work, source material, or literary project..."
+                value={
+                  item.description || ""
+                }
+                onChange={(e) =>
+                  updateBibliographyItem(
+                    index,
+                    "description",
+                    e.target.value,
+                    mode
+                  )
+                }
+              />
+
+              <button
+                style={
+                  styles.dangerButton
+                }
+                type="button"
+                onClick={() =>
+                  removeBibliographyItem(
+                    index,
+                    mode
+                  )
+                }
+              >
+                Remove Written Work
+              </button>
+            </div>
+          )
+        )}
 
       <button
         style={styles.secondaryButton}
         type="button"
-        onClick={() => addBibliographyItem(mode)}
+        onClick={() =>
+          addBibliographyItem(mode)
+        }
       >
         + Add Written Work
       </button>
 
-      <h3 style={styles.subheading}>Gallery Images & Videos</h3>
+      <h3 style={styles.subheading}>
+        Gallery Images & Videos
+      </h3>
 
       <input
         style={styles.fileInput}
         type="file"
         accept="image/*,video/*"
         multiple
-        onChange={(e) => uploadGalleryFiles(e, mode)}
+        onChange={(e) =>
+          uploadGalleryFiles(
+            e,
+            mode
+          )
+        }
       />
 
-      {Array.isArray(activeForm.gallery) && activeForm.gallery.length > 0 && (
-        <div style={styles.galleryGrid}>
-          {activeForm.gallery.map((item, index) => (
-            <div key={`${item.url}-${index}`} style={styles.galleryCard}>
-              {item.type === "video" ? (
-                <video
-                  src={item.url}
-                  controls
-                  playsInline
-                  style={styles.galleryMedia}
-                />
-              ) : (
-                <img
-                  src={item.url}
-                  alt={item.caption || "Gallery item"}
-                  style={styles.galleryMedia}
-                />
-              )}
+      {Array.isArray(
+        activeForm.gallery
+      ) &&
+        activeForm.gallery.length > 0 && (
+          <div
+            style={styles.galleryGrid}
+          >
+            {activeForm.gallery.map(
+              (item, index) => (
+                <div
+                  key={`${item.url}-${index}`}
+                  style={
+                    styles.galleryCard
+                  }
+                >
+                  {item.type ===
+                  "video" ? (
+                    <video
+                      src={item.url}
+                      controls
+                      playsInline
+                      style={
+                        styles.galleryMedia
+                      }
+                    />
+                  ) : (
+                    <img
+                      src={item.url}
+                      alt={
+                        item.caption ||
+                        "Gallery item"
+                      }
+                      style={
+                        styles.galleryMedia
+                      }
+                    />
+                  )}
 
-              <input
-                style={styles.input}
-                placeholder="Caption"
-                value={item.caption || ""}
-                onChange={(e) =>
-                  updateGalleryCaption(index, e.target.value, mode)
-                }
-              />
+                  <input
+                    style={
+                      styles.input
+                    }
+                    placeholder="Caption"
+                    value={
+                      item.caption || ""
+                    }
+                    onChange={(e) =>
+                      updateGalleryCaption(
+                        index,
+                        e.target.value,
+                        mode
+                      )
+                    }
+                  />
 
-              <button
-                style={styles.dangerButton}
-                type="button"
-                onClick={() => removeGalleryItem(index, mode)}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+                  <button
+                    style={
+                      styles.dangerButton
+                    }
+                    type="button"
+                    onClick={() =>
+                      removeGalleryItem(
+                        index,
+                        mode
+                      )
+                    }
+                  >
+                    Remove
+                  </button>
+                </div>
+              )
+            )}
+          </div>
+        )}
 
       <label style={styles.checkboxRow}>
         <input
           type="checkbox"
           name="featured"
-          checked={activeForm.featured}
-          onChange={(e) => handleChange(e, mode)}
+          checked={
+            activeForm.featured
+          }
+          onChange={(e) =>
+            handleChange(e, mode)
+          }
         />
+
         Mark as featured Spotlight profile
       </label>
     </>
@@ -1025,23 +1586,43 @@ export default function AdminSpotlight() {
 
   return (
     <main style={styles.page}>
-      <h1 style={styles.title}>Admin Spotlight</h1>
+      <h1 style={styles.title}>
+        Admin Spotlight
+      </h1>
+
       <p style={styles.subtitle}>
-        Create, edit, publish, and control curated Aset Spotlight profiles.
+        Create, edit, publish, and control
+        curated Aset Spotlight profiles.
       </p>
 
       {editForm && (
         <section style={styles.panel}>
-          <h2 style={styles.sectionTitle}>Edit Profile</h2>
+          <h2 style={styles.sectionTitle}>
+            Edit Profile
+          </h2>
 
-          {renderFormFields(editForm, "edit")}
+          {renderFormFields(
+            editForm,
+            "edit"
+          )}
 
           <div style={styles.buttonRow}>
-            <button style={styles.button} onClick={saveEdit} disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
+            <button
+              style={styles.button}
+              onClick={saveEdit}
+              disabled={saving}
+            >
+              {saving
+                ? "Saving..."
+                : "Save Changes"}
             </button>
 
-            <button style={styles.secondaryButton} onClick={cancelEdit}>
+            <button
+              style={
+                styles.secondaryButton
+              }
+              onClick={cancelEdit}
+            >
               Cancel Edit
             </button>
           </div>
@@ -1049,77 +1630,197 @@ export default function AdminSpotlight() {
       )}
 
       <section style={styles.panel}>
-        <h2 style={styles.sectionTitle}>Create New Profile</h2>
+        <h2 style={styles.sectionTitle}>
+          Create New Profile
+        </h2>
 
-        {renderFormFields(form, "create")}
+        {renderFormFields(
+          form,
+          "create"
+        )}
 
-        <button style={styles.button} onClick={handleCreate} disabled={saving}>
-          {saving ? "Creating..." : "Create Profile"}
+        <button
+          style={styles.button}
+          onClick={handleCreate}
+          disabled={saving}
+        >
+          {saving
+            ? "Creating..."
+            : "Create Profile"}
         </button>
       </section>
 
       <section style={styles.panel}>
-        <h2 style={styles.sectionTitle}>All Profiles</h2>
+        <h2 style={styles.sectionTitle}>
+          All Profiles
+        </h2>
 
         {loading ? (
-          <p style={styles.muted}>Loading...</p>
+          <p style={styles.muted}>
+            Loading...
+          </p>
         ) : profiles.length === 0 ? (
-          <p style={styles.muted}>No profiles found.</p>
+          <p style={styles.muted}>
+            No profiles found.
+          </p>
         ) : (
           profiles.map((profile) => (
-            <article key={profile.id} style={styles.profileCard}>
+            <article
+              key={profile.id}
+              style={
+                styles.profileCard
+              }
+            >
               <div>
-                <p style={styles.kicker}>Aset Spotlight</p>
-                <h3 style={styles.profileName}>
-                  {profile.alias || profile.name}
+                <p
+                  style={
+                    styles.kicker
+                  }
+                >
+                  Aset Spotlight
+                </p>
+
+                <h3
+                  style={
+                    styles.profileName
+                  }
+                >
+                  {profile.alias ||
+                    profile.name}
                 </h3>
+
                 {profile.alias && (
-                  <p style={styles.profileAlias}>{profile.name}</p>
+                  <p
+                    style={
+                      styles.profileAlias
+                    }
+                  >
+                    {profile.name}
+                  </p>
                 )}
-                <p style={styles.muted}>Slug: {profile.slug}</p>
-                <p style={styles.muted}>Status: {profile.status}</p>
-                <p style={styles.muted}>
+
+                <p
+                  style={
+                    styles.muted
+                  }
+                >
+                  Slug: {profile.slug}
+                </p>
+
+                <p
+                  style={
+                    styles.muted
+                  }
+                >
+                  Status:{" "}
+                  {profile.status}
+                </p>
+
+                <p
+                  style={
+                    styles.muted
+                  }
+                >
                   Featured Screening:{" "}
-                  {profile.featured_video_url ? "Added" : "Not added"}
+                  {profile.featured_video_url
+                    ? "Added"
+                    : "Not added"}
                 </p>
-                <p style={styles.muted}>
+
+                <p
+                  style={
+                    styles.muted
+                  }
+                >
                   Gallery Items:{" "}
-                  {Array.isArray(profile.gallery) ? profile.gallery.length : 0}
+                  {Array.isArray(
+                    profile.gallery
+                  )
+                    ? profile.gallery
+                        .length
+                    : 0}
                 </p>
-                <p style={styles.muted}>
+
+                <p
+                  style={
+                    styles.muted
+                  }
+                >
                   Filmography Credits:{" "}
-                  {Array.isArray(profile.filmography)
-                    ? profile.filmography.length
+                  {Array.isArray(
+                    profile.filmography
+                  )
+                    ? profile
+                        .filmography
+                        .length
                     : 0}
                 </p>
-                <p style={styles.muted}>
+
+                <p
+                  style={
+                    styles.muted
+                  }
+                >
                   Written Works:{" "}
-                  {Array.isArray(profile.bibliography)
-                    ? profile.bibliography.length
+                  {Array.isArray(
+                    profile.bibliography
+                  )
+                    ? profile
+                        .bibliography
+                        .length
                     : 0}
                 </p>
-                <p style={styles.muted}>
+
+                <p
+                  style={
+                    styles.muted
+                  }
+                >
                   Verified Presence:{" "}
-                  {profile.representation?.official_presence?.instagram_url ||
-                  profile.representation?.official_presence?.youtube_url
+                  {profile.representation
+                    ?.official_presence
+                    ?.instagram_url ||
+                  profile.representation
+                    ?.official_presence
+                    ?.youtube_url
                     ? "Added"
                     : "Not added"}
                 </p>
               </div>
 
-              <div style={styles.actions}>
+              <div
+                style={
+                  styles.actions
+                }
+              >
                 <button
-                  style={styles.smallButton}
-                  onClick={() => startEdit(profile)}
+                  style={
+                    styles.smallButton
+                  }
+                  onClick={() =>
+                    startEdit(
+                      profile
+                    )
+                  }
                 >
                   Edit Profile
                 </button>
 
                 <button
-                  style={styles.smallButton}
-                  onClick={() => togglePublish(profile.id, profile.status)}
+                  style={
+                    styles.smallButton
+                  }
+                  onClick={() =>
+                    togglePublish(
+                      profile.id,
+                      profile.status
+                    )
+                  }
                 >
-                  {profile.status === "published" ? "Unpublish" : "Publish"}
+                  {profile.status ===
+                  "published"
+                    ? "Unpublish"
+                    : "Publish"}
                 </button>
               </div>
             </article>
@@ -1133,7 +1834,8 @@ export default function AdminSpotlight() {
 const styles = {
   page: {
     minHeight: "100vh",
-    padding: "110px 6vw 70px",
+    padding:
+      "110px 6vw 70px",
     background:
       "radial-gradient(circle at top left, rgba(169,112,42,0.16), transparent 34%), #000",
     color: "#f5efe5",
@@ -1150,8 +1852,10 @@ const styles = {
   },
 
   panel: {
-    border: "1px solid rgba(255,255,255,0.1)",
-    background: "rgba(255,255,255,0.035)",
+    border:
+      "1px solid rgba(255,255,255,0.1)",
+    background:
+      "rgba(255,255,255,0.035)",
     padding: "28px",
     marginBottom: "32px",
   },
@@ -1179,7 +1883,8 @@ const styles = {
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(220px, 1fr))",
     gap: "12px",
     marginBottom: "12px",
   },
@@ -1190,7 +1895,8 @@ const styles = {
     marginBottom: "12px",
     background: "#090909",
     color: "#fff",
-    border: "1px solid rgba(255,255,255,0.16)",
+    border:
+      "1px solid rgba(255,255,255,0.16)",
   },
 
   fileInput: {
@@ -1199,7 +1905,8 @@ const styles = {
     marginBottom: "12px",
     background: "#090909",
     color: "#d9ccb8",
-    border: "1px solid rgba(255,255,255,0.16)",
+    border:
+      "1px solid rgba(255,255,255,0.16)",
   },
 
   textarea: {
@@ -1209,7 +1916,8 @@ const styles = {
     marginBottom: "12px",
     background: "#090909",
     color: "#fff",
-    border: "1px solid rgba(255,255,255,0.16)",
+    border:
+      "1px solid rgba(255,255,255,0.16)",
     resize: "vertical",
   },
 
@@ -1241,7 +1949,8 @@ const styles = {
     padding: "12px 18px",
     background: "transparent",
     color: "#f5efe5",
-    border: "1px solid rgba(255,255,255,0.25)",
+    border:
+      "1px solid rgba(255,255,255,0.25)",
     fontWeight: 800,
     cursor: "pointer",
   },
@@ -1250,7 +1959,8 @@ const styles = {
     padding: "10px 12px",
     background: "transparent",
     color: "#ffb4a8",
-    border: "1px solid rgba(255,120,100,0.45)",
+    border:
+      "1px solid rgba(255,120,100,0.45)",
     cursor: "pointer",
   },
 
@@ -1259,7 +1969,8 @@ const styles = {
     maxWidth: "100%",
     display: "block",
     margin: "12px 0 20px",
-    border: "1px solid rgba(255,255,255,0.12)",
+    border:
+      "1px solid rgba(255,255,255,0.12)",
   },
 
   previewVideo: {
@@ -1267,20 +1978,24 @@ const styles = {
     maxHeight: "420px",
     margin: "12px 0 20px",
     background: "#000",
-    border: "1px solid rgba(255,255,255,0.12)",
+    border:
+      "1px solid rgba(255,255,255,0.12)",
   },
 
   galleryGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(220px, 1fr))",
     gap: "16px",
     margin: "16px 0",
   },
 
   galleryCard: {
-    border: "1px solid rgba(255,255,255,0.1)",
+    border:
+      "1px solid rgba(255,255,255,0.1)",
     padding: "14px",
-    background: "rgba(0,0,0,0.35)",
+    background:
+      "rgba(0,0,0,0.35)",
   },
 
   galleryMedia: {
@@ -1293,7 +2008,8 @@ const styles = {
   },
 
   filmCard: {
-    border: "1px solid rgba(255,255,255,0.1)",
+    border:
+      "1px solid rgba(255,255,255,0.1)",
     padding: "16px",
     marginBottom: "14px",
     background:
@@ -1302,10 +2018,13 @@ const styles = {
 
   profileCard: {
     display: "flex",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     gap: "20px",
-    border: "1px solid rgba(255,255,255,0.1)",
-    background: "rgba(0,0,0,0.4)",
+    border:
+      "1px solid rgba(255,255,255,0.1)",
+    background:
+      "rgba(0,0,0,0.4)",
     padding: "20px",
     marginBottom: "16px",
   },
@@ -1344,7 +2063,8 @@ const styles = {
     padding: "10px 12px",
     background: "transparent",
     color: "#f5efe5",
-    border: "1px solid rgba(215,180,108,0.5)",
+    border:
+      "1px solid rgba(215,180,108,0.5)",
     cursor: "pointer",
   },
 };

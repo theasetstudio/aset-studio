@@ -60,14 +60,6 @@ const adminSections = [
     path: "/admin/beauty-applications",
     action: "Review Applications",
   },
-  {
-    number: "08",
-    title: "Brick by Brick",
-    description:
-      "Manage Brick by Brick characters, world content and production tools.",
-    path: "/brick-admin",
-    action: "Open Brick Admin",
-  },
 ];
 
 export default function AdminPage() {

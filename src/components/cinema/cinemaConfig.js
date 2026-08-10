@@ -33,7 +33,6 @@ export const PRIMARY_ROWS = [
       "original production",
       "original film",
       "original series",
-      "brick by brick",
     ],
   },
 
@@ -92,7 +91,6 @@ export const PRIMARY_ROWS = [
       "generative film",
       "synthetic cinema",
       "artificial intelligence",
-      "brick by brick",
     ],
   },
 

@@ -34,14 +34,16 @@ export default function TopNav() {
   };
 
   const isAdminArea =
-    location.pathname.startsWith("/admin") ||
-    location.pathname === "/brick-admin";
+    location.pathname.startsWith("/admin");
 
   const isExpressionVault =
     location.pathname === "/studio/expression-vault";
 
-  const isServices = location.pathname === "/services";
-  const isHomePage = location.pathname === "/";
+  const isServices =
+    location.pathname === "/services";
+
+  const isHomePage =
+    location.pathname === "/";
 
   if (isAdminArea) {
     return null;
@@ -49,7 +51,9 @@ export default function TopNav() {
 
   const navStyle = {
     ...styles.nav,
-    ...(isHomePage ? styles.navHome : styles.navInner),
+    ...(isHomePage
+      ? styles.navHome
+      : styles.navInner),
   };
 
   const logoStyle = {
@@ -63,7 +67,10 @@ export default function TopNav() {
         style={logoStyle}
         onClick={() => navigate("/")}
         onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
+          if (
+            event.key === "Enter" ||
+            event.key === " "
+          ) {
             event.preventDefault();
             navigate("/");
           }
@@ -79,9 +86,13 @@ export default function TopNav() {
           type="button"
           style={{
             ...styles.button,
-            ...(isExpressionVault ? styles.activeButton : {}),
+            ...(isExpressionVault
+              ? styles.activeButton
+              : {}),
           }}
-          onClick={() => navigate("/studio/expression-vault")}
+          onClick={() =>
+            navigate("/studio/expression-vault")
+          }
         >
           Expression Vault
         </button>
@@ -90,7 +101,9 @@ export default function TopNav() {
           type="button"
           style={{
             ...styles.button,
-            ...(isServices ? styles.activeButton : {}),
+            ...(isServices
+              ? styles.activeButton
+              : {}),
           }}
           onClick={() => navigate("/services")}
         >
@@ -102,7 +115,9 @@ export default function TopNav() {
             <button
               type="button"
               style={styles.button}
-              onClick={() => navigate("/creator-hub")}
+              onClick={() =>
+                navigate("/creator-hub")
+              }
             >
               Hub
             </button>
@@ -145,8 +160,10 @@ const styles = {
     gap: "10px",
     backdropFilter: "blur(22px)",
     WebkitBackdropFilter: "blur(22px)",
-    borderBottom: "1px solid rgba(212, 175, 55, 0.12)",
-    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.22)",
+    borderBottom:
+      "1px solid rgba(212, 175, 55, 0.12)",
+    boxShadow:
+      "0 10px 30px rgba(0, 0, 0, 0.22)",
   },
 
   navHome: {
@@ -168,7 +185,8 @@ const styles = {
 
   logoHome: {
     color: "#f2f0ea",
-    textShadow: "0 1px 10px rgba(0,0,0,0.35)",
+    textShadow:
+      "0 1px 10px rgba(0,0,0,0.35)",
   },
 
   actions: {
@@ -180,9 +198,11 @@ const styles = {
   },
 
   button: {
-    background: "rgba(18, 18, 20, 0.68)",
+    background:
+      "rgba(18, 18, 20, 0.68)",
     color: "white",
-    border: "1px solid rgba(255,255,255,0.12)",
+    border:
+      "1px solid rgba(255,255,255,0.12)",
     padding: "8px 14px",
     borderRadius: "10px",
     cursor: "pointer",
@@ -190,12 +210,14 @@ const styles = {
     whiteSpace: "nowrap",
     backdropFilter: "blur(12px)",
     WebkitBackdropFilter: "blur(12px)",
-    boxShadow: "0 4px 14px rgba(0,0,0,0.18)",
+    boxShadow:
+      "0 4px 14px rgba(0,0,0,0.18)",
     transition: "all 0.2s ease",
   },
 
   activeButton: {
-    border: "1px solid rgba(212, 175, 55, 0.62)",
+    border:
+      "1px solid rgba(212, 175, 55, 0.62)",
     color: "#e7d2a2",
     boxShadow:
       "0 0 0 1px rgba(214,195,165,0.15) inset, 0 6px 18px rgba(0,0,0,0.18)",
