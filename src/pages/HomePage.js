@@ -114,6 +114,20 @@ export default function HomePage() {
     },
 
     {
+      eyebrow: "ASET STUDIO AFTER DARK",
+      title: "Photography after the lights go low.",
+      text:
+        "A mature gallery for boudoir, intimate portraiture, sensual editorial photography, and elevated visual concepts from The Aset Studio.",
+      panelEyebrow: "18+ GALLERY",
+      panelTitle: "After Dark",
+      panelText:
+        "A black-and-charcoal gallery experience for mature artistic photography.",
+      path: "/after-dark",
+      button: "Enter After Dark",
+      variant: "light",
+    },
+
+    {
       eyebrow: "THE GALLERY",
       title: "Enter the Gallery",
       text:
@@ -635,6 +649,21 @@ export default function HomePage() {
             </Link>
 
             <Link
+              to="/after-dark"
+              style={styles.afterDarkPortalCard}
+            >
+              <span>
+                Aset Studio After Dark
+              </span>
+
+              <small
+                style={styles.afterDarkPortalLabel}
+              >
+                18+
+              </small>
+            </Link>
+
+            <Link
               to="/gallery"
               style={styles.portalCard}
             >
@@ -1143,5 +1172,36 @@ const styles = {
       "1px solid rgba(245,241,235,0.08)",
     background:
       "rgba(255,255,255,0.023)",
+  },
+
+  afterDarkPortalCard: {
+    padding: "20px 18px",
+    borderRadius: 18,
+    textDecoration: "none",
+    color: "#f5f1eb",
+    border:
+      "1px solid rgba(245,241,235,0.14)",
+    background:
+      "linear-gradient(145deg, #1b1b1b, #090909)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+
+  afterDarkPortalLabel: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 34,
+    height: 24,
+    padding: "0 8px",
+    borderRadius: 999,
+    border:
+      "1px solid rgba(245,241,235,0.18)",
+    color: "rgba(245,241,235,0.72)",
+    fontSize: 10,
+    fontWeight: 900,
+    letterSpacing: "0.08em",
   },
 };

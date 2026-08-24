@@ -60,6 +60,14 @@ const adminSections = [
     path: "/admin/beauty-applications",
     action: "Review Applications",
   },
+  {
+    number: "08",
+    title: "After Dark",
+    description:
+      "Upload and manage boudoir, intimate portraiture and mature editorial photography for Aset Studio After Dark.",
+    path: "/admin/after-dark",
+    action: "Open After Dark Admin",
+  },
 ];
 
 export default function AdminPage() {
@@ -76,7 +84,11 @@ export default function AdminPage() {
       navigate("/");
     } catch (error) {
       console.error("Admin logout failed:", error);
-      alert(error?.message || "Logout failed.");
+
+      alert(
+        error?.message ||
+          "Logout failed."
+      );
     }
   }
 
@@ -129,8 +141,9 @@ export default function AdminPage() {
           </h1>
 
           <p className="aset-control-intro">
-            Choose the department you want to manage. Each area now has
-            one clear purpose and its own dedicated workspace.
+            Choose the department you want to manage.
+            Each area now has one clear purpose and its
+            own dedicated workspace.
           </p>
         </header>
 
@@ -144,13 +157,16 @@ export default function AdminPage() {
               className="aset-control-card"
               role="button"
               tabIndex={0}
-              onClick={() => openSection(section.path)}
+              onClick={() =>
+                openSection(section.path)
+              }
               onKeyDown={(event) => {
                 if (
                   event.key === "Enter" ||
                   event.key === " "
                 ) {
                   event.preventDefault();
+
                   openSection(section.path);
                 }
               }}
@@ -191,7 +207,8 @@ export default function AdminPage() {
           <p>THE ASET STUDIO</p>
 
           <span>
-            Business, network and creative production administration.
+            Business, network and creative production
+            administration.
           </span>
         </footer>
       </section>

@@ -11,14 +11,18 @@ import TopNav from "./components/TopNav";
 import HomePage from "./pages/HomePage";
 import GalleryPage from "./pages/GalleryPage";
 import PhotographyStudioPage from "./pages/PhotographyStudioPage";
+import AfterDarkPage from "./pages/AfterDarkPage";
 import MediaDetailPage from "./pages/MediaDetailPage";
 import FavoritesPage from "./pages/FavoritesPage";
+import ServicesPage from "./pages/ServicesPage";
+import TalentPage from "./pages/TalentPage";
 
 import AdminPage from "./pages/AdminPage";
 import AdminInquiries from "./pages/AdminInquiries";
 import AdminSpotlight from "./pages/AdminSpotlight";
 import AdminPhotographyPage from "./pages/AdminPhotographyPage";
 import AdminGalleryPage from "./pages/AdminGalleryPage";
+import AdminAfterDarkPage from "./pages/AdminAfterDarkPage";
 import AdminBeautyApplications from "./pages/AdminBeautyApplications";
 import AdminManagersPage from "./pages/AdminManagersPage";
 
@@ -70,8 +74,6 @@ import MyCreationsPage from "./pages/MyCreationsPage";
 
 import EliteGeneratorPage from "./pages/EliteGeneratorPage";
 import SupremeAccessPage from "./pages/SupremeAccessPage";
-import TalentPage from "./pages/TalentPage";
-import ServicesPage from "./pages/ServicesPage";
 
 function App() {
   return (
@@ -80,19 +82,51 @@ function App() {
 
       <Routes>
         {/* MAIN STUDIO */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/gallery" element={<GalleryPage />} />
+        <Route
+          path="/"
+          element={<HomePage />}
+        />
+
+        <Route
+          path="/gallery"
+          element={<GalleryPage />}
+        />
+
         <Route
           path="/photography-studio"
           element={<PhotographyStudioPage />}
         />
-        <Route path="/media/:id" element={<MediaDetailPage />} />
-        <Route path="/favorites" element={<FavoritesPage />} />
-        <Route path="/services" element={<ServicesPage />} />
-        <Route path="/talent" element={<TalentPage />} />
+
+        <Route
+          path="/after-dark"
+          element={<AfterDarkPage />}
+        />
+
+        <Route
+          path="/media/:id"
+          element={<MediaDetailPage />}
+        />
+
+        <Route
+          path="/favorites"
+          element={<FavoritesPage />}
+        />
+
+        <Route
+          path="/services"
+          element={<ServicesPage />}
+        />
+
+        <Route
+          path="/talent"
+          element={<TalentPage />}
+        />
 
         {/* COLLECTIVES */}
-        <Route path="/collectives" element={<CollectivesPage />} />
+        <Route
+          path="/collectives"
+          element={<CollectivesPage />}
+        />
 
         <Route
           path="/collectives/beauty"
@@ -140,7 +174,10 @@ function App() {
         />
 
         {/* ADMIN */}
-        <Route path="/admin" element={<AdminPage />} />
+        <Route
+          path="/admin"
+          element={<AdminPage />}
+        />
 
         <Route
           path="/admin/inquiries"
@@ -163,6 +200,11 @@ function App() {
         />
 
         <Route
+          path="/admin/after-dark"
+          element={<AdminAfterDarkPage />}
+        />
+
+        <Route
           path="/admin/beauty-applications"
           element={<AdminBeautyApplications />}
         />
@@ -173,7 +215,10 @@ function App() {
         />
 
         {/* AUTH */}
-        <Route path="/auth" element={<AuthPage />} />
+        <Route
+          path="/auth"
+          element={<AuthPage />}
+        />
 
         <Route
           path="/auth/callback"
@@ -241,12 +286,13 @@ function App() {
           element={<CreatorsCornerPage />}
         />
 
-        {/* FEATURED, SPOTLIGHT, MANAGERS */}
+        {/* FEATURED */}
         <Route
           path="/featured"
           element={<FeaturedPage />}
         />
 
+        {/* SPOTLIGHT */}
         <Route
           path="/aset-spotlight"
           element={<AsetSpotlightPage />}
@@ -257,6 +303,7 @@ function App() {
           element={<SpotlightProfilePage />}
         />
 
+        {/* MANAGERS */}
         <Route
           path="/managers"
           element={<ManagersPage />}
@@ -267,6 +314,7 @@ function App() {
           element={<ManagerProfilePage />}
         />
 
+        {/* DEBUG */}
         <Route
           path="/debug-auth"
           element={<DebugAuthPage />}

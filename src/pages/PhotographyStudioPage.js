@@ -1,20 +1,52 @@
 import React, {
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
-import { Link } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+} from "react-router-dom";
+
 import { supabase } from "../supabaseClient";
 
 const STORAGE_BUCKET = "media";
 const SIGNED_URL_SECONDS = 60 * 30;
 
 export default function PhotographyStudioPage() {
+  const location = useLocation();
+
   const [portfolioItems, setPortfolioItems] = useState([]);
   const [loadingPortfolio, setLoadingPortfolio] = useState(true);
   const [portfolioError, setPortfolioError] = useState("");
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+
+  const [afterDarkChoice, setAfterDarkChoice] = useState("");
+  const [vision, setVision] = useState("");
+
+  const bookingReference = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+
+    const source = params.get("source");
+    const imageId = params.get("imageId");
+    const imageTitle = params.get("imageTitle");
+
+    if (
+      source !== "after-dark" ||
+      !imageId
+    ) {
+      return null;
+    }
+
+    return {
+      source,
+      imageId,
+      imageTitle:
+        imageTitle || "Selected After Dark Look",
+    };
+  }, [location.search]);
 
   const scrollToPortfolio = () => {
     document
@@ -107,6 +139,25 @@ export default function PhotographyStudioPage() {
   }, [loadPortfolio]);
 
   useEffect(() => {
+    if (!bookingReference) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      document
+        .getElementById("photography-booking")
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [bookingReference]);
+
+  useEffect(() => {
     if (!selectedPhoto) return undefined;
 
     function handleEscape(event) {
@@ -136,6 +187,27 @@ export default function PhotographyStudioPage() {
     portfolioItems.length > 0
       ? portfolioItems[0]
       : null;
+
+  function handleBookingSubmit(event) {
+    event.preventDefault();
+
+    if (
+      bookingReference &&
+      !afterDarkChoice
+    ) {
+      alert(
+        "Please choose how you want to use the selected After Dark look."
+      );
+
+      return;
+    }
+
+    alert(
+      bookingReference
+        ? "After Dark photography request received."
+        : "Photography request received."
+    );
+  }
 
   return (
     <main style={styles.page}>
@@ -314,7 +386,7 @@ export default function PhotographyStudioPage() {
         </div>
       </section>
 
-      {/* REAL PHOTOGRAPHY PORTFOLIO */}
+      {/* PORTFOLIO */}
       <section
         id="photography-portfolio"
         style={styles.portfolioSection}
@@ -535,6 +607,43 @@ export default function PhotographyStudioPage() {
             instructions.
           </p>
 
+          {bookingReference && (
+            <div style={styles.afterDarkReference}>
+              <p
+                style={
+                  styles.afterDarkReferenceEyebrow
+                }
+              >
+                ASET STUDIO AFTER DARK
+              </p>
+
+              <h3
+                style={
+                  styles.afterDarkReferenceTitle
+                }
+              >
+                Selected Look
+              </h3>
+
+              <p
+                style={
+                  styles.afterDarkReferenceName
+                }
+              >
+                {bookingReference.imageTitle}
+              </p>
+
+              <p
+                style={
+                  styles.afterDarkReferenceText
+                }
+              >
+                This After Dark concept will stay
+                attached to your photography request.
+              </p>
+            </div>
+          )}
+
           <div style={styles.bookingDetails}>
             <p style={styles.detailLine}>
               <strong style={styles.detailLabel}>
@@ -561,14 +670,157 @@ export default function PhotographyStudioPage() {
 
         <form
           style={styles.form}
-          onSubmit={(event) => {
-            event.preventDefault();
-
-            alert(
-              "Photography request received."
-            );
-          }}
+          onSubmit={handleBookingSubmit}
         >
+          {bookingReference && (
+            <>
+              <div style={styles.afterDarkFormBanner}>
+                <p
+                  style={
+                    styles.afterDarkFormEyebrow
+                  }
+                >
+                  BOOK THIS LOOK
+                </p>
+
+                <h3
+                  style={
+                    styles.afterDarkFormTitle
+                  }
+                >
+                  {bookingReference.imageTitle}
+                </h3>
+
+                <input
+                  type="hidden"
+                  name="source"
+                  value="after-dark"
+                />
+
+                <input
+                  type="hidden"
+                  name="afterDarkImageId"
+                  value={
+                    bookingReference.imageId
+                  }
+                />
+
+                <input
+                  type="hidden"
+                  name="afterDarkImageTitle"
+                  value={
+                    bookingReference.imageTitle
+                  }
+                />
+              </div>
+
+              <fieldset
+                style={styles.choiceFieldset}
+              >
+                <legend
+                  style={styles.choiceLegend}
+                >
+                  How would you like to use this
+                  look?
+                </legend>
+
+                <label
+                  style={{
+                    ...styles.choiceCard,
+                    ...(afterDarkChoice ===
+                    "recreate"
+                      ? styles.choiceCardActive
+                      : {}),
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="afterDarkChoice"
+                    value="recreate"
+                    checked={
+                      afterDarkChoice ===
+                      "recreate"
+                    }
+                    onChange={(event) =>
+                      setAfterDarkChoice(
+                        event.target.value
+                      )
+                    }
+                    style={styles.radio}
+                  />
+
+                  <span>
+                    <strong
+                      style={
+                        styles.choiceTitle
+                      }
+                    >
+                      Recreate This Look
+                    </strong>
+
+                    <span
+                      style={
+                        styles.choiceDescription
+                      }
+                    >
+                      Build your session around the
+                      same overall concept, styling,
+                      lighting, environment and
+                      visual direction.
+                    </span>
+                  </span>
+                </label>
+
+                <label
+                  style={{
+                    ...styles.choiceCard,
+                    ...(afterDarkChoice ===
+                    "inspiration"
+                      ? styles.choiceCardActive
+                      : {}),
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="afterDarkChoice"
+                    value="inspiration"
+                    checked={
+                      afterDarkChoice ===
+                      "inspiration"
+                    }
+                    onChange={(event) =>
+                      setAfterDarkChoice(
+                        event.target.value
+                      )
+                    }
+                    style={styles.radio}
+                  />
+
+                  <span>
+                    <strong
+                      style={
+                        styles.choiceTitle
+                      }
+                    >
+                      Use This as Inspiration
+                    </strong>
+
+                    <span
+                      style={
+                        styles.choiceDescription
+                      }
+                    >
+                      Use the selected image as the
+                      creative starting point while
+                      developing something
+                      personalized for you.
+                    </span>
+                  </span>
+                </label>
+              </fieldset>
+            </>
+          )}
+
           <label style={styles.label}>
             Full Name
 
@@ -638,7 +890,15 @@ export default function PhotographyStudioPage() {
               name="vision"
               required
               rows="7"
-              placeholder="Tell us what you would like The Aset Studio to create..."
+              value={vision}
+              onChange={(event) =>
+                setVision(event.target.value)
+              }
+              placeholder={
+                bookingReference
+                  ? "Tell us what you want to keep, change or personalize from the selected After Dark look..."
+                  : "Tell us what you would like The Aset Studio to create..."
+              }
               style={styles.textarea}
             />
           </label>
@@ -647,7 +907,9 @@ export default function PhotographyStudioPage() {
             type="submit"
             style={styles.submitButton}
           >
-            Submit Photography Request
+            {bookingReference
+              ? "Submit After Dark Photography Request"
+              : "Submit Photography Request"}
           </button>
         </form>
       </section>
@@ -1161,6 +1423,47 @@ const styles = {
     lineHeight: 1.85,
   },
 
+  afterDarkReference: {
+    marginTop: 30,
+    padding: 24,
+    background:
+      "linear-gradient(145deg, #1b1b1b, #090909)",
+    border:
+      "1px solid rgba(255,255,255,0.13)",
+  },
+
+  afterDarkReferenceEyebrow: {
+    margin: "0 0 10px",
+    color: "#9d9d9d",
+    fontFamily: "Arial, sans-serif",
+    fontSize: 9,
+    fontWeight: 900,
+    letterSpacing: "0.22em",
+  },
+
+  afterDarkReferenceTitle: {
+    margin: "0 0 8px",
+    color: "#ffffff",
+    fontSize: 26,
+    fontWeight: 500,
+  },
+
+  afterDarkReferenceName: {
+    margin: "0 0 12px",
+    color: "#d7ae6a",
+    fontFamily: "Arial, sans-serif",
+    fontSize: 14,
+    fontWeight: 800,
+  },
+
+  afterDarkReferenceText: {
+    margin: 0,
+    color: "#999",
+    fontFamily: "Arial, sans-serif",
+    fontSize: 12,
+    lineHeight: 1.7,
+  },
+
   bookingDetails: {
     marginTop: 34,
     paddingTop: 26,
@@ -1185,6 +1488,83 @@ const styles = {
     background: "#0d0d0d",
     border:
       "1px solid rgba(255,255,255,0.1)",
+  },
+
+  afterDarkFormBanner: {
+    paddingBottom: 20,
+    marginBottom: 4,
+    borderBottom:
+      "1px solid rgba(255,255,255,0.1)",
+  },
+
+  afterDarkFormEyebrow: {
+    margin: "0 0 8px",
+    color: "#9d9d9d",
+    fontFamily: "Arial, sans-serif",
+    fontSize: 9,
+    fontWeight: 900,
+    letterSpacing: "0.22em",
+  },
+
+  afterDarkFormTitle: {
+    margin: 0,
+    color: "#ffffff",
+    fontSize: 26,
+    fontWeight: 500,
+  },
+
+  choiceFieldset: {
+    margin: 0,
+    padding: 0,
+    display: "grid",
+    gap: 10,
+    border: "none",
+  },
+
+  choiceLegend: {
+    marginBottom: 10,
+    color: "#d5d0c7",
+    fontFamily: "Arial, sans-serif",
+    fontSize: 12,
+    fontWeight: 800,
+  },
+
+  choiceCard: {
+    padding: 18,
+    display: "grid",
+    gridTemplateColumns: "22px 1fr",
+    gap: 12,
+    alignItems: "start",
+    cursor: "pointer",
+    background: "#121212",
+    border:
+      "1px solid rgba(255,255,255,0.1)",
+  },
+
+  choiceCardActive: {
+    background: "#181613",
+    border:
+      "1px solid rgba(215,174,106,0.7)",
+  },
+
+  radio: {
+    marginTop: 4,
+  },
+
+  choiceTitle: {
+    display: "block",
+    marginBottom: 6,
+    color: "#ffffff",
+    fontFamily: "Arial, sans-serif",
+    fontSize: 13,
+  },
+
+  choiceDescription: {
+    display: "block",
+    color: "#999",
+    fontFamily: "Arial, sans-serif",
+    fontSize: 11,
+    lineHeight: 1.6,
   },
 
   label: {
@@ -1309,7 +1689,8 @@ const responsiveStyles = `
   .photography-portfolio-card:hover {
     transform: translateY(-5px);
     border-color: rgba(215,174,106,0.42);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.42);
+    box-shadow:
+      0 20px 50px rgba(0,0,0,0.42);
   }
 
   .photography-photo-button {
@@ -1342,7 +1723,10 @@ const responsiveStyles = `
   .photography-card-title {
     margin: 0;
     color: #ffffff;
-    font-family: Georgia, "Times New Roman", serif;
+    font-family:
+      Georgia,
+      "Times New Roman",
+      serif;
     font-size: 27px;
     font-weight: 500;
     line-height: 1.15;
@@ -1375,8 +1759,10 @@ const responsiveStyles = `
     position: relative;
     overflow: hidden;
     background: #080808;
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 40px 120px rgba(0,0,0,0.7);
+    border:
+      1px solid rgba(255,255,255,0.12);
+    box-shadow:
+      0 40px 120px rgba(0,0,0,0.7);
   }
 
   .photography-viewer-close {
@@ -1389,7 +1775,8 @@ const responsiveStyles = `
     display: grid;
     place-items: center;
     border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.2);
+    border:
+      1px solid rgba(255,255,255,0.2);
     background: rgba(10,10,10,0.86);
     color: #ffffff;
     cursor: pointer;
@@ -1413,7 +1800,8 @@ const responsiveStyles = `
 
   .photography-viewer-info {
     padding: 25px 28px 30px;
-    border-top: 1px solid rgba(255,255,255,0.08);
+    border-top:
+      1px solid rgba(255,255,255,0.08);
   }
 
   .photography-viewer-eyebrow {
@@ -1428,8 +1816,12 @@ const responsiveStyles = `
   .photography-viewer-title {
     margin: 0;
     color: #f4f0e8;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(2rem, 4vw, 4rem);
+    font-family:
+      Georgia,
+      "Times New Roman",
+      serif;
+    font-size:
+      clamp(2rem, 4vw, 4rem);
     font-weight: 500;
     line-height: 1;
   }
