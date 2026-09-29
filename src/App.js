@@ -8,6 +8,10 @@ import {
 
 import TopNav from "./components/TopNav";
 
+/* ==========================================
+   MAIN STUDIO
+========================================== */
+
 import HomePage from "./pages/HomePage";
 import GalleryPage from "./pages/GalleryPage";
 import PhotographyStudioPage from "./pages/PhotographyStudioPage";
@@ -17,6 +21,10 @@ import FavoritesPage from "./pages/FavoritesPage";
 import ServicesPage from "./pages/ServicesPage";
 import TalentPage from "./pages/TalentPage";
 
+/* ==========================================
+   ADMIN
+========================================== */
+
 import AdminPage from "./pages/AdminPage";
 import AdminInquiries from "./pages/AdminInquiries";
 import AdminSpotlight from "./pages/AdminSpotlight";
@@ -25,10 +33,19 @@ import AdminGalleryPage from "./pages/AdminGalleryPage";
 import AdminAfterDarkPage from "./pages/AdminAfterDarkPage";
 import AdminBeautyApplications from "./pages/AdminBeautyApplications";
 import AdminManagersPage from "./pages/AdminManagersPage";
+import AdminAsetPage from "./pages/AdminAsetPage";
+
+/* ==========================================
+   AUTH
+========================================== */
 
 import AuthPage from "./pages/AuthPage";
 import AuthCallback from "./pages/AuthCallback";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+
+/* ==========================================
+   CREATOR NETWORK
+========================================== */
 
 import CreatorUploadPage from "./pages/CreatorUploadPage";
 import MessagesPage from "./pages/MessagesPage";
@@ -41,20 +58,52 @@ import CreatorConnectionsPage from "./pages/CreatorConnectionsPage";
 import CreatorsHubPage from "./pages/CreatorsHubPage";
 import CreatorsCornerPage from "./pages/CreatorsCornerPage";
 
+/* ==========================================
+   FEATURED / DEBUG
+========================================== */
+
 import FeaturedPage from "./pages/FeaturedPage";
 import DebugAuthPage from "./pages/DebugAuthPage";
+
+/* ==========================================
+   ASET CINEMA
+========================================== */
 
 import VideosPage from "./pages/VideosPage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
 
+/* ==========================================
+   VAULTS
+========================================== */
+
 import DiamondVaultPage from "./pages/DiamondVaultPage";
 import ExpressionVaultPage from "./pages/ExpressionVaultPage";
+
+/* ==========================================
+   ASET MAGAZINE
+========================================== */
+
+import AsetMagazinePage from "./pages/AsetMagazinePage";
+import AsetArticlePage from "./pages/AsetArticlePage";
+import AsetIssuePage from "./pages/AsetIssuePage";
+
+/* ==========================================
+   ASET SPOTLIGHT
+========================================== */
 
 import AsetSpotlightPage from "./pages/AsetSpotlightPage";
 import SpotlightProfilePage from "./pages/SpotlightProfilePage";
 
+/* ==========================================
+   MANAGERS
+========================================== */
+
 import ManagersPage from "./pages/ManagersPage";
 import ManagerProfilePage from "./pages/ManagerProfilePage";
+
+/* ==========================================
+   COLLECTIVES
+========================================== */
 
 import CollectivesPage from "./pages/CollectivesPage";
 import AsetBeautyCollectivePage from "./pages/AsetBeautyCollectivePage";
@@ -67,13 +116,25 @@ import SfxMakeupArtistsPage from "./pages/SfxMakeupArtistsPage";
 import BeautyCompaniesPage from "./pages/BeautyCompaniesPage";
 import BeautyApplyPage from "./pages/BeautyApplyPage";
 
+/* ==========================================
+   ASET LOUNGE
+========================================== */
+
 import AsetLoungePage from "./pages/AsetLoungePage";
 import PuzzleLibraryPage from "./pages/PuzzleLibraryPage";
 import PuzzlePlayPage from "./pages/PuzzlePlayPage";
 import MyCreationsPage from "./pages/MyCreationsPage";
 
+/* ==========================================
+   ACCESS
+========================================== */
+
 import EliteGeneratorPage from "./pages/EliteGeneratorPage";
 import SupremeAccessPage from "./pages/SupremeAccessPage";
+
+/* ==========================================
+   APP
+========================================== */
 
 function App() {
   return (
@@ -81,7 +142,10 @@ function App() {
       <TopNav />
 
       <Routes>
-        {/* MAIN STUDIO */}
+        {/* =====================================
+            MAIN STUDIO
+        ===================================== */}
+
         <Route
           path="/"
           element={<HomePage />}
@@ -122,7 +186,10 @@ function App() {
           element={<TalentPage />}
         />
 
-        {/* COLLECTIVES */}
+        {/* =====================================
+            COLLECTIVES
+        ===================================== */}
+
         <Route
           path="/collectives"
           element={<CollectivesPage />}
@@ -173,7 +240,10 @@ function App() {
           element={<BeautyApplyPage />}
         />
 
-        {/* ADMIN */}
+        {/* =====================================
+            ADMIN
+        ===================================== */}
+
         <Route
           path="/admin"
           element={<AdminPage />}
@@ -214,7 +284,15 @@ function App() {
           element={<AdminManagersPage />}
         />
 
-        {/* AUTH */}
+        <Route
+          path="/admin/aset"
+          element={<AdminAsetPage />}
+        />
+
+        {/* =====================================
+            AUTH
+        ===================================== */}
+
         <Route
           path="/auth"
           element={<AuthPage />}
@@ -230,7 +308,10 @@ function App() {
           element={<ResetPasswordPage />}
         />
 
-        {/* CREATOR NETWORK */}
+        {/* =====================================
+            CREATOR NETWORK
+        ===================================== */}
+
         <Route
           path="/upload"
           element={<CreatorUploadPage />}
@@ -286,13 +367,38 @@ function App() {
           element={<CreatorsCornerPage />}
         />
 
-        {/* FEATURED */}
+        {/* =====================================
+            FEATURED
+        ===================================== */}
+
         <Route
           path="/featured"
           element={<FeaturedPage />}
         />
 
-        {/* SPOTLIGHT */}
+        {/* =====================================
+            ASET MAGAZINE
+        ===================================== */}
+
+        <Route
+          path="/aset"
+          element={<AsetMagazinePage />}
+        />
+
+        <Route
+          path="/aset/articles/:slug"
+          element={<AsetArticlePage />}
+        />
+
+        <Route
+          path="/aset/issues/:slug"
+          element={<AsetIssuePage />}
+        />
+
+        {/* =====================================
+            ASET SPOTLIGHT
+        ===================================== */}
+
         <Route
           path="/aset-spotlight"
           element={<AsetSpotlightPage />}
@@ -303,7 +409,10 @@ function App() {
           element={<SpotlightProfilePage />}
         />
 
-        {/* MANAGERS */}
+        {/* =====================================
+            MANAGERS
+        ===================================== */}
+
         <Route
           path="/managers"
           element={<ManagersPage />}
@@ -314,13 +423,19 @@ function App() {
           element={<ManagerProfilePage />}
         />
 
-        {/* DEBUG */}
+        {/* =====================================
+            DEBUG
+        ===================================== */}
+
         <Route
           path="/debug-auth"
           element={<DebugAuthPage />}
         />
 
-        {/* CINEMA */}
+        {/* =====================================
+            ASET CINEMA
+        ===================================== */}
+
         <Route
           path="/videos"
           element={<VideosPage />}
@@ -331,7 +446,10 @@ function App() {
           element={<VideoPlayerPage />}
         />
 
-        {/* VAULTS */}
+        {/* =====================================
+            VAULTS
+        ===================================== */}
+
         <Route
           path="/diamond-vault"
           element={<DiamondVaultPage />}
@@ -342,7 +460,10 @@ function App() {
           element={<ExpressionVaultPage />}
         />
 
-        {/* ASET LOUNGE */}
+        {/* =====================================
+            ASET LOUNGE
+        ===================================== */}
+
         <Route
           path="/aset-lounge"
           element={<AsetLoungePage />}
@@ -363,7 +484,10 @@ function App() {
           element={<MyCreationsPage />}
         />
 
-        {/* ACCESS */}
+        {/* =====================================
+            ACCESS
+        ===================================== */}
+
         <Route
           path="/supreme-access"
           element={<SupremeAccessPage />}
@@ -374,16 +498,32 @@ function App() {
           element={<EliteGeneratorPage />}
         />
 
-        {/* LEGACY REDIRECT */}
+        {/* =====================================
+            LEGACY REDIRECT
+        ===================================== */}
+
         <Route
           path="/studio/writer"
-          element={<Navigate to="/" replace />}
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
         />
 
-        {/* FALLBACK */}
+        {/* =====================================
+            FALLBACK
+        ===================================== */}
+
         <Route
           path="*"
-          element={<Navigate to="/" replace />}
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
         />
       </Routes>
     </Router>
